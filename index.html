@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>粉體烤漆用量試算表</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-color: #e9ecef;
+            --text-main: #333333;
+            --text-muted: #6c757d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                grid-template-columns: 3fr 2fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+            font-size: 1.25rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 2fr 3fr;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .help-text {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: normal;
+            margin-top: 2px;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .unit {
+            position: absolute;
+            right: 12px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+
+        /* Results Section */
+        .result-box {
+            background-color: #f1f8ff;
+            border: 1px solid #cce5ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .result-box.highlight {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .result-title {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            color: inherit;
+            opacity: 0.9;
+        }
+
+        .result-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .result-box.highlight .result-title {
+            color: #e0e0e0;
+        }
+
+        .divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 20px 0;
+        }
+
+        .equipment-notes {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #856404;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 左側：參數輸入區 -->
+    <div class="card">
+        <h2>工件與設備參數設定</h2>
+        
+        <div class="equipment-notes">
+            <strong>現場參數記錄：</strong>產線速度 1100｜粉量 98｜霧化 45｜靜電 22｜無回收系統。<br>
+            * 系統已根據上述條件將「實際附著率」預設為較保守的 52%。
+        </div>
+
+        <div class="form-group">
+            <label>工件長度</label>
+            <div class="input-wrapper">
+                <input type="number" id="length" value="80" step="1" oninput="calculate()">
+                <span class="unit">cm</span>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>工件寬度</label>
+            <div class="input-wrapper">
+                <input type="number" id="width" value="50" step="1" oninput="calculate()">
+                <span class="unit">cm</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>塗佈面</label>
+            <select id="sides" onchange="calculate()">
+                <option value="2">雙面</option>
+                <option value="1">單面</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>生產數量</label>
+            <div class="input-wrapper">
+                <input type="number" id="quantity" value="300" step="1" oninput="calculate()">
+                <span class="unit">個</span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="form-group">
+            <label>設定膜厚</label>
+            <div class="input-wrapper">
+                <input type="number" id="thickness" value="80" step="5" oninput="calculate()">
+                <span class="unit">μm</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>粉體比重 (密度)<span class="help-text">深藍色一般約 1.4~1.5</span></label>
+            <div class="input-wrapper">
+                <input type="number" id="density" value="1.45" step="0.01" oninput="calculate()">
+                <span class="unit">g/cm³</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>實際附著率<span class="help-text">無回收+大出粉量約 50~55%</span></label>
+            <div class="input-wrapper">
+                <input type="number" id="efficiency" value="52" step="1" oninput="calculate()">
+                <span class="unit">%</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>單箱淨重</label>
+            <div class="input-wrapper">
+                <input type="number" id="boxWeight" value="25" step="1" oninput="calculate()">
+                <span class="unit">kg</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右側：計算結果區 -->
+    <div class="card">
+        <h2>用量分析結果</h2>
+
+        <div class="result-box">
+            <div class="result-title">總塗佈面積</div>
+            <p class="result-value"><span id="resArea">0.00</span> <span style="font-size: 1rem;">m²</span></p>
+        </div>
+
+        <div class="result-box">
+            <div class="result-title">理論需粉量 (100%附著)</div>
+            <p class="result-value"><span id="resTheoretical">0.00</span> <span style="font-size: 1rem;">kg</span></p>
+        </div>
+
+        <div class="result-box highlight">
+            <div class="result-title">實際需粉量 (含損耗)</div>
+            <p class="result-value"><span id="resActualKg">0.00</span> <span style="font-size: 1rem;">kg</span></p>
+        </div>
+
+        <div class="result-box highlight" style="background-color: var(--accent-color); border-color: var(--accent-color);">
+            <div class="result-title">建議備料箱數</div>
+            <p class="result-value"><span id="resBoxes">0.00</span> <span style="font-size: 1rem;">箱</span></p>
+            <p style="margin: 5px 0 0 0; font-size: 0.85rem; color: #fff; opacity: 0.8;">(整數進位建議備料：<strong id="resBoxRound" style="font-size: 1rem;">0</strong> 箱)</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calculate() {
+        // 取得所有輸入值
+        const length = parseFloat(document.getElementById('length').value) || 0;
+        const width = parseFloat(document.getElementById('width').value) || 0;
+        const sides = parseFloat(document.getElementById('sides').value) || 2;
+        const quantity = parseFloat(document.getElementById('quantity').value) || 0;
+        
+        const thickness = parseFloat(document.getElementById('thickness').value) || 0;
+        const density = parseFloat(document.getElementById('density').value) || 0;
+        const efficiency = parseFloat(document.getElementById('efficiency').value) || 100;
+        const boxWeight = parseFloat(document.getElementById('boxWeight').value) || 1;
+
+        // 1. 計算總面積 (平方公尺)
+        // 長(cm) * 寬(cm) / 10000 = 單面面積(m²)
+        const singleAreaM2 = (length * width) / 10000;
+        const totalAreaM2 = singleAreaM2 * sides * quantity;
+
+        // 2. 計算理論重量 (公斤)
+        // 公式：面積(m²) * 膜厚(μm) * 比重(g/cm³) / 1000
+        const theoreticalKg = (totalAreaM2 * thickness * density) / 1000;
+
+        // 3. 計算實際重量 (公斤)
+        const actualKg = theoreticalKg / (efficiency / 100);
+
+        // 4. 計算箱數
+        const boxes = actualKg / boxWeight;
+        const roundedBoxes = Math.ceil(boxes);
+
+        // 更新畫面顯示 (小數點後兩位)
+        document.getElementById('resArea').innerText = totalAreaM2.toFixed(2);
+        document.getElementById('resTheoretical').innerText = theoreticalKg.toFixed(2);
+        document.getElementById('resActualKg').innerText = actualKg.toFixed(2);
+        document.getElementById('resBoxes').innerText = boxes.toFixed(2);
+        document.getElementById('resBoxRound').innerText = roundedBoxes;
+    }
+
+    // 網頁載入時先執行一次計算
+    window.onload = calculate;
+</script>
+
+</body>
+</html>
