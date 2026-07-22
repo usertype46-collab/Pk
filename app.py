@@ -89,7 +89,7 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台 (改成長型軌跡、縮小卡片)
+        # 1. 模擬器主控台 (黑虛線滾動軌跡，配合新版 S 型佈局)
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -102,7 +102,6 @@ def create_templates():
                 .dashboard {{ background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
                 .speed-ctrl button {{ font-size: 18px; padding: 5px 15px; margin: 0 10px; cursor: pointer; }}
                 
-                /* 改為拉長的 2:3 比例，更適合手機直向 */
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 600px; 
                     aspect-ratio: 2 / 3; background: white; 
@@ -110,7 +109,16 @@ def create_templates():
                 }}
                 .factory-map svg {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; }}
                 
-                /* 縮小卡片 */
+                /* 動態黑色虛線滾動動畫 (模擬鏈條) */
+                .chain-track {{
+                    stroke-dasharray: 16, 12;
+                    animation: moveChain 1.2s linear infinite;
+                }}
+                @keyframes moveChain {{
+                    from {{ stroke-dashoffset: 28; }}
+                    to {{ stroke-dashoffset: 0; }}
+                }}
+
                 .mini-card {{ 
                     position: absolute; width: auto; min-width: 50px; height: 26px; border-radius: 4px; 
                     border: 2px solid #333; transform: translate(-50%, -50%); cursor: pointer; 
@@ -120,7 +128,6 @@ def create_templates():
                 }}
                 .mini-card .details {{ display: none; }}
                 
-                /* 置中展開 Modal 化 */
                 #overlay {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9990; }}
                 .mini-card.expanded {{
                     position: fixed !important; top: 50% !important; left: 50% !important;
@@ -153,27 +160,30 @@ def create_templates():
             </div>
             
             <div class="factory-map" id="map">
-                <!-- 重新設計的直向長軌跡 -->
                 <svg viewBox="0 0 800 1200">
-                    <path id="track" d="M 200 150 L 100 150 L 100 50 L 700 50 L 700 200 L 400 200 L 400 350 L 700 350 L 700 500 L 400 500 L 400 650 L 700 650 L 700 1100 L 100 1100" fill="none" stroke="#ff4d4d" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                    <!-- 背景淺灰色實線 -->
+                    <path d="M 200 180 L 100 180 L 100 80 L 750 80 L 750 180 L 500 180 L 500 280 L 750 280 L 750 380 L 500 380 L 500 480 L 750 480 L 750 1100 L 100 1100" fill="none" stroke="#e0e0e0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
                     
-                    <rect x="130" y="115" width="120" height="70" fill="#4d94ff" rx="5"/>
-                    <text x="190" y="160" fill="white" font-size="32" font-weight="bold" text-anchor="middle" data-i18n="map1">上料</text>
+                    <!-- 上方疊加動態黑色虛線 -->
+                    <path id="track" d="M 200 180 L 100 180 L 100 80 L 750 80 L 750 180 L 500 180 L 500 280 L 750 280 L 750 380 L 500 380 L 500 480 L 750 480 L 750 1100 L 100 1100" fill="none" stroke="#222" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                     
-                    <rect x="330" y="15" width="140" height="70" fill="#4d94ff" rx="5"/>
-                    <text x="400" y="60" fill="white" font-size="32" font-weight="bold" text-anchor="middle" data-i18n="map2">前處理</text>
+                    <rect x="150" y="190" width="120" height="60" fill="#4d94ff" rx="5"/>
+                    <text x="210" y="232" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map1">上料</text>
                     
-                    <rect x="480" y="315" width="140" height="70" fill="#4d94ff" rx="5"/>
-                    <text x="550" y="360" fill="white" font-size="32" font-weight="bold" text-anchor="middle" data-i18n="map3">水切爐</text>
+                    <rect x="350" y="10" width="140" height="60" fill="#4d94ff" rx="5"/>
+                    <text x="420" y="52" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map2">前處理</text>
                     
-                    <rect x="480" y="615" width="160" height="80" fill="#4d94ff" rx="5"/>
-                    <text x="560" y="665" fill="white" font-size="36" font-weight="bold" text-anchor="middle" data-i18n="map4">噴房</text>
+                    <rect x="600" y="210" width="140" height="60" fill="#4d94ff" rx="5"/>
+                    <text x="670" y="252" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map3">水切爐</text>
                     
-                    <rect x="620" y="850" width="160" height="80" fill="#4d94ff" rx="5"/>
-                    <text x="700" y="902" fill="white" font-size="36" font-weight="bold" text-anchor="middle" data-i18n="map5">烘烤爐</text>
+                    <rect x="530" y="310" width="140" height="60" fill="#4d94ff" rx="5"/>
+                    <text x="600" y="352" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map5">烘烤爐</text>
                     
-                    <rect x="130" y="1065" width="120" height="70" fill="#4d94ff" rx="5"/>
-                    <text x="190" y="1110" fill="white" font-size="32" font-weight="bold" text-anchor="middle" data-i18n="map6">下料</text>
+                    <rect x="580" y="410" width="140" height="60" fill="#4d94ff" rx="5"/>
+                    <text x="650" y="452" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map4">噴房</text>
+                    
+                    <rect x="50" y="1020" width="120" height="60" fill="#4d94ff" rx="5"/>
+                    <text x="110" y="1062" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map6">下料</text>
                 </svg>
             </div>
 
@@ -247,7 +257,6 @@ def create_templates():
                             div.style.backgroundColor = card.colorCode || '#333';
                             div.onclick = (e) => toggleCard(card.id, e);
                             
-                            // 判斷卡片上要顯示的簡短文字 (如果有拍照，就顯示預設字樣)
                             let shortLabel = t('comp_lbl');
                             if (card.part_name && !card.part_name.startsWith('data:image') && card.part_name !== '未填寫') {{
                                 shortLabel = card.part_name;
@@ -261,6 +270,7 @@ def create_templates():
                                     <div class="close-btn" onclick="toggleCard('${{card.id}}', event)">×</div>
                                     <b>${{t('part_no')}}</b> ${{renderField(card.part_no)}}<br>
                                     <b>${{t('part_name')}}</b> ${{renderField(card.part_name)}}<br>
+                                    <b>機/櫃:</b> ${{card.model_no || '未填寫'}}<br>
                                     <b>${{t('qty')}}</b> ${{card.qty}}<br>
                                     <b>${{t('color')}}</b> ${{card.color}}
                                 </div>
@@ -275,7 +285,7 @@ def create_templates():
         </html>
         """,
 
-        # 2. 現場待料區 (純拍照儲存)
+        # 2. 現場待料區 (新增 機種第幾櫃 欄位)
         'waiting.html': f"""
         <!DOCTYPE html>
         <html>
@@ -346,6 +356,10 @@ def create_templates():
                     <input type="text" id="partName" data-i18n="name_ph" placeholder="手動輸入或掃描品名">
                     <button type="button" class="btn-scan" data-i18n="scan_btn" onclick="openScanner('partName')">📷 掃描</button>
                 </div>
+                <div class="input-group" id="modelNoGroup">
+                    <!-- 新增：機種第幾櫃欄位 -->
+                    <input type="text" id="modelNo" placeholder="機種第幾櫃 (手動輸入 / Nhập model)">
+                </div>
                 <input type="number" id="qty" placeholder="數量 / Số lượng">
                 <button class="btn-add" data-i18n="add_btn" onclick="createCard()">➕ 新增待上線構件</button>
             </div>
@@ -375,7 +389,7 @@ def create_templates():
             <script>
                 const socket = io();
                 let sys_state_cache = {{cards:{{}}}};
-                let scanData = {{ partNo: '', partName: '' }}; // 暫存拍照的照片
+                let scanData = {{ partNo: '', partName: '' }}; 
                 
                 function previewColor() {{
                     const val = document.getElementById('colorSelect').value.split(',');
@@ -390,15 +404,16 @@ def create_templates():
                         colorCode: colorData[1],
                         part_no: scanData.partNo || document.getElementById('partNo').value || '未填寫',
                         part_name: scanData.partName || document.getElementById('partName').value || '未填寫',
+                        model_no: document.getElementById('modelNo').value || '', 
                         qty: document.getElementById('qty').value || 0,
                         status: 'waiting'
                     }};
                     socket.emit('add_card', data);
                     
-                    // 重置表單
                     scanData = {{ partNo: '', partName: '' }};
                     document.getElementById('partNo').value = '';
                     document.getElementById('partName').value = '';
+                    document.getElementById('modelNo').value = '';
                     document.getElementById('qty').value = '';
                     if(document.getElementById('partNoPreview')) document.getElementById('partNoPreview').remove();
                     if(document.getElementById('partNamePreview')) document.getElementById('partNamePreview').remove();
@@ -413,8 +428,12 @@ def create_templates():
                         const div = document.createElement('div');
                         div.className = 'data-card';
                         div.style.borderColor = card.colorCode;
+                        
+                        // 清單上同步顯示機櫃資訊(若有)
+                        let modelInfo = card.model_no ? ` [${{card.model_no}}]` : '';
+                        
                         div.innerHTML = `
-                            <div><b>${{renderField(card.part_no)}}</b> (${{renderField(card.part_name)}}) - ${{card.color}} x ${{card.qty}}</div>
+                            <div><b>${{renderField(card.part_no)}}</b> (${{renderField(card.part_name)}})${{modelInfo}} - ${{card.color}} x ${{card.qty}}</div>
                             <div style="display:flex; gap:5px;">
                                 ${{card.status === 'waiting' ? 
                                     `<button class="btn-send" onclick="sendToAli('${{card.id}}')">${{t('btn_send_ali')}}</button>
@@ -461,7 +480,6 @@ def create_templates():
                     if(stream) {{ stream.getTracks().forEach(track => track.stop()); }}
                 }}
 
-                // 拍照並擷取綠色框框內的圖片轉為 base64 儲存
                 function captureAndStore() {{
                     video.pause();
                     
@@ -476,7 +494,6 @@ def create_templates():
                     
                     const cropCanvas = document.createElement('canvas');
                     
-                    // 為了減少 socket 傳輸負擔，將圖片限制最大寬度為 400px
                     const maxW = 400;
                     const scale = cropW > maxW ? maxW / cropW : 1;
                     cropCanvas.width = cropW * scale;
@@ -485,11 +502,9 @@ def create_templates():
                     cropCtx.scale(scale, scale);
                     cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-                    // 取得 JPEG base64 (壓縮比 0.85)
                     const base64Img = cropCanvas.toDataURL('image/jpeg', 0.85);
                     scanData[currentScanTarget] = base64Img;
                     
-                    // 更新 UI，顯示縮圖
                     const inputEl = document.getElementById(currentScanTarget);
                     inputEl.value = '[🖼️ 已儲存照片]';
                     
@@ -516,7 +531,7 @@ def create_templates():
         </html>
         """,
 
-        # 3. 待上料_阿利 (支援渲染圖片)
+        # 3. 待上料_阿利 
         'loading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -558,7 +573,7 @@ def create_templates():
                             div.className = 'card';
                             div.style.borderColor = card.colorCode;
                             div.innerHTML = `
-                                <strong>${{t('part_no')}} ${{renderField(card.part_no)}} | ${{t('part_name')}} ${{renderField(card.part_name)}} | ${{t('qty')}} ${{card.qty}} | ${{t('color')}} ${{card.color}}</strong>
+                                <strong>${{t('part_no')}} ${{renderField(card.part_no)}} | ${{t('part_name')}} ${{renderField(card.part_name)}} | ${{card.model_no ? '機/櫃: ' + card.model_no + ' | ' : ''}}${{t('qty')}} ${{card.qty}} | ${{t('color')}} ${{card.color}}</strong>
                                 <div class="grid-form">
                                     <label>${{t('lbl_hang')}} <select id="hang_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})"><option value="1">1</option><option value="2">2</option></select></label>
                                     <label>${{t('lbl_empty')}} <select id="empty_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
@@ -604,7 +619,7 @@ def create_templates():
         </html>
         """,
 
-        # 4. 下料_完成 (支援渲染圖片)
+        # 4. 下料_完成 (改為強大的歷史紀錄表格式呈現)
         'unloading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -616,7 +631,14 @@ def create_templates():
                 body {{ font-family: '微軟正黑體', sans-serif; background: #fdf2e9; padding: 20px;}}
                 .card {{ background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 10px solid #ccc; display: flex; justify-content: space-between; align-items: center;}}
                 .btn-done {{ background: #27ae60; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight:bold;}}
-                .record {{ font-size: 12px; color: #7f8c8d; margin-top: 5px;}}
+                
+                /* 表格相關樣式 */
+                .done-table-container {{ overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+                .done-table {{ width: 100%; border-collapse: collapse; min-width: 600px; text-align: center; font-size: 14px;}}
+                .done-table th, .done-table td {{ border: 1px solid #dee2e6; padding: 12px 8px; }}
+                .done-table th {{ background: #34495e; color: white; font-weight: bold; white-space: nowrap;}}
+                .done-table tr:nth-child(even) {{ background: #f8f9fa; }}
+                .empty-record {{ text-align: center; color: #7f8c8d; padding: 20px; font-weight: bold; }}
             </style>
             {I18N_SCRIPT}
         </head>
@@ -624,9 +646,10 @@ def create_templates():
             <h2 data-i18n="unload_title">✅ 下料與完成紀錄區</h2>
             <h3 data-i18n="unload_wait">待下料區 (模擬器跑完自動傳送至此)</h3>
             <div id="unload-list"></div>
+            
             <hr>
             <h3 data-i18n="done_list">歷史完成紀錄</h3>
-            <div id="done-list"></div>
+            <div id="done-list" class="done-table-container"></div>
 
             <script>
                 const socket = io();
@@ -635,27 +658,63 @@ def create_templates():
                 function renderDynamic() {{
                     const unloadList = document.getElementById('unload-list');
                     const doneList = document.getElementById('done-list');
-                    unloadList.innerHTML = ''; doneList.innerHTML = '';
+                    unloadList.innerHTML = ''; 
+                    
+                    // 初始化表格 HTML
+                    let tableHTML = `
+                    <table class="done-table">
+                        <thead>
+                            <tr>
+                                <th>1. 料號 (Mã LK)</th>
+                                <th>2. 品名 (Tên LK)</th>
+                                <th>3. 機種第幾櫃 (Model)</th>
+                                <th>數量 (SL)</th>
+                                <th>顏色 (Màu)</th>
+                                <th>完成時間 (Thời gian)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                    `;
+                    let hasCompleted = false;
 
                     Object.values(sys_state_cache.cards).forEach(card => {{
-                        const div = document.createElement('div');
-                        div.className = 'card';
-                        div.style.borderColor = card.colorCode;
-                        
                         if(card.status === 'unloading') {{
+                            // 待下料區維持卡片樣式
+                            const div = document.createElement('div');
+                            div.className = 'card';
+                            div.style.borderColor = card.colorCode;
                             div.innerHTML = `
                                 <div><b>${{renderField(card.part_no)}}</b> - ${{card.color}} x ${{card.qty}}</div>
                                 <button class="btn-done" onclick="finishCard('${{card.id}}')">${{t('btn_done')}}</button>
                             `;
                             unloadList.appendChild(div);
                         }} else if(card.status === 'completed') {{
-                            div.innerHTML = `
-                                <div><b>${{renderField(card.part_no)}}</b> - ${{card.color}} x ${{card.qty}}<br>
-                                <span class="record">${{t('done_time')}} ${{card.finish_time}}</span></div>
+                            // 完成區轉為表格 Row
+                            hasCompleted = true;
+                            tableHTML += `
+                                <tr>
+                                    <td>${{renderField(card.part_no)}}</td>
+                                    <td>${{renderField(card.part_name)}}</td>
+                                    <td style="font-weight:bold; color:#d35400;">${{card.model_no || '-'}}</td>
+                                    <td>${{card.qty}}</td>
+                                    <td>
+                                        <span style="display:inline-block;width:14px;height:14px;background:${{card.colorCode}};border:1px solid #333;border-radius:3px;vertical-align:middle;margin-right:5px;"></span>
+                                        ${{card.color}}
+                                    </td>
+                                    <td style="font-size:12px; color:#555;">${{card.finish_time}}</td>
+                                </tr>
                             `;
-                            doneList.appendChild(div);
                         }}
                     }});
+                    
+                    tableHTML += `</tbody></table>`;
+                    
+                    // 根據是否有歷史資料進行渲染
+                    if(hasCompleted) {{
+                        doneList.innerHTML = tableHTML;
+                    }} else {{
+                        doneList.innerHTML = '<div class="empty-record">尚無完成紀錄 / Chưa có dữ liệu</div>';
+                    }}
                 }}
 
                 socket.on('update_state', (state) => {{
