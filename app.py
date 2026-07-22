@@ -5,7 +5,8 @@ import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+# 移除 async_mode='eventlet'，讓系統自動分配最穩定的執行模式
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # 系統全局變數
 sys_state = {
@@ -53,7 +54,7 @@ def create_templates():
             </div>
             
             <div class="factory-map" id="map">
-                <!-- SVG 路線圖 (依據 14389.jpg 繪製) -->
+                <!-- SVG 路線圖 -->
                 <svg viewBox="0 0 1000 800" width="100%" height="100%">
                     <path id="track" d="M 200 150 L 100 150 L 100 50 L 900 50 L 900 150 L 600 150 L 600 220 L 900 220 L 900 290 L 600 290 L 600 360 L 900 360 L 900 750 L 100 750" fill="none" stroke="#ff4d4d" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
                     <rect x="150" y="125" width="80" height="50" fill="#4d94ff" rx="5"/>
@@ -153,21 +154,41 @@ def create_templates():
                 .btn-send { background: #007bff; color: white; width: auto; }
                 .btn-del { background: #dc3545; color: white; width: auto; }
                 .fixed-bottom { position: fixed; bottom: 0; left: 0; right: 0; height: 120px; background: #343a40; color: white; padding: 10px; overflow-y: auto; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);}
-                img.preview { max-width: 50px; cursor: pointer; vertical-align: middle; margin-left: 10px; }
             </style>
         </head>
         <body>
             <h2>📦 現場待料區</h2>
-            <!-- 新增表單區：與列表分離，解決下拉選單閃退問題 -->
             <div class="form-card" id="inputForm">
                 <select id="colorSelect" onchange="previewColor()">
                     <option value="WE白色,#FFFFFF">WE白色</option>
+                    <option value="WES白砂,#F5F5F5">WES白砂</option>
                     <option value="BK黑平光,#333333">BK黑平光</option>
+                    <option value="EBK消光黑,#1A1A1A">EBK消光黑</option>
+                    <option value="BKH黑錘紋,#2B2B2B">BKH黑錘紋</option>
+                    <option value="BKS1黑砂,#222222">BKS1黑砂</option>
+                    <option value="BKS5黑砂,#111111">BKS5黑砂</option>
+                    <option value="BKSA黑砂閃銀,#3D3D3D">BKSA黑砂閃銀</option>
+                    <option value="BKSA1黑閃銀,#444444">BKSA1黑閃銀</option>
+                    <option value="PK粉紅色,#FFC0CB">PK粉紅色</option>
                     <option value="RD紅色,#FF0000">RD紅色</option>
+                    <option value="OE橘色,#FFA500">OE橘色</option>
+                    <option value="OE1橘色,#FF8C00">OE1橘色</option>
+                    <option value="OE2橘色,#FF7F50">OE2橘色</option>
                     <option value="YWH黃錘紋,#FFD700">YWH黃錘紋</option>
-                    <option value="BE藍色,#0000FF">BE藍色</option>
+                    <option value="YW1黃亮光,#FFFF00">YW1黃亮光</option>
+                    <option value="GYW鵝黃色,#FAFAD2">GYW鵝黃色</option>
                     <option value="GN綠色,#008000">GN綠色</option>
-                    <!-- 依需求可在此增補所有顏色 -->
+                    <option value="FGN青綠色,#32CD32">FGN青綠色</option>
+                    <option value="BE藍色,#0000FF">BE藍色</option>
+                    <option value="BEG艷藍色,#1E90FF">BEG艷藍色</option>
+                    <option value="DBE深藍色,#00008B">DBE深藍色</option>
+                    <option value="PEL紫色,#800080">PEL紫色</option>
+                    <option value="IG灰色,#808080">IG灰色</option>
+                    <option value="IGS灰砂紋,#696969">IGS灰砂紋</option>
+                    <option value="DGS藍砂紋,#4682B4">DGS藍砂紋</option>
+                    <option value="ATG深灰,#A9A9A9">ATG深灰</option>
+                    <option value="SAT2閃銀,#C0C0C0">SAT2閃銀</option>
+                    <option value="GSAT黃金色,#DAA520">GSAT黃金色</option>
                 </select>
                 <input type="text" id="partNo" placeholder="料號 (點擊右側相機拍照) ➔"> 
                 <input type="file" accept="image/*" capture="environment">
@@ -180,7 +201,6 @@ def create_templates():
             <h3>待處理清單 (順序排列)</h3>
             <div id="waiting-list"></div>
 
-            <!-- 同步傳送區 -->
             <div class="fixed-bottom">
                 <h4>[待上料_阿利] 同步接收區</h4>
                 <div id="ali-list"></div>
@@ -206,7 +226,6 @@ def create_templates():
                         status: 'waiting'
                     };
                     socket.emit('add_card', data);
-                    // 清空欄位
                     document.getElementById('partNo').value = '';
                     document.getElementById('partName').value = '';
                     document.getElementById('qty').value = '';
@@ -469,4 +488,5 @@ def finish_card(card_id):
 if __name__ == '__main__':
     create_templates() # 啟動前自動建立資料夾與檔案
     port = int(os.environ.get('PORT', 5000))
-    socketio.run(app, host='0.0.0.0', port=port)
+    # 加上 allow_unsafe_werkzeug=True，確保在 Railway 上順利啟動
+    socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
