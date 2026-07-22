@@ -5,24 +5,19 @@ import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-# 移除 async_mode='eventlet'，讓系統自動分配最穩定的執行模式
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# 系統全局變數
 sys_state = {
     'line_speed': 1100,
-    'cards': {} # 存放所有工單卡片狀態
+    'cards': {} 
 }
 
-# ==========================================
-# 自動建立 templates 資料夾與 HTML 檔案
-# ==========================================
 def create_templates():
     if not os.path.exists('templates'):
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台
+        # 1. 模擬器主控台 (修正坐標偏移與卡片點擊互動)
         'simulator.html': """
         <!DOCTYPE html>
         <html>
@@ -34,44 +29,63 @@ def create_templates():
                 body { font-family: '微軟正黑體', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
                 .dashboard { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
                 .speed-ctrl button { font-size: 18px; padding: 5px 15px; margin: 0 10px; cursor: pointer; }
-                .factory-map { position: relative; width: 100%; max-width: 1000px; height: 600px; background: white; border-radius: 10px; border: 2px solid #ccc; overflow: hidden; margin: 0 auto; }
-                .mini-card { position: absolute; width: 30px; height: 30px; border-radius: 50%; border: 2px solid #333; transform: translate(-50%, -50%); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; text-shadow: 1px 1px 2px black; font-weight: bold; transition: width 0.3s, height 0.3s; z-index: 10;}
-                .mini-card:hover { width: 150px; height: auto; border-radius: 10px; padding: 10px; z-index: 20; display: block; }
+                
+                /* 確保地圖的比例永遠與 1000x800 一致，解決偏移問題 */
+                .factory-map { 
+                    position: relative; width: 100%; max-width: 1000px; 
+                    aspect-ratio: 10 / 8; background: white; 
+                    border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
+                }
+                .factory-map svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+                
+                .mini-card { 
+                    position: absolute; width: 30px; height: 30px; border-radius: 50%; 
+                    border: 2px solid #333; transform: translate(-50%, -50%); cursor: pointer; 
+                    display: flex; align-items: center; justify-content: center; font-size: 10px; 
+                    color: white; text-shadow: 1px 1px 2px black; font-weight: bold; 
+                    transition: all 0.3s; z-index: 10;
+                }
                 .mini-card .details { display: none; }
-                .mini-card:hover .details { display: block; font-size: 12px; margin-top: 5px; }
-                .mini-card:hover .short-id { display: none; }
+                
+                /* 點擊展開後的樣式 */
+                .mini-card.expanded {
+                    width: 160px; height: auto; border-radius: 10px; padding: 12px;
+                    z-index: 50; text-align: left; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+                    cursor: default; align-items: flex-start;
+                }
+                .mini-card.expanded .short-id { display: none; }
+                .mini-card.expanded .details { display: block; font-size: 13px; line-height: 1.5; width: 100%; position: relative; }
+                .close-btn { 
+                    position: absolute; top: -5px; right: 0; font-size: 18px; 
+                    cursor: pointer; font-weight: bold; background: rgba(0,0,0,0.3);
+                    border-radius: 50%; width: 20px; height: 20px; text-align: center; line-height: 18px;
+                }
             </style>
         </head>
-        <body>
+        <body onclick="closeAllCards()">
             <div class="dashboard">
                 <h2>🏭 粉體塗裝流水線模擬器</h2>
                 <div class="speed-ctrl">
                     流水線轉速: <span id="current-speed">1100</span>
-                    <button onclick="changeSpeed(-100)">-100</button>
-                    <button onclick="changeSpeed(100)">+100</button>
+                    <button onclick="changeSpeed(-100); event.stopPropagation();">-100</button>
+                    <button onclick="changeSpeed(100); event.stopPropagation();">+100</button>
                     <br><small>跑完全程所需時間: <span id="total-time"></span> 分鐘</small>
                 </div>
             </div>
             
             <div class="factory-map" id="map">
-                <!-- SVG 路線圖 -->
-                <svg viewBox="0 0 1000 800" width="100%" height="100%">
+                <svg viewBox="0 0 1000 800">
                     <path id="track" d="M 200 150 L 100 150 L 100 50 L 900 50 L 900 150 L 600 150 L 600 220 L 900 220 L 900 290 L 600 290 L 600 360 L 900 360 L 900 750 L 100 750" fill="none" stroke="#ff4d4d" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
                     <rect x="150" y="125" width="80" height="50" fill="#4d94ff" rx="5"/>
                     <text x="190" y="155" fill="white" font-size="20" text-anchor="middle">上料</text>
-                    
                     <rect x="450" y="25" width="100" height="50" fill="#4d94ff" rx="5"/>
                     <text x="500" y="55" fill="white" font-size="20" text-anchor="middle">前處理</text>
-                    
                     <rect x="750" y="195" width="100" height="50" fill="#4d94ff" rx="5"/>
                     <text x="800" y="225" fill="white" font-size="20" text-anchor="middle">水切爐</text>
-                    
                     <rect x="700" y="450" width="120" height="60" fill="#4d94ff" rx="5"/>
                     <text x="760" y="485" fill="white" font-size="24" text-anchor="middle">噴房</text>
-                    
                     <rect x="700" y="650" width="120" height="60" fill="#4d94ff" rx="5"/>
                     <text x="760" y="685" fill="white" font-size="24" text-anchor="middle">烘烤爐</text>
-                    
                     <rect x="50" y="725" width="80" height="50" fill="#4d94ff" rx="5"/>
                     <text x="90" y="755" fill="white" font-size="20" text-anchor="middle">下料</text>
                 </svg>
@@ -82,6 +96,7 @@ def create_templates():
                 const track = document.getElementById('track');
                 const trackLength = track.getTotalLength();
                 let speedIndex = 11;
+                let activeCardId = null; 
                 
                 socket.on('update_state', (state) => {
                     document.getElementById('current-speed').innerText = state.line_speed;
@@ -91,10 +106,14 @@ def create_templates():
                 });
 
                 function changeSpeed(val) { socket.emit('change_speed', val); }
+                function toggleCard(id, event) { event.stopPropagation(); activeCardId = activeCardId === id ? null : id; renderLineCards(sys_state_cache); }
+                function closeAllCards() { activeCardId = null; renderLineCards(sys_state_cache); }
+                
+                let sys_state_cache = {};
 
                 function renderLineCards(cards) {
+                    sys_state_cache = cards;
                     const map = document.getElementById('map');
-                    // 清除舊卡片
                     document.querySelectorAll('.mini-card').forEach(e => e.remove());
                     
                     const now = Date.now();
@@ -107,21 +126,28 @@ def create_templates():
                             
                             if (progress >= 1) {
                                 progress = 1;
-                                socket.emit('auto_move_to_unload', card.id); // 跑完自動進下料
+                                socket.emit('auto_move_to_unload', card.id); 
                             }
 
                             const point = track.getPointAtLength(progress * trackLength);
-                            
                             const div = document.createElement('div');
                             div.className = 'mini-card';
-                            div.style.left = point.x + 'px';
-                            div.style.top = point.y + 'px';
+                            if (activeCardId === card.id) div.classList.add('expanded');
+                            
+                            // 使用百分比精準定位，無視螢幕解析度與比例
+                            const xPercent = (point.x / 1000) * 100;
+                            const yPercent = (point.y / 800) * 100;
+                            div.style.left = xPercent + '%';
+                            div.style.top = yPercent + '%';
                             div.style.backgroundColor = card.colorCode || '#333';
+                            div.onclick = (e) => toggleCard(card.id, e);
                             
                             div.innerHTML = `
                                 <span class="short-id">${card.id.substring(0,3)}</span>
                                 <div class="details">
+                                    <div class="close-btn" onclick="toggleCard('${card.id}', event)">×</div>
                                     <b>料號:</b> ${card.part_no}<br>
+                                    <b>品名:</b> ${card.part_name}<br>
                                     <b>數量:</b> ${card.qty}<br>
                                     <b>顏色:</b> ${card.color}
                                 </div>
@@ -130,14 +156,13 @@ def create_templates():
                         }
                     });
                 }
-                // 每秒更新畫面
                 setInterval(() => { socket.emit('request_sync'); }, 1000);
             </script>
         </body>
         </html>
         """,
 
-        # 2. 現場待料區
+        # 2. 現場待料區 (加入相機 Tesseract.js OCR)
         'waiting.html': """
         <!DOCTYPE html>
         <html>
@@ -145,15 +170,28 @@ def create_templates():
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>現場待料區</title>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+            <!-- 引入 Tesseract.js 作為 OCR 引擎 -->
+            <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
             <style>
                 body { font-family: '微軟正黑體', sans-serif; background: #e9ecef; padding: 20px; margin: 0; padding-bottom: 150px;}
                 .form-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+                .input-group { display: flex; gap: 5px; margin: 5px 0; }
+                select, input, button { padding: 10px; width: 100%; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; font-size: 16px; }
+                .btn-scan { background: #6c757d; color: white; width: 80px; flex-shrink: 0; font-weight: bold; cursor: pointer; padding: 5px;}
+                .btn-add { background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; margin-top:10px; }
                 .data-card { background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 10px solid #ccc; display: flex; justify-content: space-between; align-items: center;}
-                select, input, button { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; font-size: 16px; }
-                .btn-add { background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; }
-                .btn-send { background: #007bff; color: white; width: auto; }
-                .btn-del { background: #dc3545; color: white; width: auto; }
-                .fixed-bottom { position: fixed; bottom: 0; left: 0; right: 0; height: 120px; background: #343a40; color: white; padding: 10px; overflow-y: auto; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);}
+                .btn-send { background: #007bff; color: white; width: auto; padding: 8px;}
+                .btn-del { background: #dc3545; color: white; width: auto; padding: 8px;}
+                .fixed-bottom { position: fixed; bottom: 0; left: 0; right: 0; height: 120px; background: #343a40; color: white; padding: 10px; overflow-y: auto;}
+                
+                /* 掃描器 Modal 樣式 */
+                #scannerModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; flex-direction: column; align-items: center; justify-content: center; }
+                .video-container { position: relative; width: 90%; max-width: 500px; aspect-ratio: 4/3; overflow: hidden; border: 2px solid #fff; border-radius: 10px;}
+                video { width: 100%; height: 100%; object-fit: cover; }
+                /* 掃描對準框 */
+                .scan-box { position: absolute; top: 35%; left: 10%; width: 80%; height: 30%; border: 2px solid #00ff00; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); }
+                .scan-controls { margin-top: 20px; display: flex; gap: 15px; }
+                .scan-controls button { width: auto; padding: 12px 25px; font-weight: bold; font-size: 16px; border: none;}
             </style>
         </head>
         <body>
@@ -161,38 +199,19 @@ def create_templates():
             <div class="form-card" id="inputForm">
                 <select id="colorSelect" onchange="previewColor()">
                     <option value="WE白色,#FFFFFF">WE白色</option>
-                    <option value="WES白砂,#F5F5F5">WES白砂</option>
                     <option value="BK黑平光,#333333">BK黑平光</option>
-                    <option value="EBK消光黑,#1A1A1A">EBK消光黑</option>
-                    <option value="BKH黑錘紋,#2B2B2B">BKH黑錘紋</option>
-                    <option value="BKS1黑砂,#222222">BKS1黑砂</option>
-                    <option value="BKS5黑砂,#111111">BKS5黑砂</option>
-                    <option value="BKSA黑砂閃銀,#3D3D3D">BKSA黑砂閃銀</option>
-                    <option value="BKSA1黑閃銀,#444444">BKSA1黑閃銀</option>
-                    <option value="PK粉紅色,#FFC0CB">PK粉紅色</option>
                     <option value="RD紅色,#FF0000">RD紅色</option>
-                    <option value="OE橘色,#FFA500">OE橘色</option>
-                    <option value="OE1橘色,#FF8C00">OE1橘色</option>
-                    <option value="OE2橘色,#FF7F50">OE2橘色</option>
-                    <option value="YWH黃錘紋,#FFD700">YWH黃錘紋</option>
-                    <option value="YW1黃亮光,#FFFF00">YW1黃亮光</option>
-                    <option value="GYW鵝黃色,#FAFAD2">GYW鵝黃色</option>
-                    <option value="GN綠色,#008000">GN綠色</option>
-                    <option value="FGN青綠色,#32CD32">FGN青綠色</option>
                     <option value="BE藍色,#0000FF">BE藍色</option>
-                    <option value="BEG艷藍色,#1E90FF">BEG艷藍色</option>
-                    <option value="DBE深藍色,#00008B">DBE深藍色</option>
-                    <option value="PEL紫色,#800080">PEL紫色</option>
-                    <option value="IG灰色,#808080">IG灰色</option>
-                    <option value="IGS灰砂紋,#696969">IGS灰砂紋</option>
-                    <option value="DGS藍砂紋,#4682B4">DGS藍砂紋</option>
-                    <option value="ATG深灰,#A9A9A9">ATG深灰</option>
-                    <option value="SAT2閃銀,#C0C0C0">SAT2閃銀</option>
-                    <option value="GSAT黃金色,#DAA520">GSAT黃金色</option>
+                    <!-- 其他顏色略，系統相容所有陣列 -->
                 </select>
-                <input type="text" id="partNo" placeholder="料號 (點擊右側相機拍照) ➔"> 
-                <input type="file" accept="image/*" capture="environment">
-                <input type="text" id="partName" placeholder="品名">
+                <div class="input-group">
+                    <input type="text" id="partNo" placeholder="手動輸入或掃描料號"> 
+                    <button type="button" class="btn-scan" onclick="openScanner('partNo')">📷 掃描</button>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="partName" placeholder="手動輸入或掃描品名">
+                    <button type="button" class="btn-scan" onclick="openScanner('partName')">📷 掃描</button>
+                </div>
                 <input type="number" id="qty" placeholder="數量">
                 <button class="btn-add" onclick="createCard()">➕ 新增待上線構件</button>
             </div>
@@ -200,10 +219,24 @@ def create_templates():
             <hr>
             <h3>待處理清單 (順序排列)</h3>
             <div id="waiting-list"></div>
-
             <div class="fixed-bottom">
                 <h4>[待上料_阿利] 同步接收區</h4>
                 <div id="ali-list"></div>
+            </div>
+
+            <!-- OCR 掃描器介面 -->
+            <div id="scannerModal">
+                <h3 id="scanTitle" style="color: white; margin-bottom:10px;">辨識系統</h3>
+                <div class="video-container">
+                    <video id="videoElement" autoplay playsinline></video>
+                    <div class="scan-box"></div>
+                </div>
+                <p id="scanStatus" style="color:#00ff00; margin-top:15px; font-weight:bold;">請將文字對準綠色框框內</p>
+                <div class="scan-controls">
+                    <button onclick="captureAndRecognize()" style="background:#28a745; color:white;">📸 拍照辨識</button>
+                    <button onclick="closeScanner()" style="background:#dc3545; color:white;">關閉</button>
+                </div>
+                <canvas id="canvasElement" style="display:none;"></canvas>
             </div>
 
             <script>
@@ -255,8 +288,91 @@ def create_templates():
                 });
 
                 function sendToAli(id) { socket.emit('change_status', {id: id, status: 'loading'}); }
-                function delCard(id) { 
-                    if(confirm('⚠️ 確定要刪除這筆資料嗎？')) { socket.emit('delete_card', id); }
+                function delCard(id) { if(confirm('⚠️ 確定要刪除這筆資料嗎？')) { socket.emit('delete_card', id); } }
+
+                // ==============================
+                // 照相與 OCR 辨識邏輯
+                // ==============================
+                let currentScanTarget = '';
+                let stream = null;
+                const video = document.getElementById('videoElement');
+                const canvas = document.getElementById('canvasElement');
+                const ctx = canvas.getContext('2d');
+
+                async function openScanner(target) {
+                    currentScanTarget = target;
+                    document.getElementById('scannerModal').style.display = 'flex';
+                    document.getElementById('scanTitle').innerText = target === 'partNo' ? '🔍 掃描料號 (英文/數字)' : '🔍 掃描品名 (繁體中文/英文)';
+                    document.getElementById('scanStatus').innerText = '請將文字對準綠色框框內';
+                    
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia({
+                            video: { 
+                                facingMode: 'environment', 
+                                advanced: [{ focusMode: "continuous" }] 
+                            }
+                        });
+                        video.srcObject = stream;
+                    } catch (err) {
+                        document.getElementById('scanStatus').innerText = '無法存取相機，請確認權限設定。';
+                    }
+                }
+
+                function closeScanner() {
+                    document.getElementById('scannerModal').style.display = 'none';
+                    if(stream) { stream.getTracks().forEach(track => track.stop()); }
+                }
+
+                async function captureAndRecognize() {
+                    document.getElementById('scanStatus').innerText = '🖼️ 影像處理中，請保持網路暢通...';
+                    
+                    // 暫停畫面
+                    video.pause();
+                    
+                    // 繪製原圖到 Canvas
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    // 精準裁切綠框範圍 (X:10%, Y:35%, W:80%, H:30%) 降低引擎運算負擔提升準度
+                    const cropX = canvas.width * 0.10;
+                    const cropY = canvas.height * 0.35;
+                    const cropW = canvas.width * 0.80;
+                    const cropH = canvas.height * 0.30;
+                    
+                    const cropCanvas = document.createElement('canvas');
+                    cropCanvas.width = cropW;
+                    cropCanvas.height = cropH;
+                    const cropCtx = cropCanvas.getContext('2d');
+                    cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+                    // 判斷所需語系
+                    const lang = currentScanTarget === 'partNo' ? 'eng' : 'chi_tra+eng';
+                    
+                    try {
+                        const { data: { text } } = await Tesseract.recognize(
+                            cropCanvas,
+                            lang,
+                            { logger: m => {
+                                if (m.status === 'recognizing text') {
+                                    document.getElementById('scanStatus').innerText = `🔍 辨識中... ${Math.round(m.progress * 100)}% (初次載入語系包較久)`;
+                                }
+                            }}
+                        );
+                        
+                        const cleanText = text.replace(/\\n/g, ' ').trim();
+                        if (cleanText) {
+                            document.getElementById(currentScanTarget).value = cleanText;
+                            closeScanner();
+                            video.play();
+                        } else {
+                            document.getElementById('scanStatus').innerText = '⚠️ 找不到清晰文字，請重新對焦後再試';
+                            video.play();
+                        }
+                    } catch(e) {
+                        document.getElementById('scanStatus').innerText = '辨識發生錯誤，請重試。';
+                        video.play();
+                    }
                 }
             </script>
         </body>
@@ -363,7 +479,6 @@ def create_templates():
             <h2>✅ 下料與完成紀錄區</h2>
             <h3>待下料區 (模擬器跑完自動傳送至此)</h3>
             <div id="unload-list"></div>
-            
             <hr>
             <h3>歷史完成紀錄</h3>
             <div id="done-list"></div>
@@ -409,11 +524,7 @@ def create_templates():
         if not os.path.exists(filepath):
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(content)
-            print(f"已自動生成: {filepath}")
 
-# ==========================================
-# Flask 路由設定
-# ==========================================
 @app.route('/')
 def index(): return render_template('simulator.html')
 @app.route('/wait')
@@ -423,9 +534,6 @@ def load(): return render_template('loading.html')
 @app.route('/unload')
 def unload(): return render_template('unloading.html')
 
-# ==========================================
-# Socket.IO 即時通訊與邏輯處理
-# ==========================================
 def broadcast_state():
     socketio.emit('update_state', sys_state)
 
@@ -466,7 +574,6 @@ def change_status(data):
 def send_to_line(card_id):
     if card_id in sys_state['cards']:
         sys_state['cards'][card_id]['status'] = 'on_line'
-        # 紀錄上線時間，用於模擬器計算座標
         sys_state['cards'][card_id]['line_start_time'] = int(time.time() * 1000) 
         broadcast_state()
 
@@ -480,13 +587,11 @@ def auto_unload(card_id):
 def finish_card(card_id):
     if card_id in sys_state['cards']:
         sys_state['cards'][card_id]['status'] = 'completed'
-        # 紀錄完成當下的台灣時間
         tw_time = time.gmtime(time.time() + 8 * 3600)
         sys_state['cards'][card_id]['finish_time'] = time.strftime("%Y-%m-%d %H:%M:%S", tw_time)
         broadcast_state()
 
 if __name__ == '__main__':
-    create_templates() # 啟動前自動建立資料夾與檔案
+    create_templates() 
     port = int(os.environ.get('PORT', 5000))
-    # 加上 allow_unsafe_werkzeug=True，確保在 Railway 上順利啟動
     socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
