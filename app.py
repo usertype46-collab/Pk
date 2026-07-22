@@ -12,8 +12,7 @@ sys_state = {
     'cards': {} 
 }
 
-# 共用的 i18n 語言包與切換腳本 (注入到每一個 HTML 中)
-# 修正：加入 body padding-top 避免語系按鈕遮擋標題
+# 共用的 i18n 語言包與切換腳本 (包含渲染圖片的輔助函數 renderField)
 I18N_SCRIPT = """
 <style>
     body { padding-top: 60px !important; }
@@ -29,14 +28,13 @@ I18N_SCRIPT = """
             'wait_title': '📦 現場待料區', 'part_ph': '手動輸入或掃描料號', 'name_ph': '手動輸入或掃描品名',
             'scan_btn': '📷 掃描', 'add_btn': '➕ 新增待上線構件', 'list_wait': '待處理清單 (順序排列)',
             'ali_sync': '[待上料_阿利] 同步接收區', 'btn_send_ali': '➕ 傳送阿利', 'btn_del': '刪除',
-            'ocr_title': '辨識系統', 'ocr_tip': '請將文字對準綠色框框內', 'btn_pic': '📸 拍照辨識', 'btn_close': '關閉',
+            'ocr_title': '📸 拍照系統', 'ocr_tip': '請將目標對準綠色框框內', 'btn_pic': '📸 拍照儲存', 'btn_close': '關閉',
             'ali_title': '🏗️ 待上料_阿利', 'line_sync': '⬇️ [流水線_上線] 同步傳送區 ⬇️',
             'lbl_hang': '掛:', 'lbl_empty': '空:', 'lbl_space': '間隔:', 'lbl_hook': '接勾:',
             'btn_to_line': '➕ 同步傳送至流水線並計時', 'calcing': '計算上線時間...',
             'unload_title': '✅ 下料與完成紀錄區', 'unload_wait': '待下料區 (模擬器跑完自動傳送至此)',
             'done_list': '歷史完成紀錄', 'btn_done': '✅ 點擊完成',
             'lang_btn': '🇻🇳 切換為越文 (Việt)', 'part_no': '料號:', 'part_name': '品名:', 'qty': '數量:', 'color': '顏色:',
-            'ocr_proc': '🖼️ 影像處理中，請稍候...', 'ocr_err': '⚠️ 找不到清晰文字，請重新對焦後再試', 
             'est_time': '預估佔線時間: ', 'hrs': ' 小時 ', 'done_time': '完成時間: ', 'alert_del': '⚠️ 確定要刪除這筆資料嗎？',
             'comp_lbl': '構件'
         },
@@ -46,14 +44,13 @@ I18N_SCRIPT = """
             'wait_title': '📦 Khu vực chờ vật liệu', 'part_ph': 'Nhập / Quét mã LK', 'name_ph': 'Nhập / Quét tên LK',
             'scan_btn': '📷 Quét', 'add_btn': '➕ Thêm vào hàng chờ', 'list_wait': 'Danh sách chờ (Theo thứ tự)',
             'ali_sync': 'Khu vực đồng bộ [Chờ lên hàng_Ali]', 'btn_send_ali': '➕ Chuyển cho Ali', 'btn_del': 'Xóa',
-            'ocr_title': 'Hệ thống nhận diện', 'ocr_tip': 'Căn chỉnh văn bản vào khung xanh', 'btn_pic': '📸 Chụp nhận diện', 'btn_close': 'Đóng',
+            'ocr_title': '📸 Hệ thống chụp', 'ocr_tip': 'Căn chỉnh văn bản vào khung xanh', 'btn_pic': '📸 Chụp & Lưu', 'btn_close': 'Đóng',
             'ali_title': '🏗️ Chờ lên hàng_Ali', 'line_sync': '⬇️ [Dây chuyền] Truyền đồng bộ ⬇️',
             'lbl_hang': 'Treo:', 'lbl_empty': 'Trống:', 'lbl_space': 'Cách:', 'lbl_hook': 'Móc:',
             'btn_to_line': '➕ Chuyển lên chuyền & Bắt đầu tính giờ', 'calcing': 'Đang tính...',
             'unload_title': '✅ Khu vực xuống hàng & Lịch sử', 'unload_wait': 'Khu vực chờ xuống hàng',
             'done_list': 'Lịch sử hoàn thành', 'btn_done': '✅ Hoàn thành',
             'lang_btn': '🇹🇼 Đổi ngôn ngữ (中文)', 'part_no': 'Mã LK:', 'part_name': 'Tên LK:', 'qty': 'SL:', 'color': 'Màu:',
-            'ocr_proc': '🖼️ Đang xử lý ảnh...', 'ocr_err': '⚠️ Không tìm thấy chữ rõ ràng', 
             'est_time': 'TG dự kiến: ', 'hrs': ' Giờ ', 'done_time': 'Thời gian HT: ', 'alert_del': '⚠️ Xác nhận xóa dữ liệu này?',
             'comp_lbl': 'Cấu kiện'
         }
@@ -74,6 +71,15 @@ I18N_SCRIPT = """
         });
         document.getElementById('langBtn').innerHTML = t('lang_btn');
     }
+    
+    // 將 base64 圖片轉成 img 標籤顯示，若是文字則原樣輸出
+    function renderField(val) {
+        if (typeof val === 'string' && val.startsWith('data:image')) {
+            return `<img src="${val}" style="max-height: 40px; vertical-align: middle; border-radius: 4px; border: 1px solid #ccc; margin: 2px;">`;
+        }
+        return val;
+    }
+
     window.addEventListener('DOMContentLoaded', applyLang);
 </script>
 """
@@ -83,7 +89,7 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台
+        # 1. 模擬器主控台 (改成長型軌跡、縮小卡片)
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -96,20 +102,21 @@ def create_templates():
                 .dashboard {{ background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
                 .speed-ctrl button {{ font-size: 18px; padding: 5px 15px; margin: 0 10px; cursor: pointer; }}
                 
+                /* 改為拉長的 2:3 比例，更適合手機直向 */
                 .factory-map {{ 
-                    position: relative; width: 100%; max-width: 1000px; 
-                    aspect-ratio: 10 / 8; background: white; 
+                    position: relative; width: 100%; max-width: 600px; 
+                    aspect-ratio: 2 / 3; background: white; 
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
                 }}
                 .factory-map svg {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; }}
                 
-                /* 長方形構件卡片 */
+                /* 縮小卡片 */
                 .mini-card {{ 
-                    position: absolute; width: auto; min-width: 70px; height: 35px; border-radius: 6px; 
-                    border: 3px solid #333; transform: translate(-50%, -50%); cursor: pointer; 
-                    display: flex; align-items: center; justify-content: center; font-size: 14px; 
+                    position: absolute; width: auto; min-width: 50px; height: 26px; border-radius: 4px; 
+                    border: 2px solid #333; transform: translate(-50%, -50%); cursor: pointer; 
+                    display: flex; align-items: center; justify-content: center; font-size: 11px; 
                     color: white; text-shadow: 1px 1px 2px black; font-weight: bold; 
-                    transition: all 0.3s; z-index: 10; padding: 0 10px; white-space: nowrap;
+                    transition: all 0.3s; z-index: 10; padding: 0 5px; white-space: nowrap;
                 }}
                 .mini-card .details {{ display: none; }}
                 
@@ -123,7 +130,7 @@ def create_templates():
                     cursor: default; display: flex; flex-direction: column; white-space: normal;
                 }}
                 .mini-card.expanded .short-id {{ display: none; }}
-                .mini-card.expanded .details {{ display: block; font-size: 18px; line-height: 1.8; width: 100%; position: relative; color: white; }}
+                .mini-card.expanded .details {{ display: block; font-size: 16px; line-height: 1.8; width: 100%; position: relative; color: white; }}
                 
                 .close-btn {{ 
                     position: absolute; top: -10px; right: -10px; font-size: 24px; 
@@ -146,27 +153,27 @@ def create_templates():
             </div>
             
             <div class="factory-map" id="map">
-                <!-- 放大了區塊與字體 -->
-                <svg viewBox="0 0 1000 800">
-                    <path id="track" d="M 200 150 L 100 150 L 100 50 L 900 50 L 900 150 L 600 150 L 600 220 L 900 220 L 900 290 L 600 290 L 600 360 L 900 360 L 900 750 L 100 750" fill="none" stroke="#ff4d4d" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- 重新設計的直向長軌跡 -->
+                <svg viewBox="0 0 800 1200">
+                    <path id="track" d="M 200 150 L 100 150 L 100 50 L 700 50 L 700 200 L 400 200 L 400 350 L 700 350 L 700 500 L 400 500 L 400 650 L 700 650 L 700 1100 L 100 1100" fill="none" stroke="#ff4d4d" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
                     
                     <rect x="130" y="115" width="120" height="70" fill="#4d94ff" rx="5"/>
                     <text x="190" y="160" fill="white" font-size="32" font-weight="bold" text-anchor="middle" data-i18n="map1">上料</text>
                     
-                    <rect x="430" y="15" width="140" height="70" fill="#4d94ff" rx="5"/>
-                    <text x="500" y="60" fill="white" font-size="32" font-weight="bold" text-anchor="middle" data-i18n="map2">前處理</text>
+                    <rect x="330" y="15" width="140" height="70" fill="#4d94ff" rx="5"/>
+                    <text x="400" y="60" fill="white" font-size="32" font-weight="bold" text-anchor="middle" data-i18n="map2">前處理</text>
                     
-                    <rect x="730" y="185" width="140" height="70" fill="#4d94ff" rx="5"/>
-                    <text x="800" y="230" fill="white" font-size="32" font-weight="bold" text-anchor="middle" data-i18n="map3">水切爐</text>
+                    <rect x="480" y="315" width="140" height="70" fill="#4d94ff" rx="5"/>
+                    <text x="550" y="360" fill="white" font-size="32" font-weight="bold" text-anchor="middle" data-i18n="map3">水切爐</text>
                     
-                    <rect x="680" y="440" width="160" height="80" fill="#4d94ff" rx="5"/>
-                    <text x="760" y="492" fill="white" font-size="36" font-weight="bold" text-anchor="middle" data-i18n="map4">噴房</text>
+                    <rect x="480" y="615" width="160" height="80" fill="#4d94ff" rx="5"/>
+                    <text x="560" y="665" fill="white" font-size="36" font-weight="bold" text-anchor="middle" data-i18n="map4">噴房</text>
                     
-                    <rect x="680" y="640" width="160" height="80" fill="#4d94ff" rx="5"/>
-                    <text x="760" y="692" fill="white" font-size="36" font-weight="bold" text-anchor="middle" data-i18n="map5">烘烤爐</text>
+                    <rect x="620" y="850" width="160" height="80" fill="#4d94ff" rx="5"/>
+                    <text x="700" y="902" fill="white" font-size="36" font-weight="bold" text-anchor="middle" data-i18n="map5">烘烤爐</text>
                     
-                    <rect x="30" y="715" width="120" height="70" fill="#4d94ff" rx="5"/>
-                    <text x="90" y="760" fill="white" font-size="32" font-weight="bold" text-anchor="middle" data-i18n="map6">下料</text>
+                    <rect x="130" y="1065" width="120" height="70" fill="#4d94ff" rx="5"/>
+                    <text x="190" y="1110" fill="white" font-size="32" font-weight="bold" text-anchor="middle" data-i18n="map6">下料</text>
                 </svg>
             </div>
 
@@ -231,8 +238,8 @@ def create_templates():
                                 div.style.left = '50%';
                                 div.style.top = '50%';
                             }} else {{
-                                const xPercent = (point.x / 1000) * 100;
-                                const yPercent = (point.y / 800) * 100;
+                                const xPercent = (point.x / 800) * 100;
+                                const yPercent = (point.y / 1200) * 100;
                                 div.style.left = xPercent + '%';
                                 div.style.top = yPercent + '%';
                             }}
@@ -240,15 +247,20 @@ def create_templates():
                             div.style.backgroundColor = card.colorCode || '#333';
                             div.onclick = (e) => toggleCard(card.id, e);
                             
-                            // 顯示品名或預設構件字樣
-                            const shortLabel = (card.part_name && card.part_name !== '未填寫') ? card.part_name : t('comp_lbl');
+                            // 判斷卡片上要顯示的簡短文字 (如果有拍照，就顯示預設字樣)
+                            let shortLabel = t('comp_lbl');
+                            if (card.part_name && !card.part_name.startsWith('data:image') && card.part_name !== '未填寫') {{
+                                shortLabel = card.part_name;
+                            }} else if (card.part_no && !card.part_no.startsWith('data:image') && card.part_no !== '未填寫') {{
+                                shortLabel = card.part_no;
+                            }}
                             
                             div.innerHTML = `
                                 <span class="short-id">${{shortLabel}}</span>
                                 <div class="details">
                                     <div class="close-btn" onclick="toggleCard('${{card.id}}', event)">×</div>
-                                    <b>${{t('part_no')}}</b> ${{card.part_no}}<br>
-                                    <b>${{t('part_name')}}</b> ${{card.part_name}}<br>
+                                    <b>${{t('part_no')}}</b> ${{renderField(card.part_no)}}<br>
+                                    <b>${{t('part_name')}}</b> ${{renderField(card.part_name)}}<br>
                                     <b>${{t('qty')}}</b> ${{card.qty}}<br>
                                     <b>${{t('color')}}</b> ${{card.color}}
                                 </div>
@@ -263,7 +275,7 @@ def create_templates():
         </html>
         """,
 
-        # 2. 現場待料區 (強化 OCR 辨識)
+        # 2. 現場待料區 (純拍照儲存)
         'waiting.html': f"""
         <!DOCTYPE html>
         <html>
@@ -271,11 +283,10 @@ def create_templates():
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>現場待料區</title>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
-            <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
             <style>
                 body {{ font-family: '微軟正黑體', sans-serif; background: #e9ecef; padding: 20px; margin: 0; padding-bottom: 150px;}}
                 .form-card {{ background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }}
-                .input-group {{ display: flex; gap: 5px; margin: 5px 0; }}
+                .input-group {{ display: flex; gap: 5px; margin: 5px 0; align-items: center; }}
                 select, input, button {{ padding: 10px; width: 100%; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; font-size: 16px; }}
                 .btn-scan {{ background: #6c757d; color: white; width: 80px; flex-shrink: 0; font-weight: bold; cursor: pointer; padding: 5px;}}
                 .btn-add {{ background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; margin-top:10px; }}
@@ -327,11 +338,11 @@ def create_templates():
                     <option value="SAT2閃銀,#C0C0C0">SAT2閃銀</option>
                     <option value="GSAT黃金色,#FFD700">GSAT黃金色</option>
                 </select>
-                <div class="input-group">
+                <div class="input-group" id="partNoGroup">
                     <input type="text" id="partNo" data-i18n="part_ph" placeholder="手動輸入或掃描料號"> 
                     <button type="button" class="btn-scan" data-i18n="scan_btn" onclick="openScanner('partNo')">📷 掃描</button>
                 </div>
-                <div class="input-group">
+                <div class="input-group" id="partNameGroup">
                     <input type="text" id="partName" data-i18n="name_ph" placeholder="手動輸入或掃描品名">
                     <button type="button" class="btn-scan" data-i18n="scan_btn" onclick="openScanner('partName')">📷 掃描</button>
                 </div>
@@ -348,14 +359,14 @@ def create_templates():
             </div>
 
             <div id="scannerModal">
-                <h3 id="scanTitle" data-i18n="ocr_title" style="color: white; margin-bottom:10px;">辨識系統</h3>
+                <h3 id="scanTitle" data-i18n="ocr_title" style="color: white; margin-bottom:10px;">📸 拍照系統</h3>
                 <div class="video-container">
                     <video id="videoElement" autoplay playsinline></video>
                     <div class="scan-box"></div>
                 </div>
-                <p id="scanStatus" data-i18n="ocr_tip" style="color:#00ff00; margin-top:15px; font-weight:bold;">請將文字對準綠色框框內</p>
+                <p id="scanStatus" data-i18n="ocr_tip" style="color:#00ff00; margin-top:15px; font-weight:bold;">請將目標對準綠色框框內</p>
                 <div class="scan-controls">
-                    <button onclick="captureAndRecognize()" data-i18n="btn_pic" style="background:#28a745; color:white;">📸 拍照辨識</button>
+                    <button onclick="captureAndStore()" data-i18n="btn_pic" style="background:#28a745; color:white;">📸 拍照儲存</button>
                     <button onclick="closeScanner()" data-i18n="btn_close" style="background:#dc3545; color:white;">關閉</button>
                 </div>
                 <canvas id="canvasElement" style="display:none;"></canvas>
@@ -364,6 +375,7 @@ def create_templates():
             <script>
                 const socket = io();
                 let sys_state_cache = {{cards:{{}}}};
+                let scanData = {{ partNo: '', partName: '' }}; // 暫存拍照的照片
                 
                 function previewColor() {{
                     const val = document.getElementById('colorSelect').value.split(',');
@@ -376,15 +388,20 @@ def create_templates():
                         id: Date.now().toString(),
                         color: colorData[0],
                         colorCode: colorData[1],
-                        part_no: document.getElementById('partNo').value || '未填寫',
-                        part_name: document.getElementById('partName').value || '未填寫',
+                        part_no: scanData.partNo || document.getElementById('partNo').value || '未填寫',
+                        part_name: scanData.partName || document.getElementById('partName').value || '未填寫',
                         qty: document.getElementById('qty').value || 0,
                         status: 'waiting'
                     }};
                     socket.emit('add_card', data);
+                    
+                    // 重置表單
+                    scanData = {{ partNo: '', partName: '' }};
                     document.getElementById('partNo').value = '';
                     document.getElementById('partName').value = '';
                     document.getElementById('qty').value = '';
+                    if(document.getElementById('partNoPreview')) document.getElementById('partNoPreview').remove();
+                    if(document.getElementById('partNamePreview')) document.getElementById('partNamePreview').remove();
                 }}
 
                 function renderDynamic() {{
@@ -397,7 +414,7 @@ def create_templates():
                         div.className = 'data-card';
                         div.style.borderColor = card.colorCode;
                         div.innerHTML = `
-                            <div><b>${{card.part_no}}</b> (${{card.part_name}}) - ${{card.color}} x ${{card.qty}}</div>
+                            <div><b>${{renderField(card.part_no)}}</b> (${{renderField(card.part_name)}}) - ${{card.color}} x ${{card.qty}}</div>
                             <div style="display:flex; gap:5px;">
                                 ${{card.status === 'waiting' ? 
                                     `<button class="btn-send" onclick="sendToAli('${{card.id}}')">${{t('btn_send_ali')}}</button>
@@ -444,8 +461,8 @@ def create_templates():
                     if(stream) {{ stream.getTracks().forEach(track => track.stop()); }}
                 }}
 
-                async function captureAndRecognize() {{
-                    document.getElementById('scanStatus').innerText = t('ocr_proc');
+                // 拍照並擷取綠色框框內的圖片轉為 base64 儲存
+                function captureAndStore() {{
                     video.pause();
                     
                     canvas.width = video.videoWidth;
@@ -457,53 +474,49 @@ def create_templates():
                     const cropW = canvas.width * 0.80;
                     const cropH = canvas.height * 0.30;
                     
-                    // 【強化版 OCR 預先處理】
-                    // 1. 放大圖片解析度 2 倍 (Upscaling) 讓 Tesseract.js 更好抓取像素
-                    const scale = 2;
                     const cropCanvas = document.createElement('canvas');
+                    
+                    // 為了減少 socket 傳輸負擔，將圖片限制最大寬度為 400px
+                    const maxW = 400;
+                    const scale = cropW > maxW ? maxW / cropW : 1;
                     cropCanvas.width = cropW * scale;
                     cropCanvas.height = cropH * scale;
                     const cropCtx = cropCanvas.getContext('2d');
-                    
-                    // 2. 關閉平滑處理保留銳利邊緣
-                    cropCtx.imageSmoothingEnabled = false;
-                    
-                    // 3. 套用高對比度及灰階，去除光源色彩干擾
-                    cropCtx.filter = 'contrast(250%) brightness(120%) grayscale(100%)';
                     cropCtx.scale(scale, scale);
                     cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-                    const langType = currentScanTarget === 'partNo' ? 'eng' : 'chi_tra+eng';
+                    // 取得 JPEG base64 (壓縮比 0.85)
+                    const base64Img = cropCanvas.toDataURL('image/jpeg', 0.85);
+                    scanData[currentScanTarget] = base64Img;
                     
-                    try {{
-                        const {{ data: {{ text }} }} = await Tesseract.recognize(
-                            cropCanvas,
-                            langType,
-                            {{ logger: m => {{ if (m.status === 'recognizing text') {{
-                                document.getElementById('scanStatus').innerText = `${{Math.round(m.progress * 100)}}%`;
-                            }}}}}}
-                        );
-                        
-                        const cleanText = text.replace(/\\n/g, ' ').trim();
-                        if (cleanText) {{
-                            document.getElementById(currentScanTarget).value = cleanText;
-                            closeScanner();
-                            video.play();
-                        }} else {{
-                            document.getElementById('scanStatus').innerText = t('ocr_err');
-                            video.play();
-                        }}
-                    }} catch(e) {{
-                        document.getElementById('scanStatus').innerText = 'Error';
-                        video.play();
+                    // 更新 UI，顯示縮圖
+                    const inputEl = document.getElementById(currentScanTarget);
+                    inputEl.value = '[🖼️ 已儲存照片]';
+                    
+                    let previewEl = document.getElementById(currentScanTarget + 'Preview');
+                    if(!previewEl) {{
+                        previewEl = document.createElement('img');
+                        previewEl.id = currentScanTarget + 'Preview';
+                        previewEl.style = "max-height: 40px; margin-left: 5px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer;";
+                        previewEl.title = "點擊刪除照片";
+                        previewEl.onclick = function() {{
+                            scanData[currentScanTarget] = '';
+                            this.remove();
+                            inputEl.value = '';
+                        }};
+                        document.getElementById(currentScanTarget + 'Group').insertBefore(previewEl, inputEl.nextSibling);
                     }}
+                    previewEl.src = base64Img;
+
+                    closeScanner();
+                    video.play();
                 }}
             </script>
         </body>
         </html>
         """,
 
-        # 3. 待上料_阿利 (不變，僅套用新 padding 樣式即可)
+        # 3. 待上料_阿利 (支援渲染圖片)
         'loading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -545,7 +558,7 @@ def create_templates():
                             div.className = 'card';
                             div.style.borderColor = card.colorCode;
                             div.innerHTML = `
-                                <strong>${{t('part_no')}} ${{card.part_no}} | ${{t('part_name')}} ${{card.part_name}} | ${{t('qty')}} ${{card.qty}} | ${{t('color')}} ${{card.color}}</strong>
+                                <strong>${{t('part_no')}} ${{renderField(card.part_no)}} | ${{t('part_name')}} ${{renderField(card.part_name)}} | ${{t('qty')}} ${{card.qty}} | ${{t('color')}} ${{card.color}}</strong>
                                 <div class="grid-form">
                                     <label>${{t('lbl_hang')}} <select id="hang_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})"><option value="1">1</option><option value="2">2</option></select></label>
                                     <label>${{t('lbl_empty')}} <select id="empty_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
@@ -591,7 +604,7 @@ def create_templates():
         </html>
         """,
 
-        # 4. 下料_完成
+        # 4. 下料_完成 (支援渲染圖片)
         'unloading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -631,13 +644,13 @@ def create_templates():
                         
                         if(card.status === 'unloading') {{
                             div.innerHTML = `
-                                <div><b>${{card.part_no}}</b> - ${{card.color}} x ${{card.qty}}</div>
+                                <div><b>${{renderField(card.part_no)}}</b> - ${{card.color}} x ${{card.qty}}</div>
                                 <button class="btn-done" onclick="finishCard('${{card.id}}')">${{t('btn_done')}}</button>
                             `;
                             unloadList.appendChild(div);
                         }} else if(card.status === 'completed') {{
                             div.innerHTML = `
-                                <div><b>${{card.part_no}}</b> - ${{card.color}} x ${{card.qty}}<br>
+                                <div><b>${{renderField(card.part_no)}}</b> - ${{card.color}} x ${{card.qty}}<br>
                                 <span class="record">${{t('done_time')}} ${{card.finish_time}}</span></div>
                             `;
                             doneList.appendChild(div);
