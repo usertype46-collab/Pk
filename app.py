@@ -580,7 +580,7 @@ def create_templates():
         </html>
         """,
 
-        # 3. 待上料_阿利
+        # 3. 待上料_阿利 (修正下拉式選單每次被 socket 重新渲染時重設的問題)
         'loading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -614,27 +614,42 @@ def create_templates():
 
                 function renderDynamic() {{
                     const list = document.getElementById('loading-list');
+                    
+                    // 收集目前頁面上現有的資料卡片 ID 與當前各下拉選單的值，避免因為背景同步重新渲染而把使用者的點選彈回預設值
+                    const existingCardIds = Array.from(list.querySelectorAll('.card')).map(el => el.dataset.cardId);
+                    const incomingLoadingCards = Object.values(sys_state_cache.cards).filter(c => c.status === 'loading');
+                    const incomingIds = incomingLoadingCards.map(c => c.id);
+
+                    // 若卡片清單完全一致，則僅更新文字與時間，不重構 DOM，徹底解決下拉選單閃爍與彈回的問題
+                    const isSameStructure = existingCardIds.length === incomingIds.length && existingCardIds.every((id, idx) => id === incomingIds[idx]);
+
+                    if (isSameStructure) {{
+                        incomingLoadingCards.forEach(card => {{
+                            calcTime(card.id, card.qty);
+                        }});
+                        return;
+                    }}
+
                     list.innerHTML = '';
                     
-                    Object.values(sys_state_cache.cards).forEach(card => {{
-                        if(card.status === 'loading') {{
-                            const div = document.createElement('div');
-                            div.className = 'card';
-                            div.style.borderColor = card.colorCode;
-                            div.innerHTML = `
-                                <strong>${{t('part_no')}} ${{renderField(card.part_no)}} | ${{t('part_name')}} ${{renderField(card.part_name)}} | ${{card.model_no ? '機/櫃: ' + renderField(card.model_no) + ' | ' : ''}}${{t('qty')}} ${{card.qty}} | ${{t('color')}} ${{card.color}}</strong>
-                                <div class="grid-form">
-                                    <label>${{t('lbl_hang')}} <select id="hang_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})"><option value="1">1</option><option value="2">2</option></select></label>
-                                    <label>${{t('lbl_empty')}} <select id="empty_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
-                                    <label>${{t('lbl_space')}} <select id="interval_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
-                                    <label>${{t('lbl_hook')}} <select id="hook_${{card.id}}">${{genOptions(10)}}</select></label>
-                                </div>
-                                <div class="time-calc" id="time_${{card.id}}">${{t('calcing')}}</div>
-                                <button class="btn-line" onclick="sendToLine('${{card.id}}')">${{t('btn_to_line')}}</button>
-                            `;
-                            list.appendChild(div);
-                            setTimeout(() => calcTime(card.id, card.qty), 100);
-                        }}
+                    incomingLoadingCards.forEach(card => {{
+                        const div = document.createElement('div');
+                        div.className = 'card';
+                        div.dataset.cardId = card.id;
+                        div.style.borderColor = card.colorCode;
+                        div.innerHTML = `
+                            <strong>${{t('part_no')}} ${{renderField(card.part_no)}} | ${{t('part_name')}} ${{renderField(card.part_name)}} | ${{card.model_no ? '機/櫃: ' + renderField(card.model_no) + ' | ' : ''}}${{t('qty')}} ${{card.qty}} | ${{t('color')}} ${{card.color}}</strong>
+                            <div class="grid-form">
+                                <label>${{t('lbl_hang')}} <select id="hang_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})"><option value="1">1</option><option value="2">2</option></select></label>
+                                <label>${{t('lbl_empty')}} <select id="empty_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
+                                <label>${{t('lbl_space')}} <select id="interval_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
+                                <label>${{t('lbl_hook')}} <select id="hook_${{card.id}}">${{genOptions(10)}}</select></label>
+                            </div>
+                            <div class="time-calc" id="time_${{card.id}}">${{t('calcing')}}</div>
+                            <button class="btn-line" onclick="sendToLine('${{card.id}}')">${{t('btn_to_line')}}</button>
+                        `;
+                        list.appendChild(div);
+                        setTimeout(() => calcTime(card.id, card.qty), 100);
                     }});
                 }}
 
@@ -651,15 +666,24 @@ def create_templates():
                 }}
 
                 function calcTime(id, qty) {{
-                    const hang = parseFloat(document.getElementById('hang_' + id).value) || 0;
-                    const empty = parseFloat(document.getElementById('empty_' + id).value) || 0;
-                    const interval = parseFloat(document.getElementById('interval_' + id).value) || 0;
+                    const hangEl = document.getElementById('hang_' + id);
+                    const emptyEl = document.getElementById('empty_' + id);
+                    const intervalEl = document.getElementById('interval_' + id);
+                    
+                    if (!hangEl || !emptyEl || !intervalEl) return;
+
+                    const hang = parseFloat(hangEl.value) || 0;
+                    const empty = parseFloat(emptyEl.value) || 0;
+                    const interval = parseFloat(intervalEl.value) || 0;
                     const speedIndex = currentSpeed / 100;
                     
                     const totalMins = Math.round(((hang + empty + interval) * qty) / speedIndex);
                     const h = Math.floor(totalMins / 60);
                     const m = totalMins % 60;
-                    document.getElementById('time_' + id).innerText = `${{t('est_time')}} ${{h}} ${{t('hrs')}} ${{m}} ${{t('mins')}}`;
+                    const timeEl = document.getElementById('time_' + id);
+                    if (timeEl) {{
+                        timeEl.innerText = `${{t('est_time')}} ${{h}} ${{t('hrs')}} ${{m}} ${{t('mins')}}`;
+                    }}
                 }}
 
                 function sendToLine(id) {{ socket.emit('send_to_line', id); }}
