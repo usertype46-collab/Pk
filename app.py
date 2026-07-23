@@ -88,7 +88,7 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台 (噴房與烘烤爐軌跡已向下微調)
+        # 1. 模擬器主控台
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -158,35 +158,25 @@ def create_templates():
             </div>
             
             <div class="factory-map" id="map">
-                <!-- 座標系：800 x 1000，烘烤爐與噴房軌跡已下修 -->
                 <svg viewBox="0 0 800 1000">
-                    <!-- 背景軌跡 (灰色底線) -->
                     <path d="M 280 320 L 100 320 L 100 100 L 700 100 L 700 350 L 580 350 L 580 200 L 650 200 L 650 430 L 500 430 L 500 280 L 700 280 L 700 900 L 460 900" fill="none" stroke="#e0e0e0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-                    
-                    <!-- 動態黑色虛線鏈條 (烘烤爐與噴房區塊已下修) -->
                     <path id="track" d="M 280 320 L 100 320 L 100 100 L 700 100 L 700 350 L 580 350 L 580 200 L 650 200 L 650 430 L 500 430 L 500 280 L 700 280 L 700 900 L 460 900" fill="none" stroke="#222" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                     
-                    <!-- 1. 上料區 -->
                     <rect x="220" y="290" width="120" height="50" fill="#4d94ff" rx="5"/>
                     <text x="280" y="323" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map1">上料</text>
                     
-                    <!-- 2. 前處理區 -->
                     <rect x="360" y="75" width="140" height="50" fill="#4d94ff" rx="5"/>
                     <text x="430" y="108" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map2">前處理</text>
                     
-                    <!-- 3. 水切爐區 -->
                     <rect x="580" y="175" width="140" height="50" fill="#4d94ff" rx="5"/>
                     <text x="650" y="208" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map3">水切爐</text>
                     
-                    <!-- 4. 烘烤爐區 (已下修) -->
                     <rect x="530" y="255" width="140" height="50" fill="#4d94ff" rx="5"/>
                     <text x="600" y="288" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map5">烘烤爐</text>
                     
-                    <!-- 5. 噴房區 (已下修) -->
                     <rect x="530" y="405" width="140" height="50" fill="#4d94ff" rx="5"/>
                     <text x="600" y="438" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map4">噴房</text>
                     
-                    <!-- 6. 下料區 -->
                     <rect x="400" y="875" width="120" height="50" fill="#4d94ff" rx="5"/>
                     <text x="460" y="908" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map6">下料</text>
                 </svg>
@@ -203,7 +193,7 @@ def create_templates():
                 socket.on('update_state', (state) => {{
                     document.getElementById('current-speed').innerText = state.line_speed;
                     speedIndex = state.line_speed / 100;
-                    document.getElementById('total-time').innerText = Math.round(1450 / speedIndex);
+                    document.getElementById('total-time').innerText = Math.round(1320 / speedIndex);
                     renderLineCards(state.cards);
                 }});
 
@@ -232,7 +222,7 @@ def create_templates():
                     document.querySelectorAll('.mini-card').forEach(e => e.remove());
                     
                     const now = Date.now();
-                    const fullTimeMs = (1450 / speedIndex) * 60000;
+                    const fullTimeMs = (1320 / speedIndex) * 60000;
 
                     Object.values(cards).forEach(card => {{
                         if(card.status === 'on_line') {{
@@ -275,7 +265,7 @@ def create_templates():
                                     <div class="close-btn" onclick="toggleCard('${{card.id}}', event)">×</div>
                                     <b>${{t('part_no')}}</b> ${{renderField(card.part_no)}}<br>
                                     <b>${{t('part_name')}}</b> ${{renderField(card.part_name)}}<br>
-                                    <b>機/櫃:</b> ${{card.model_no || '未填寫'}}<br>
+                                    <b>機/櫃:</b> ${{renderField(card.model_no) || '未填寫'}}<br>
                                     <b>${{t('qty')}}</b> ${{card.qty}}<br>
                                     <b>${{t('color')}}</b> ${{card.color}}
                                 </div>
@@ -313,7 +303,7 @@ def create_templates():
                 #scannerModal {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; flex-direction: column; align-items: center; justify-content: center; }}
                 .video-container {{ position: relative; width: 90%; max-width: 500px; aspect-ratio: 4/3; overflow: hidden; border: 2px solid #fff; border-radius: 10px;}}
                 video {{ width: 100%; height: 100%; object-fit: cover; }}
-                .scan-box {{ position: absolute; top: 35%; left: 10%; width: 80%; height: 30%; border: 2px solid #00ff00; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); }}
+                .scan-box {{ position: absolute; top: 35%; left: 10%; width: 80%; height: 30%; border: 2px solid #00ff00; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); pointer-events: none; }}
                 .scan-controls {{ margin-top: 20px; display: flex; gap: 15px; }}
                 .scan-controls button {{ width: auto; padding: 12px 25px; font-weight: bold; font-size: 16px; border: none;}}
             </style>
@@ -363,6 +353,7 @@ def create_templates():
                 </div>
                 <div class="input-group" id="modelNoGroup">
                     <input type="text" id="modelNo" placeholder="機種第幾櫃 (手動輸入 / Nhập model)">
+                    <button type="button" class="btn-scan" data-i18n="scan_btn" onclick="openScanner('modelNo')">📷 掃描</button>
                 </div>
                 <input type="number" id="qty" placeholder="數量 / Số lượng">
                 <button class="btn-add" data-i18n="add_btn" onclick="createCard()">➕ 新增待上線構件</button>
@@ -393,7 +384,7 @@ def create_templates():
             <script>
                 const socket = io();
                 let sys_state_cache = {{cards:{{}}}};
-                let scanData = {{ partNo: '', partName: '' }}; 
+                let scanData = {{ partNo: '', partName: '', modelNo: '' }}; 
                 
                 function previewColor() {{
                     const val = document.getElementById('colorSelect').value.split(',');
@@ -408,19 +399,20 @@ def create_templates():
                         colorCode: colorData[1],
                         part_no: scanData.partNo || document.getElementById('partNo').value || '未填寫',
                         part_name: scanData.partName || document.getElementById('partName').value || '未填寫',
-                        model_no: document.getElementById('modelNo').value || '', 
+                        model_no: scanData.modelNo || document.getElementById('modelNo').value || '', 
                         qty: document.getElementById('qty').value || 0,
                         status: 'waiting'
                     }};
                     socket.emit('add_card', data);
                     
-                    scanData = {{ partNo: '', partName: '' }};
+                    scanData = {{ partNo: '', partName: '', modelNo: '' }};
                     document.getElementById('partNo').value = '';
                     document.getElementById('partName').value = '';
                     document.getElementById('modelNo').value = '';
                     document.getElementById('qty').value = '';
                     if(document.getElementById('partNoPreview')) document.getElementById('partNoPreview').remove();
                     if(document.getElementById('partNamePreview')) document.getElementById('partNamePreview').remove();
+                    if(document.getElementById('modelNoPreview')) document.getElementById('modelNoPreview').remove();
                 }}
 
                 function renderDynamic() {{
@@ -433,7 +425,7 @@ def create_templates():
                         div.className = 'data-card';
                         div.style.borderColor = card.colorCode;
                         
-                        let modelInfo = card.model_no ? ` [${{card.model_no}}]` : '';
+                        let modelInfo = card.model_no ? ` [${{renderField(card.model_no)}}]` : '';
                         
                         div.innerHTML = `
                             <div><b>${{renderField(card.part_no)}}</b> (${{renderField(card.part_name)}})${{modelInfo}} - ${{card.color}} x ${{card.qty}}</div>
@@ -470,9 +462,26 @@ def create_templates():
                     
                     try {{
                         stream = await navigator.mediaDevices.getUserMedia({{
-                            video: {{ facingMode: 'environment', advanced: [{{ focusMode: "continuous" }}] }}
+                            video: {{ 
+                                facingMode: 'environment', 
+                                width: {{ ideal: 1280 }}, 
+                                height: {{ ideal: 720 }} 
+                            }}
                         }});
                         video.srcObject = stream;
+                        
+                        // 嘗試開啟自動對焦，解決模糊問題
+                        const track = stream.getVideoTracks()[0];
+                        const capabilities = track.getCapabilities ? track.getCapabilities() : {{}};
+                        if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {{
+                            try {{
+                                await track.applyConstraints({{
+                                    advanced: [{{ focusMode: 'continuous' }}]
+                                }});
+                            }} catch (e) {{
+                                console.log('Focus mode apply error:', e);
+                            }}
+                        }}
                     }} catch (err) {{
                         document.getElementById('scanStatus').innerText = '無法存取相機 / Lỗi Camera';
                     }}
@@ -576,7 +585,7 @@ def create_templates():
                             div.className = 'card';
                             div.style.borderColor = card.colorCode;
                             div.innerHTML = `
-                                <strong>${{t('part_no')}} ${{renderField(card.part_no)}} | ${{t('part_name')}} ${{renderField(card.part_name)}} | ${{card.model_no ? '機/櫃: ' + card.model_no + ' | ' : ''}}${{t('qty')}} ${{card.qty}} | ${{t('color')}} ${{card.color}}</strong>
+                                <strong>${{t('part_no')}} ${{renderField(card.part_no)}} | ${{t('part_name')}} ${{renderField(card.part_name)}} | ${{card.model_no ? '機/櫃: ' + renderField(card.model_no) + ' | ' : ''}}${{t('qty')}} ${{card.qty}} | ${{t('color')}} ${{card.color}}</strong>
                                 <div class="grid-form">
                                     <label>${{t('lbl_hang')}} <select id="hang_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})"><option value="1">1</option><option value="2">2</option></select></label>
                                     <label>${{t('lbl_empty')}} <select id="empty_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
@@ -694,7 +703,7 @@ def create_templates():
                                 <tr>
                                     <td>${{renderField(card.part_no)}}</td>
                                     <td>${{renderField(card.part_name)}}</td>
-                                    <td style="font-weight:bold; color:#d35400;">${{card.model_no || '-'}}</td>
+                                    <td style="font-weight:bold; color:#d35400;">${{renderField(card.model_no) || '-'}}</td>
                                     <td>${{card.qty}}</td>
                                     <td>
                                         <span style="display:inline-block;width:14px;height:14px;background:${{card.colorCode}};border:1px solid #333;border-radius:3px;vertical-align:middle;margin-right:5px;"></span>
