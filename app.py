@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from flask_socketio import SocketIO, emit
 import time
 
@@ -24,7 +24,6 @@ I18N_SCRIPT = """
     const i18n = {
         'zh': {
             'sim_title': '🏭 粉體塗裝流水線模擬器', 'speed': '流水線轉速: ', 'time_lbl': '跑完全程所需時間: ', 'mins': ' 分鐘',
-            'map1': '上料', 'map2': '前處理', 'map3': '水切爐', 'map4': '噴房', 'map5': '烘烤爐', 'map6': '下料',
             'wait_title': '📦 現場待料區', 'part_ph': '手動輸入或掃描料號', 'name_ph': '手動輸入或掃描品名',
             'scan_btn': '📷 掃描', 'add_btn': '➕ 新增待上線構件', 'list_wait': '待處理清單 (順序排列)',
             'ali_sync': '[待上料_阿利] 同步接收區', 'btn_send_ali': '➕ 傳送阿利', 'btn_del': '刪除',
@@ -40,7 +39,6 @@ I18N_SCRIPT = """
         },
         'vi': {
             'sim_title': '🏭 Trình mô phỏng chuyền sơn', 'speed': 'Tốc độ chuyền: ', 'time_lbl': 'Thời gian 1 vòng: ', 'mins': ' Phút',
-            'map1': 'Lên hàng', 'map2': 'Tiền X.Lý', 'map3': 'Lò sấy', 'map4': 'Phòng phun', 'map5': 'Lò nướng', 'map6': 'Xuống hàng',
             'wait_title': '📦 Khu vực chờ vật liệu', 'part_ph': 'Nhập / Quét mã LK', 'name_ph': 'Nhập / Quét tên LK',
             'scan_btn': '📷 Quét', 'add_btn': '➕ Thêm vào hàng chờ', 'list_wait': 'Danh sách chờ (Theo thứ tự)',
             'ali_sync': 'Khu vực đồng bộ [Chờ lên hàng_Ali]', 'btn_send_ali': '➕ Chuyển cho Ali', 'btn_del': 'Xóa',
@@ -88,7 +86,7 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台
+        # 1. 模擬器主控台 (已整合圖片背景與精確軌跡)
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -101,35 +99,34 @@ def create_templates():
                 .dashboard {{ background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
                 .speed-ctrl button {{ font-size: 18px; padding: 5px 15px; margin: 0 10px; cursor: pointer; }}
                 
-                /* 套用 14436.png 為產線背景圖 */
                 .factory-map {{ 
-                    position: relative; width: 100%; max-width: 600px; 
-                    aspect-ratio: 3 / 4; 
-                    background: url('14436.png') center/cover no-repeat white; 
+                    position: relative; width: 100%; max-width: 800px; 
+                    aspect-ratio: 768 / 1024; /* 根據圖片比例設定 */
+                    background-image: url('/14436.png');
+                    background-size: cover;
+                    background-position: center;
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
-                    overflow: hidden;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
                 }}
-                /* 加入半透明遮罩以不影響原有 SVG 標示辨識度 */
-                .factory-map svg {{ 
-                    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-                    background: rgba(255, 255, 255, 0.65);
-                }}
+                .factory-map svg {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }}
                 
+                /* 半透明虛線軌跡，協助開發與視覺引導 */
                 .chain-track {{
-                    stroke-dasharray: 16, 12;
-                    animation: moveChain 1.2s linear infinite;
+                    stroke-dasharray: 10, 8;
+                    animation: moveChain 1.5s linear infinite;
+                    opacity: 0.6;
                 }}
                 @keyframes moveChain {{
-                    from {{ stroke-dashoffset: 28; }}
+                    from {{ stroke-dashoffset: 18; }}
                     to {{ stroke-dashoffset: 0; }}
                 }}
 
                 .mini-card {{ 
                     position: absolute; width: auto; min-width: 50px; height: 26px; border-radius: 4px; 
-                    border: 2px solid #333; transform: translate(-50%, -50%); cursor: pointer; 
-                    display: flex; align-items: center; justify-content: center; font-size: 11px; 
+                    border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.5); transform: translate(-50%, -50%); cursor: pointer; 
+                    display: flex; align-items: center; justify-content: center; font-size: 12px; 
                     color: white; text-shadow: 1px 1px 2px black; font-weight: bold; 
-                    transition: width 0.3s, height 0.3s; z-index: 10; padding: 0 5px; white-space: nowrap;
+                    transition: all 0.3s; z-index: 10; padding: 0 5px; white-space: nowrap;
                 }}
                 .mini-card .details {{ display: none; }}
                 
@@ -165,27 +162,37 @@ def create_templates():
             </div>
             
             <div class="factory-map" id="map">
-                <svg viewBox="0 0 800 1000">
-                    <path d="M 280 320 L 100 320 L 100 100 L 700 100 L 700 350 L 580 350 L 580 200 L 650 200 L 650 430 L 500 430 L 500 280 L 700 280 L 700 900 L 460 900" fill="none" stroke="#e0e0e0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path id="track" d="M 280 320 L 100 320 L 100 100 L 700 100 L 700 350 L 580 350 L 580 200 L 650 200 L 650 430 L 500 430 L 500 280 L 700 280 L 700 900 L 460 900" fill="none" stroke="#222" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
-                    
-                    <rect x="220" y="290" width="120" height="50" fill="#4d94ff" rx="5"/>
-                    <text x="280" y="323" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map1">上料</text>
-                    
-                    <rect x="360" y="75" width="140" height="50" fill="#4d94ff" rx="5"/>
-                    <text x="430" y="108" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map2">前處理</text>
-                    
-                    <rect x="580" y="175" width="140" height="50" fill="#4d94ff" rx="5"/>
-                    <text x="650" y="208" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map3">水切爐</text>
-                    
-                    <rect x="530" y="255" width="140" height="50" fill="#4d94ff" rx="5"/>
-                    <text x="600" y="288" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map5">烘烤爐</text>
-                    
-                    <rect x="530" y="405" width="140" height="50" fill="#4d94ff" rx="5"/>
-                    <text x="600" y="438" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map4">噴房</text>
-                    
-                    <rect x="400" y="875" width="120" height="50" fill="#4d94ff" rx="5"/>
-                    <text x="460" y="908" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map6">下料</text>
+                <svg viewBox="0 0 768 1024">
+                    <!-- 配合 14436.png 繪製的複雜軌跡線 (從上料到下料) -->
+                    <path id="track" d="
+                        M 330 750 
+                        L 420 750 
+                        L 420 330 
+                        L 280 330 
+                        L 280 180 
+                        L 120 180 
+                        L 120 90 
+                        L 680 90 
+                        L 680 200 
+                        L 550 200 
+                        L 550 240 
+                        L 680 240 
+                        L 680 300 
+                        L 550 300 
+                        L 550 350 
+                        L 680 350 
+                        L 680 440 
+                        L 550 440 
+                        L 550 480 
+                        L 680 480 
+                        L 680 570 
+                        L 550 570 
+                        L 550 620 
+                        L 680 620 
+                        L 680 880 
+                        L 450 880 
+                        L 450 780" 
+                        fill="none" stroke="#ffff00" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                 </svg>
             </div>
 
@@ -196,13 +203,11 @@ def create_templates():
                 const trackLength = track.getTotalLength();
                 let speedIndex = 11;
                 let activeCardId = null; 
-                let sys_state_cache = {{}};
                 
                 socket.on('update_state', (state) => {{
                     document.getElementById('current-speed').innerText = state.line_speed;
                     speedIndex = state.line_speed / 100;
                     document.getElementById('total-time').innerText = Math.round(1320 / speedIndex);
-                    // 接收狀態時僅更新快取並同步 DOM 結構，不干涉位置動畫
                     renderLineCards(state.cards);
                 }});
 
@@ -212,117 +217,84 @@ def create_templates():
                     event.stopPropagation(); 
                     activeCardId = activeCardId === id ? null : id;
                     overlay.style.display = activeCardId ? 'block' : 'none';
+                    renderLineCards(sys_state_cache); 
                 }}
                 
                 function closeAllCards() {{ 
                     activeCardId = null; 
                     overlay.style.display = 'none';
+                    renderLineCards(sys_state_cache); 
                 }}
                 
+                let sys_state_cache = {{}};
+
                 function renderDynamic() {{ renderLineCards(sys_state_cache); }}
 
-                // 優化：只處理建立與刪除 DOM 元素，分離座標更新
                 function renderLineCards(cards) {{
                     sys_state_cache = cards;
                     const map = document.getElementById('map');
-                    const activeIds = new Set();
-
-                    Object.values(cards).forEach(card => {{
-                        if(card.status === 'on_line') {{
-                            activeIds.add(card.id);
-                            let div = document.getElementById('card_' + card.id);
-                            
-                            // 若卡片不存在才重新建構 DOM，避免閃爍
-                            if (!div) {{
-                                div = document.createElement('div');
-                                div.id = 'card_' + card.id;
-                                div.className = 'mini-card';
-                                div.style.backgroundColor = card.colorCode || '#333';
-                                div.onclick = (e) => toggleCard(card.id, e);
-                                
-                                let shortLabel = t('comp_lbl');
-                                if (card.part_name && !card.part_name.startsWith('data:image') && card.part_name !== '未填寫') {{
-                                    shortLabel = card.part_name;
-                                }} else if (card.part_no && !card.part_no.startsWith('data:image') && card.part_no !== '未填寫') {{
-                                    shortLabel = card.part_no;
-                                }}
-                                
-                                div.innerHTML = `
-                                    <span class="short-id">${{shortLabel}}</span>
-                                    <div class="details">
-                                        <div class="close-btn" onclick="toggleCard('${{card.id}}', event)">×</div>
-                                        <b>${{t('part_no')}}</b> ${{renderField(card.part_no)}}<br>
-                                        <b>${{t('part_name')}}</b> ${{renderField(card.part_name)}}<br>
-                                        <b>機/櫃:</b> ${{renderField(card.model_no) || '未填寫'}}<br>
-                                        <b>${{t('qty')}}</b> ${{card.qty}}<br>
-                                        <b>${{t('color')}}</b> ${{card.color}}
-                                    </div>
-                                `;
-                                map.appendChild(div);
-                            }}
-                        }}
-                    }});
-
-                    // 移除已經下料或刪除的卡片 DOM
-                    document.querySelectorAll('.mini-card').forEach(el => {{
-                        const id = el.id.replace('card_', '');
-                        if (!activeIds.has(id)) {{
-                            el.remove();
-                            if(activeCardId === id) {{ closeAllCards(); }}
-                        }}
-                    }});
-                }}
-
-                // 優化：建立每秒約 60 幀平滑演算的專屬動畫迴圈
-                function animateLine() {{
+                    document.querySelectorAll('.mini-card').forEach(e => e.remove());
+                    
                     const now = Date.now();
                     const fullTimeMs = (1320 / speedIndex) * 60000;
 
-                    Object.values(sys_state_cache).forEach(card => {{
+                    Object.values(cards).forEach(card => {{
                         if(card.status === 'on_line') {{
-                            const div = document.getElementById('card_' + card.id);
-                            if (div) {{
-                                const elapsed = now - card.line_start_time;
-                                let progress = elapsed / fullTimeMs;
-                                
-                                if (progress >= 1) {{
-                                    progress = 1;
-                                    // 確保抵達終點時只觸發一次自動下料
-                                    if (!div.dataset.finished) {{
-                                        div.dataset.finished = 'true';
-                                        socket.emit('auto_move_to_unload', card.id); 
-                                    }}
-                                }}
-
-                                if (activeCardId === card.id) {{
-                                    div.classList.add('expanded');
-                                    div.style.left = '50%';
-                                    div.style.top = '50%';
-                                }} else {{
-                                    div.classList.remove('expanded');
-                                    const point = track.getPointAtLength(progress * trackLength);
-                                    const xPercent = (point.x / 800) * 100;
-                                    const yPercent = (point.y / 1000) * 100;
-                                    div.style.left = xPercent + '%';
-                                    div.style.top = yPercent + '%';
-                                }}
+                            const elapsed = now - card.line_start_time;
+                            let progress = elapsed / fullTimeMs;
+                            
+                            if (progress >= 1) {{
+                                progress = 1;
+                                socket.emit('auto_move_to_unload', card.id); 
                             }}
+
+                            const point = track.getPointAtLength(progress * trackLength);
+                            const div = document.createElement('div');
+                            div.className = 'mini-card';
+                            
+                            if (activeCardId === card.id) {{
+                                div.classList.add('expanded');
+                                div.style.left = '50%';
+                                div.style.top = '50%';
+                            }} else {{
+                                const xPercent = (point.x / 768) * 100;
+                                const yPercent = (point.y / 1024) * 100;
+                                div.style.left = xPercent + '%';
+                                div.style.top = yPercent + '%';
+                            }}
+                            
+                            div.style.backgroundColor = card.colorCode || '#333';
+                            div.onclick = (e) => toggleCard(card.id, e);
+                            
+                            let shortLabel = t('comp_lbl');
+                            if (card.part_name && !card.part_name.startsWith('data:image') && card.part_name !== '未填寫') {{
+                                shortLabel = card.part_name;
+                            }} else if (card.part_no && !card.part_no.startsWith('data:image') && card.part_no !== '未填寫') {{
+                                shortLabel = card.part_no;
+                            }}
+                            
+                            div.innerHTML = `
+                                <span class="short-id">${{shortLabel}}</span>
+                                <div class="details">
+                                    <div class="close-btn" onclick="toggleCard('${{card.id}}', event)">×</div>
+                                    <b>${{t('part_no')}}</b> ${{renderField(card.part_no)}}<br>
+                                    <b>${{t('part_name')}}</b> ${{renderField(card.part_name)}}<br>
+                                    <b>機/櫃:</b> ${{renderField(card.model_no) || '未填寫'}}<br>
+                                    <b>${{t('qty')}}</b> ${{card.qty}}<br>
+                                    <b>${{t('color')}}</b> ${{card.color}}
+                                </div>
+                            `;
+                            map.appendChild(div);
                         }}
                     }});
-                    // 呼叫下一幀
-                    requestAnimationFrame(animateLine);
                 }}
-
-                // 啟動動畫迴圈
-                requestAnimationFrame(animateLine);
-
                 setInterval(() => {{ socket.emit('request_sync'); }}, 1000);
             </script>
         </body>
         </html>
         """,
 
-        # 2. 現場待料區
+        # 2. 現場待料區 (無改動)
         'waiting.html': f"""
         <!DOCTYPE html>
         <html>
@@ -608,7 +580,7 @@ def create_templates():
         </html>
         """,
 
-        # 3. 待上料_阿利
+        # 3. 待上料_阿利 (無改動)
         'loading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -696,7 +668,7 @@ def create_templates():
         </html>
         """,
 
-        # 4. 下料_完成
+        # 4. 下料_完成 (無改動)
         'unloading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -807,6 +779,7 @@ def create_templates():
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(content)
 
+# Flask 路由設定
 @app.route('/')
 def index(): return render_template('simulator.html')
 @app.route('/wait')
@@ -815,6 +788,11 @@ def wait(): return render_template('waiting.html')
 def load(): return render_template('loading.html')
 @app.route('/unload')
 def unload(): return render_template('unloading.html')
+
+# 新增：讓 Flask 直接返回同一目錄下的圖片檔案
+@app.route('/14436.png')
+def serve_image():
+    return send_from_directory('.', '14436.png')
 
 def broadcast_state():
     socketio.emit('update_state', sys_state)
