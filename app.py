@@ -93,7 +93,7 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台 (內建 SVG 廠房平面圖背景，解決雲端圖檔缺失問題)
+        # 1. 模擬器主控台 (替換為 14437.png 作為背景圖)
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -108,9 +108,10 @@ def create_templates():
                 .status-banner {{ background: #27ae60; color: white; padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; }}
                 
                 .factory-map {{ 
-                    position: relative; width: 100%; max-width: 600px; 
-                    aspect-ratio: 3 / 4;
-                    background-color: #2c3e50;
+                    position: relative; width: 100%; max-width: 768px; 
+                    aspect-ratio: 768 / 1024;
+                    background: url('/14437.png') no-repeat center center;
+                    background-size: cover;
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
                     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
                     overflow: hidden;
@@ -120,7 +121,7 @@ def create_templates():
                 .chain-track {{
                     stroke-dasharray: 10, 8;
                     animation: moveChain 1.5s linear infinite;
-                    opacity: 0.8;
+                    opacity: 0.5; /* 半透明以確保圖片底圖不會被過度遮擋 */
                 }}
                 @keyframes moveChain {{
                     from {{ stroke-dashoffset: 18; }}
@@ -172,37 +173,24 @@ def create_templates():
             
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 768 1024" preserveAspectRatio="none">
-                    <!-- 廠房結構與區域背景 -->
-                    <rect x="80" y="80" width="628" height="840" rx="15" fill="#34495e" stroke="#7f8c8d" stroke-width="4"/>
-                    <rect x="100" y="100" width="580" height="250" fill="#3b5998" opacity="0.3" rx="8"/>
-                    <text x="120" y="135" fill="#bdc3c7" font-size="18" font-weight="bold">前處理區 / Khu vực xử lý trước</text>
-                    
-                    <rect x="420" y="370" width="280" height="530" fill="#e67e22" opacity="0.2" rx="8"/>
-                    <text x="440" y="405" fill="#bdc3c7" font-size="18" font-weight="bold">烤爐與噴房區 / Lò sấy & Buồng sơn</text>
-
-                    <rect x="100" y="740" width="300" height="160" fill="#27ae60" opacity="0.2" rx="8"/>
-                    <text x="120" y="775" fill="#bdc3c7" font-size="18" font-weight="bold">下料與包裝區 / Khu vực xuống hàng</text>
-
-                    <!-- 流水線軌跡 -->
+                    <!-- 軌跡依照 14437.png 從「上料」一直走到「下料」 -->
                     <path id="track" d="
-                        M 380 500 
-                        L 380 330 
-                        L 120 330 
-                        L 120 120 
-                        L 650 120 
-                        L 650 180 
-                        L 460 180 
-                        L 460 240 
-                        L 650 240 
-                        L 650 300 
-                        L 460 300 
-                        L 460 360 
-                        L 680 360 
-                        L 680 880 
-                        L 420 880 
-                        L 420 780 
-                        L 220 780" 
-                        fill="none" stroke="#f1c40f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
+                        M 350 650 
+                        L 350 320 
+                        L 100 320 
+                        L 100 80 
+                        L 700 80 
+                        L 700 160 
+                        L 450 160 
+                        L 450 240 
+                        L 700 240 
+                        L 700 320 
+                        L 450 320 
+                        L 450 410 
+                        L 700 410 
+                        L 700 850 
+                        L 250 850" 
+                        fill="none" stroke="#f1c40f" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                 </svg>
             </div>
 
@@ -320,7 +308,7 @@ def create_templates():
         </html>
         """,
 
-        # 2. 現場待料區
+        # 2. 現場待料區 (保持原樣不變)
         'waiting.html': f"""
         <!DOCTYPE html>
         <html>
@@ -606,7 +594,7 @@ def create_templates():
         </html>
         """,
 
-        # 3. 待上料_阿利
+        # 3. 待上料_阿利 (保持原樣不變)
         'loading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -707,7 +695,7 @@ def create_templates():
         </html>
         """,
 
-        # 4. 下料_完成
+        # 4. 下料_完成 (保持原樣不變)
         'unloading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -830,6 +818,7 @@ def unload(): return render_template('unloading.html')
 
 @app.route('/14437.png')
 def serve_image():
+    # 確保 14437.png 放在與此 Python 腳本同一個目錄下
     return send_from_directory('.', '14437.png')
 
 def broadcast_state():
@@ -929,9 +918,12 @@ def continuous_line_inserter():
             total_hooks = max(1, hang + empty + interval)
             
             base_line_time_min = 1320.0 / speed_index
-            visual_gap_sec = base_line_time_min * 60.0 * 0.02 
+            
+            # 調整視覺間距 (依照卡片寬度密集接續插入)，將係數設定為 0.012 使卡片緊密排列
+            visual_gap_sec = base_line_time_min * 60.0 * 0.012 
             hook_time_sec = total_hooks * (60.0 / speed_index)
             
+            # 使用最大延遲來確保不會重疊過多或上料太慢
             delay_sec = max(visual_gap_sec, hook_time_sec)
             
             slept = 0.0
