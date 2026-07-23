@@ -72,7 +72,6 @@ I18N_SCRIPT = """
         document.getElementById('langBtn').innerHTML = t('lang_btn');
     }
     
-    // 將 base64 圖片轉成 img 標籤顯示，若是文字則原樣輸出
     function renderField(val) {
         if (typeof val === 'string' && val.startsWith('data:image')) {
             return `<img src="${val}" style="max-height: 40px; vertical-align: middle; border-radius: 4px; border: 1px solid #ccc; margin: 2px;">`;
@@ -89,7 +88,7 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台 (黑虛線滾動軌跡，配合新版 S 型佈局)
+        # 1. 模擬器主控台 (完美對照紅色軌跡與站點順序：上料->前處理->水切爐->噴房->烘烤爐->下料)
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -104,12 +103,11 @@ def create_templates():
                 
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 600px; 
-                    aspect-ratio: 2 / 3; background: white; 
+                    aspect-ratio: 3 / 4; background: white; 
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
                 }}
                 .factory-map svg {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; }}
                 
-                /* 動態黑色虛線滾動動畫 (模擬鏈條) */
                 .chain-track {{
                     stroke-dasharray: 16, 12;
                     animation: moveChain 1.2s linear infinite;
@@ -160,30 +158,37 @@ def create_templates():
             </div>
             
             <div class="factory-map" id="map">
-                <svg viewBox="0 0 800 1200">
-                    <!-- 背景淺灰色實線 -->
-                    <path d="M 200 180 L 100 180 L 100 80 L 750 80 L 750 180 L 500 180 L 500 280 L 750 280 L 750 380 L 500 380 L 500 480 L 750 480 L 750 1100 L 100 1100" fill="none" stroke="#e0e0e0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- 座標系：800 x 1000，完全對照紅色軌跡圖與正確站點 -->
+                <svg viewBox="0 0 800 1000">
+                    <!-- 背景軌跡 (灰色底線) -->
+                    <path d="M 280 320 L 100 320 L 100 100 L 700 100 L 700 350 L 580 350 L 580 200 L 650 200 L 650 400 L 500 400 L 500 250 L 700 250 L 700 900 L 460 900" fill="none" stroke="#e0e0e0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
                     
-                    <!-- 上方疊加動態黑色虛線 -->
-                    <path id="track" d="M 200 180 L 100 180 L 100 80 L 750 80 L 750 180 L 500 180 L 500 280 L 750 280 L 750 380 L 500 380 L 500 480 L 750 480 L 750 1100 L 100 1100" fill="none" stroke="#222" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
+                    <!-- 動態黑色虛線鏈條 (依序經過：上料 -> 前處理 -> 水切爐 -> 烘烤爐 -> 噴房迴路 -> 下料) -->
+                    <path id="track" d="M 280 320 L 100 320 L 100 100 L 700 100 L 700 350 L 580 350 L 580 200 L 650 200 L 650 400 L 500 400 L 500 250 L 700 250 L 700 900 L 460 900" fill="none" stroke="#222" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                     
-                    <rect x="150" y="190" width="120" height="60" fill="#4d94ff" rx="5"/>
-                    <text x="210" y="232" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map1">上料</text>
+                    <!-- 1. 上料區 -->
+                    <rect x="220" y="290" width="120" height="50" fill="#4d94ff" rx="5"/>
+                    <text x="280" y="323" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map1">上料</text>
                     
-                    <rect x="350" y="10" width="140" height="60" fill="#4d94ff" rx="5"/>
-                    <text x="420" y="52" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map2">前處理</text>
+                    <!-- 2. 前處理區 -->
+                    <rect x="360" y="75" width="140" height="50" fill="#4d94ff" rx="5"/>
+                    <text x="430" y="108" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map2">前處理</text>
                     
-                    <rect x="600" y="210" width="140" height="60" fill="#4d94ff" rx="5"/>
-                    <text x="670" y="252" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map3">水切爐</text>
+                    <!-- 3. 水切爐區 -->
+                    <rect x="580" y="175" width="140" height="50" fill="#4d94ff" rx="5"/>
+                    <text x="650" y="208" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map3">水切爐</text>
                     
-                    <rect x="530" y="310" width="140" height="60" fill="#4d94ff" rx="5"/>
-                    <text x="600" y="352" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map5">烘烤爐</text>
+                    <!-- 4. 烘烤爐區 -->
+                    <rect x="530" y="225" width="140" height="50" fill="#4d94ff" rx="5"/>
+                    <text x="600" y="258" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map5">烘烤爐</text>
                     
-                    <rect x="580" y="410" width="140" height="60" fill="#4d94ff" rx="5"/>
-                    <text x="650" y="452" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map4">噴房</text>
+                    <!-- 5. 噴房區 -->
+                    <rect x="530" y="375" width="140" height="50" fill="#4d94ff" rx="5"/>
+                    <text x="600" y="408" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map4">噴房</text>
                     
-                    <rect x="50" y="1020" width="120" height="60" fill="#4d94ff" rx="5"/>
-                    <text x="110" y="1062" fill="white" font-size="30" font-weight="bold" text-anchor="middle" data-i18n="map6">下料</text>
+                    <!-- 6. 下料區 -->
+                    <rect x="400" y="875" width="120" height="50" fill="#4d94ff" rx="5"/>
+                    <text x="460" y="908" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map6">下料</text>
                 </svg>
             </div>
 
@@ -198,7 +203,7 @@ def create_templates():
                 socket.on('update_state', (state) => {{
                     document.getElementById('current-speed').innerText = state.line_speed;
                     speedIndex = state.line_speed / 100;
-                    document.getElementById('total-time').innerText = Math.round(1320 / speedIndex);
+                    document.getElementById('total-time').innerText = Math.round(1450 / speedIndex);
                     renderLineCards(state.cards);
                 }});
 
@@ -227,7 +232,7 @@ def create_templates():
                     document.querySelectorAll('.mini-card').forEach(e => e.remove());
                     
                     const now = Date.now();
-                    const fullTimeMs = (1320 / speedIndex) * 60000;
+                    const fullTimeMs = (1450 / speedIndex) * 60000;
 
                     Object.values(cards).forEach(card => {{
                         if(card.status === 'on_line') {{
@@ -249,7 +254,7 @@ def create_templates():
                                 div.style.top = '50%';
                             }} else {{
                                 const xPercent = (point.x / 800) * 100;
-                                const yPercent = (point.y / 1200) * 100;
+                                const yPercent = (point.y / 1000) * 100;
                                 div.style.left = xPercent + '%';
                                 div.style.top = yPercent + '%';
                             }}
@@ -285,7 +290,7 @@ def create_templates():
         </html>
         """,
 
-        # 2. 現場待料區 (新增 機種第幾櫃 欄位)
+        # 2. 現場待料區
         'waiting.html': f"""
         <!DOCTYPE html>
         <html>
@@ -357,7 +362,6 @@ def create_templates():
                     <button type="button" class="btn-scan" data-i18n="scan_btn" onclick="openScanner('partName')">📷 掃描</button>
                 </div>
                 <div class="input-group" id="modelNoGroup">
-                    <!-- 新增：機種第幾櫃欄位 -->
                     <input type="text" id="modelNo" placeholder="機種第幾櫃 (手動輸入 / Nhập model)">
                 </div>
                 <input type="number" id="qty" placeholder="數量 / Số lượng">
@@ -429,7 +433,6 @@ def create_templates():
                         div.className = 'data-card';
                         div.style.borderColor = card.colorCode;
                         
-                        // 清單上同步顯示機櫃資訊(若有)
                         let modelInfo = card.model_no ? ` [${{card.model_no}}]` : '';
                         
                         div.innerHTML = `
@@ -531,7 +534,7 @@ def create_templates():
         </html>
         """,
 
-        # 3. 待上料_阿利 
+        # 3. 待上料_阿利
         'loading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -619,7 +622,7 @@ def create_templates():
         </html>
         """,
 
-        # 4. 下料_完成 (改為強大的歷史紀錄表格式呈現)
+        # 4. 下料_完成
         'unloading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -632,7 +635,6 @@ def create_templates():
                 .card {{ background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 10px solid #ccc; display: flex; justify-content: space-between; align-items: center;}}
                 .btn-done {{ background: #27ae60; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight:bold;}}
                 
-                /* 表格相關樣式 */
                 .done-table-container {{ overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
                 .done-table {{ width: 100%; border-collapse: collapse; min-width: 600px; text-align: center; font-size: 14px;}}
                 .done-table th, .done-table td {{ border: 1px solid #dee2e6; padding: 12px 8px; }}
@@ -660,7 +662,6 @@ def create_templates():
                     const doneList = document.getElementById('done-list');
                     unloadList.innerHTML = ''; 
                     
-                    // 初始化表格 HTML
                     let tableHTML = `
                     <table class="done-table">
                         <thead>
@@ -679,7 +680,6 @@ def create_templates():
 
                     Object.values(sys_state_cache.cards).forEach(card => {{
                         if(card.status === 'unloading') {{
-                            // 待下料區維持卡片樣式
                             const div = document.createElement('div');
                             div.className = 'card';
                             div.style.borderColor = card.colorCode;
@@ -689,7 +689,6 @@ def create_templates():
                             `;
                             unloadList.appendChild(div);
                         }} else if(card.status === 'completed') {{
-                            // 完成區轉為表格 Row
                             hasCompleted = true;
                             tableHTML += `
                                 <tr>
@@ -709,7 +708,6 @@ def create_templates():
                     
                     tableHTML += `</tbody></table>`;
                     
-                    // 根據是否有歷史資料進行渲染
                     if(hasCompleted) {{
                         doneList.innerHTML = tableHTML;
                     }} else {{
@@ -802,7 +800,6 @@ def finish_card(card_id):
         broadcast_state()
 
 if __name__ == '__main__':
-    # 重構開發時強制重置 HTML 檔案，以便讓上述修改生效
     import shutil
     if os.path.exists('templates'):
         shutil.rmtree('templates')
