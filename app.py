@@ -11,15 +11,13 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 sys_state = {
     'line_speed': 1100,
     'cards': {},
-    'active_card_id': None  # 紀錄當前持續滿線上料的主構件 ID
+    'active_card_id': None
 }
 
-# 鎖定機制與全域狀態
 active_card_lock = threading.Lock()
 current_active_card_template = None
 clone_counter = 0
 
-# 共用的 i18n 語言包與切換腳本
 I18N_SCRIPT = """
 <style>
     body { padding-top: 60px !important; }
@@ -74,16 +72,15 @@ I18N_SCRIPT = """
             if(el.tagName === 'INPUT') el.placeholder = t(key);
             else el.innerHTML = t(key);
         });
-        document.getElementById('langBtn').innerHTML = t('lang_btn');
+        const langBtn = document.getElementById('langBtn');
+        if(langBtn) langBtn.innerHTML = t('lang_btn');
     }
-    
     function renderField(val) {
         if (typeof val === 'string' && val.startsWith('data:image')) {
             return `<img src="${val}" style="max-height: 40px; vertical-align: middle; border-radius: 4px; border: 1px solid #ccc; margin: 2px;">`;
         }
         return val;
     }
-
     window.addEventListener('DOMContentLoaded', applyLang);
 </script>
 """
@@ -93,7 +90,6 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台 (替換為 14437.png 作為背景圖)
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -110,7 +106,7 @@ def create_templates():
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 768px; 
                     aspect-ratio: 768 / 1024;
-                    background: url('/14437.png') no-repeat center center;
+                    background: url('/14436.png') no-repeat center center;
                     background-size: cover;
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
                     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
@@ -121,7 +117,7 @@ def create_templates():
                 .chain-track {{
                     stroke-dasharray: 10, 8;
                     animation: moveChain 1.5s linear infinite;
-                    opacity: 0.5; /* 半透明以確保圖片底圖不會被過度遮擋 */
+                    opacity: 0.5;
                 }}
                 @keyframes moveChain {{
                     from {{ stroke-dashoffset: 18; }}
@@ -173,7 +169,6 @@ def create_templates():
             
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 768 1024" preserveAspectRatio="none">
-                    <!-- 軌跡依照 14437.png 從「上料」一直走到「下料」 -->
                     <path id="track" d="
                         M 350 650 
                         L 350 320 
@@ -308,7 +303,6 @@ def create_templates():
         </html>
         """,
 
-        # 2. 現場待料區 (保持原樣不變)
         'waiting.html': f"""
         <!DOCTYPE html>
         <html>
@@ -497,18 +491,6 @@ def create_templates():
                             }}
                         }});
                         video.srcObject = stream;
-                        
-                        const track = stream.getVideoTracks()[0];
-                        const capabilities = track.getCapabilities ? track.getCapabilities() : {{}};
-                        if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {{
-                            try {{
-                                await track.applyConstraints({{
-                                    advanced: [{{ focusMode: 'continuous' }}]
-                                }});
-                            }} catch (e) {{
-                                console.log('Focus mode apply error:', e);
-                            }}
-                        }}
                     }} catch (err) {{
                         document.getElementById('scanStatus').innerText = '無法存取相機 / Lỗi Camera';
                     }}
@@ -521,7 +503,6 @@ def create_templates():
 
                 function captureAndStore() {{
                     video.pause();
-                    
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -535,15 +516,12 @@ def create_templates():
                     const renderedAspect = cw / ch;
 
                     let scale, offsetX = 0, offsetY = 0;
-
                     if (intrinsicAspect > renderedAspect) {{
                         scale = ch / vh;
-                        const renderedWidth = vw * scale;
-                        offsetX = (cw - renderedWidth) / 2;
+                        offsetX = (cw - (vw * scale)) / 2;
                     }} else {{
                         scale = cw / vw;
-                        const renderedHeight = vh * scale;
-                        offsetY = (ch - renderedHeight) / 2;
+                        offsetY = (ch - (vh * scale)) / 2;
                     }}
 
                     const boxLeft = cw * 0.10;
@@ -594,7 +572,6 @@ def create_templates():
         </html>
         """,
 
-        # 3. 待上料_阿利 (保持原樣不變)
         'loading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -616,10 +593,7 @@ def create_templates():
         <body>
             <h2 data-i18n="ali_title">🏗️ 待上料_阿利</h2>
             <div id="loading-list"></div>
-            
-            <div class="fixed-bottom" data-i18n="line_sync">
-                ⬇️ [流水線_上線] 同步傳送區 ⬇️
-            </div>
+            <div class="fixed-bottom" data-i18n="line_sync">⬇️ [流水線_上線] 同步傳送區 ⬇️</div>
 
             <script>
                 const socket = io();
@@ -629,7 +603,6 @@ def create_templates():
                 function renderDynamic() {{
                     const list = document.getElementById('loading-list');
                     list.innerHTML = '';
-                    
                     Object.values(sys_state_cache.cards).forEach(card => {{
                         if(card.status === 'loading') {{
                             const div = document.createElement('div');
@@ -669,7 +642,6 @@ def create_templates():
                     const empty = parseFloat(document.getElementById('empty_' + id).value) || 0;
                     const interval = parseFloat(document.getElementById('interval_' + id).value) || 0;
                     const speedIndex = currentSpeed / 100;
-                    
                     const totalMins = Math.round(((hang + empty + interval) * qty) / speedIndex);
                     const h = Math.floor(totalMins / 60);
                     const m = totalMins % 60;
@@ -681,21 +653,13 @@ def create_templates():
                     const empty = parseInt(document.getElementById('empty_' + id).value) || 0;
                     const interval = parseInt(document.getElementById('interval_' + id).value) || 0;
                     const hook = parseInt(document.getElementById('hook_' + id).value) || 0;
-
-                    socket.emit('send_to_line', {{
-                        id: id,
-                        hang: hang,
-                        empty: empty,
-                        interval: interval,
-                        hook: hook
-                    }}); 
+                    socket.emit('send_to_line', {{ id: id, hang: hang, empty: empty, interval: interval, hook: hook }}); 
                 }}
             </script>
         </body>
         </html>
         """,
 
-        # 4. 下料_完成 (保持原樣不變)
         'unloading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -707,7 +671,6 @@ def create_templates():
                 body {{ font-family: '微軟正黑體', sans-serif; background: #fdf2e9; padding: 20px;}}
                 .card {{ background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 10px solid #ccc; display: flex; justify-content: space-between; align-items: center;}}
                 .btn-done {{ background: #27ae60; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight:bold;}}
-                
                 .done-table-container {{ overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
                 .done-table {{ width: 100%; border-collapse: collapse; min-width: 600px; text-align: center; font-size: 14px;}}
                 .done-table th, .done-table td {{ border: 1px solid #dee2e6; padding: 12px 8px; }}
@@ -721,7 +684,6 @@ def create_templates():
             <h2 data-i18n="unload_title">✅ 下料與完成紀錄區</h2>
             <h3 data-i18n="unload_wait">待下料區 (模擬器跑完自動傳送至此)</h3>
             <div id="unload-list"></div>
-            
             <hr>
             <h3 data-i18n="done_list">歷史完成紀錄</h3>
             <div id="done-list" class="done-table-container"></div>
@@ -778,7 +740,6 @@ def create_templates():
                             `;
                         }}
                     }});
-                    
                     tableHTML += `</tbody></table>`;
                     
                     if(hasCompleted) {{
@@ -806,7 +767,6 @@ def create_templates():
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(content)
 
-# Flask 路由設定
 @app.route('/')
 def index(): return render_template('simulator.html')
 @app.route('/wait')
@@ -816,10 +776,9 @@ def load(): return render_template('loading.html')
 @app.route('/unload')
 def unload(): return render_template('unloading.html')
 
-@app.route('/14437.png')
+@app.route('/14436.png')
 def serve_image():
-    # 確保 14437.png 放在與此 Python 腳本同一個目錄下
-    return send_from_directory('.', '14437.png')
+    return send_from_directory('.', '14436.png')
 
 def broadcast_state():
     socketio.emit('update_state', sys_state)
@@ -860,7 +819,6 @@ def change_status(data):
 @socketio.on('send_to_line')
 def send_to_line(data):
     global current_active_card_template
-    
     if isinstance(data, dict):
         card_id = data.get('id')
         hang = data.get('hang', 1)
@@ -904,7 +862,6 @@ def continuous_line_inserter():
     global clone_counter, current_active_card_template
     while True:
         time.sleep(1)
-        
         if current_active_card_template:
             with active_card_lock:
                 card_template = current_active_card_template.copy()
@@ -918,12 +875,8 @@ def continuous_line_inserter():
             total_hooks = max(1, hang + empty + interval)
             
             base_line_time_min = 1320.0 / speed_index
-            
-            # 調整視覺間距 (依照卡片寬度密集接續插入)，將係數設定為 0.012 使卡片緊密排列
             visual_gap_sec = base_line_time_min * 60.0 * 0.012 
             hook_time_sec = total_hooks * (60.0 / speed_index)
-            
-            # 使用最大延遲來確保不會重疊過多或上料太慢
             delay_sec = max(visual_gap_sec, hook_time_sec)
             
             slept = 0.0
