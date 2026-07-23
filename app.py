@@ -93,7 +93,7 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台 (修正背景圖顯示與比例)
+        # 1. 模擬器主控台 (內建 SVG 廠房平面圖背景，解決雲端圖檔缺失問題)
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -109,22 +109,18 @@ def create_templates():
                 
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 600px; 
-                    /* 修正為自動適應圖片尺寸 (寬高比依據 14437.png 實際比例調整) */
                     aspect-ratio: 3 / 4;
-                    background-image: url('/14437.png');
-                    background-size: 100% 100%;
-                    background-repeat: no-repeat;
-                    background-position: center;
+                    background-color: #2c3e50;
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
                     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                    background-color: #e5e5e5;
+                    overflow: hidden;
                 }}
                 .factory-map svg {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }}
                 
                 .chain-track {{
                     stroke-dasharray: 10, 8;
                     animation: moveChain 1.5s linear infinite;
-                    opacity: 0.6;
+                    opacity: 0.8;
                 }}
                 @keyframes moveChain {{
                     from {{ stroke-dashoffset: 18; }}
@@ -146,7 +142,7 @@ def create_templates():
                     transform: translate(-50%, -50%) !important;
                     width: 85vw; max-width: 350px; height: auto; border-radius: 12px; padding: 20px;
                     z-index: 9999; text-align: left; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-                    cursor: default; display: flex; flex-direction: column; white-space: normal;
+                    cursor: default; display: flex; flex-direction: column; white-space: normal; background-color: #34495e !important;
                 }}
                 .mini-card.expanded .short-id {{ display: none; }}
                 .mini-card.expanded .details {{ display: block; font-size: 16px; line-height: 1.8; width: 100%; position: relative; color: white; }}
@@ -154,7 +150,7 @@ def create_templates():
                 .close-btn {{ 
                     position: absolute; top: -10px; right: -10px; font-size: 24px; 
                     cursor: pointer; font-weight: bold; background: rgba(0,0,0,0.7);
-                    border-radius: 50%; width: 32px; height: 32px; text-align: center; line-height: 28px; border: 2px solid white;
+                    border-radius: 50%; width: 32px; height: 32px; text-align: center; line-height: 28px; border: 2px solid white; color: white;
                 }}
             </style>
             {I18N_SCRIPT}
@@ -176,7 +172,18 @@ def create_templates():
             
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 768 1024" preserveAspectRatio="none">
-                    <!-- 依據 14437.png 背景重新繪製完美貼合的軌跡路線 -->
+                    <!-- 廠房結構與區域背景 -->
+                    <rect x="80" y="80" width="628" height="840" rx="15" fill="#34495e" stroke="#7f8c8d" stroke-width="4"/>
+                    <rect x="100" y="100" width="580" height="250" fill="#3b5998" opacity="0.3" rx="8"/>
+                    <text x="120" y="135" fill="#bdc3c7" font-size="18" font-weight="bold">前處理區 / Khu vực xử lý trước</text>
+                    
+                    <rect x="420" y="370" width="280" height="530" fill="#e67e22" opacity="0.2" rx="8"/>
+                    <text x="440" y="405" fill="#bdc3c7" font-size="18" font-weight="bold">烤爐與噴房區 / Lò sấy & Buồng sơn</text>
+
+                    <rect x="100" y="740" width="300" height="160" fill="#27ae60" opacity="0.2" rx="8"/>
+                    <text x="120" y="775" fill="#bdc3c7" font-size="18" font-weight="bold">下料與包裝區 / Khu vực xuống hàng</text>
+
+                    <!-- 流水線軌跡 -->
                     <path id="track" d="
                         M 380 500 
                         L 380 330 
@@ -195,7 +202,7 @@ def create_templates():
                         L 420 880 
                         L 420 780 
                         L 220 780" 
-                        fill="none" stroke="#ffff00" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
+                        fill="none" stroke="#f1c40f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                 </svg>
             </div>
 
@@ -821,7 +828,6 @@ def load(): return render_template('loading.html')
 @app.route('/unload')
 def unload(): return render_template('unloading.html')
 
-# 提供背景圖 14437.png 路由
 @app.route('/14437.png')
 def serve_image():
     return send_from_directory('.', '14437.png')
@@ -864,7 +870,6 @@ def change_status(data):
 
 @socketio.on('send_to_line')
 def send_to_line(data):
-    """將待上料構件上線，並註冊為全域當前持續滿線發射範本"""
     global current_active_card_template
     
     if isinstance(data, dict):
