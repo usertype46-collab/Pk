@@ -93,7 +93,7 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台 (支援滿線動態展示與正確的軌跡對位)
+        # 1. 模擬器主控台 (支援滿線動態展示)
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -110,7 +110,8 @@ def create_templates():
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 800px; 
                     aspect-ratio: 768 / 1024;
-                    background-image: url('/14437.png'); /* 更新為新的背景圖 */
+                    /* 修正為新版背景圖 14437.png */
+                    background-image: url('/14437.png');
                     background-size: cover;
                     background-position: center;
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
@@ -173,35 +174,25 @@ def create_templates():
             
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 768 1024">
-                    <!-- 更新軌跡，起點 M 設定在背景圖的「上料」位置 -->
+                    <!-- 依據 14437.png 背景重新繪製完美貼合的軌跡路線 -->
                     <path id="track" d="
-                        M 320 450 
-                        L 320 280 
-                        L 100 280 
-                        L 100 90 
-                        L 660 90 
-                        L 660 210 
-                        L 460 210 
-                        L 460 270 
-                        L 660 270 
-                        L 660 340 
-                        L 460 340 
-                        L 460 400 
-                        L 660 400 
-                        L 660 520 
-                        L 460 520 
-                        L 460 580 
-                        L 660 580 
-                        L 660 760 
-                        L 560 760 
-                        L 560 840 
-                        L 680 840 
-                        L 680 920 
-                        L 350 920 
-                        L 150 920 
-                        L 150 830 
-                        L 320 830 
-                        L 320 450" 
+                        M 380 500 
+                        L 380 330 
+                        L 120 330 
+                        L 120 120 
+                        L 650 120 
+                        L 650 180 
+                        L 460 180 
+                        L 460 240 
+                        L 650 240 
+                        L 650 300 
+                        L 460 300 
+                        L 460 360 
+                        L 680 360 
+                        L 680 880 
+                        L 420 880 
+                        L 420 780 
+                        L 220 780" 
                         fill="none" stroke="#ffff00" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                 </svg>
             </div>
@@ -606,7 +597,7 @@ def create_templates():
         </html>
         """,
 
-        # 3. 待上料_阿利
+        # 3. 待上料_阿利 (支援帶入掛勾設定並傳送至持續滿線模式)
         'loading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -828,7 +819,7 @@ def load(): return render_template('loading.html')
 @app.route('/unload')
 def unload(): return render_template('unloading.html')
 
-# 改為引用新的 14437.png
+# 改為提供新的背景圖 14437.png
 @app.route('/14437.png')
 def serve_image():
     return send_from_directory('.', '14437.png')
@@ -917,7 +908,6 @@ def finish_card(card_id):
 
 # -------------------------------------------------------------
 # 核心背景服務：實現產線滿線持續自動上料機制 (Continuous Inserter)
-# 加入安全間距計算，避免卡片過於密集重疊
 # -------------------------------------------------------------
 def continuous_line_inserter():
     global clone_counter, current_active_card_template
@@ -937,15 +927,14 @@ def continuous_line_inserter():
             interval = card_template.get('interval', 0)
             total_hooks = max(1, hang + empty + interval)
             
-            # --- 卡片間距防止重疊的邏輯修正 ---
-            # 建立基本的最低視覺間距時間 (秒)
-            # 在 1100 的標準轉速下，預設確保每次插入有至少約 12 秒的間隔，從而在長度上保留卡片的安全視覺空間
-            base_visual_gap_sec = 12.0 * (11.0 / speed_index)
-            # 依照掛勾換算的秒數
-            calculated_hook_sec = total_hooks * (60.0 / speed_index)
+            # 確保卡片之間有剛好一張卡片大小的視覺間距 (避免全部疊在一起)[span_1](start_span)[span_1](end_span)
+            # 設定最小間距約為產線全程距離的 2%，確保畫面上清晰可見且連貫[span_2](start_span)[span_2](end_span)
+            base_line_time_min = 1320.0 / speed_index
+            visual_gap_sec = base_line_time_min * 60.0 * 0.02 
+            hook_time_sec = total_hooks * (60.0 / speed_index)
             
-            # 取兩者最大值，確保即使掛/空/間距的總合過少，也不會讓卡片疊成一團
-            delay_sec = max(base_visual_gap_sec, calculated_hook_sec)
+            # 選擇兩者中較大的一個，讓密度不會失控[span_3](start_span)[span_3](end_span)
+            delay_sec = max(visual_gap_sec, hook_time_sec)
             
             # 分段 Sleep 確保更換構件時能第一時間中斷並切換新構件
             slept = 0.0
