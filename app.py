@@ -101,12 +101,19 @@ def create_templates():
                 .dashboard {{ background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
                 .speed-ctrl button {{ font-size: 18px; padding: 5px 15px; margin: 0 10px; cursor: pointer; }}
                 
+                /* 套用 14436.png 為產線背景圖 */
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 600px; 
-                    aspect-ratio: 3 / 4; background: white; 
+                    aspect-ratio: 3 / 4; 
+                    background: url('14436.png') center/cover no-repeat white; 
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
+                    overflow: hidden;
                 }}
-                .factory-map svg {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; }}
+                /* 加入半透明遮罩以不影響原有 SVG 標示辨識度 */
+                .factory-map svg {{ 
+                    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+                    background: rgba(255, 255, 255, 0.65);
+                }}
                 
                 .chain-track {{
                     stroke-dasharray: 16, 12;
@@ -122,7 +129,7 @@ def create_templates():
                     border: 2px solid #333; transform: translate(-50%, -50%); cursor: pointer; 
                     display: flex; align-items: center; justify-content: center; font-size: 11px; 
                     color: white; text-shadow: 1px 1px 2px black; font-weight: bold; 
-                    transition: all 0.3s; z-index: 10; padding: 0 5px; white-space: nowrap;
+                    transition: width 0.3s, height 0.3s; z-index: 10; padding: 0 5px; white-space: nowrap;
                 }}
                 .mini-card .details {{ display: none; }}
                 
@@ -189,11 +196,13 @@ def create_templates():
                 const trackLength = track.getTotalLength();
                 let speedIndex = 11;
                 let activeCardId = null; 
+                let sys_state_cache = {{}};
                 
                 socket.on('update_state', (state) => {{
                     document.getElementById('current-speed').innerText = state.line_speed;
                     speedIndex = state.line_speed / 100;
                     document.getElementById('total-time').innerText = Math.round(1320 / speedIndex);
+                    // 接收狀態時僅更新快取並同步 DOM 結構，不干涉位置動畫
                     renderLineCards(state.cards);
                 }});
 
@@ -203,77 +212,110 @@ def create_templates():
                     event.stopPropagation(); 
                     activeCardId = activeCardId === id ? null : id;
                     overlay.style.display = activeCardId ? 'block' : 'none';
-                    renderLineCards(sys_state_cache); 
                 }}
                 
                 function closeAllCards() {{ 
                     activeCardId = null; 
                     overlay.style.display = 'none';
-                    renderLineCards(sys_state_cache); 
                 }}
                 
-                let sys_state_cache = {{}};
-
                 function renderDynamic() {{ renderLineCards(sys_state_cache); }}
 
+                // 優化：只處理建立與刪除 DOM 元素，分離座標更新
                 function renderLineCards(cards) {{
                     sys_state_cache = cards;
                     const map = document.getElementById('map');
-                    document.querySelectorAll('.mini-card').forEach(e => e.remove());
-                    
-                    const now = Date.now();
-                    const fullTimeMs = (1320 / speedIndex) * 60000;
+                    const activeIds = new Set();
 
                     Object.values(cards).forEach(card => {{
                         if(card.status === 'on_line') {{
-                            const elapsed = now - card.line_start_time;
-                            let progress = elapsed / fullTimeMs;
+                            activeIds.add(card.id);
+                            let div = document.getElementById('card_' + card.id);
                             
-                            if (progress >= 1) {{
-                                progress = 1;
-                                socket.emit('auto_move_to_unload', card.id); 
+                            // 若卡片不存在才重新建構 DOM，避免閃爍
+                            if (!div) {{
+                                div = document.createElement('div');
+                                div.id = 'card_' + card.id;
+                                div.className = 'mini-card';
+                                div.style.backgroundColor = card.colorCode || '#333';
+                                div.onclick = (e) => toggleCard(card.id, e);
+                                
+                                let shortLabel = t('comp_lbl');
+                                if (card.part_name && !card.part_name.startsWith('data:image') && card.part_name !== '未填寫') {{
+                                    shortLabel = card.part_name;
+                                }} else if (card.part_no && !card.part_no.startsWith('data:image') && card.part_no !== '未填寫') {{
+                                    shortLabel = card.part_no;
+                                }}
+                                
+                                div.innerHTML = `
+                                    <span class="short-id">${{shortLabel}}</span>
+                                    <div class="details">
+                                        <div class="close-btn" onclick="toggleCard('${{card.id}}', event)">×</div>
+                                        <b>${{t('part_no')}}</b> ${{renderField(card.part_no)}}<br>
+                                        <b>${{t('part_name')}}</b> ${{renderField(card.part_name)}}<br>
+                                        <b>機/櫃:</b> ${{renderField(card.model_no) || '未填寫'}}<br>
+                                        <b>${{t('qty')}}</b> ${{card.qty}}<br>
+                                        <b>${{t('color')}}</b> ${{card.color}}
+                                    </div>
+                                `;
+                                map.appendChild(div);
                             }}
+                        }}
+                    }});
 
-                            const point = track.getPointAtLength(progress * trackLength);
-                            const div = document.createElement('div');
-                            div.className = 'mini-card';
-                            
-                            if (activeCardId === card.id) {{
-                                div.classList.add('expanded');
-                                div.style.left = '50%';
-                                div.style.top = '50%';
-                            }} else {{
-                                const xPercent = (point.x / 800) * 100;
-                                const yPercent = (point.y / 1000) * 100;
-                                div.style.left = xPercent + '%';
-                                div.style.top = yPercent + '%';
-                            }}
-                            
-                            div.style.backgroundColor = card.colorCode || '#333';
-                            div.onclick = (e) => toggleCard(card.id, e);
-                            
-                            let shortLabel = t('comp_lbl');
-                            if (card.part_name && !card.part_name.startsWith('data:image') && card.part_name !== '未填寫') {{
-                                shortLabel = card.part_name;
-                            }} else if (card.part_no && !card.part_no.startsWith('data:image') && card.part_no !== '未填寫') {{
-                                shortLabel = card.part_no;
-                            }}
-                            
-                            div.innerHTML = `
-                                <span class="short-id">${{shortLabel}}</span>
-                                <div class="details">
-                                    <div class="close-btn" onclick="toggleCard('${{card.id}}', event)">×</div>
-                                    <b>${{t('part_no')}}</b> ${{renderField(card.part_no)}}<br>
-                                    <b>${{t('part_name')}}</b> ${{renderField(card.part_name)}}<br>
-                                    <b>機/櫃:</b> ${{renderField(card.model_no) || '未填寫'}}<br>
-                                    <b>${{t('qty')}}</b> ${{card.qty}}<br>
-                                    <b>${{t('color')}}</b> ${{card.color}}
-                                </div>
-                            `;
-                            map.appendChild(div);
+                    // 移除已經下料或刪除的卡片 DOM
+                    document.querySelectorAll('.mini-card').forEach(el => {{
+                        const id = el.id.replace('card_', '');
+                        if (!activeIds.has(id)) {{
+                            el.remove();
+                            if(activeCardId === id) {{ closeAllCards(); }}
                         }}
                     }});
                 }}
+
+                // 優化：建立每秒約 60 幀平滑演算的專屬動畫迴圈
+                function animateLine() {{
+                    const now = Date.now();
+                    const fullTimeMs = (1320 / speedIndex) * 60000;
+
+                    Object.values(sys_state_cache).forEach(card => {{
+                        if(card.status === 'on_line') {{
+                            const div = document.getElementById('card_' + card.id);
+                            if (div) {{
+                                const elapsed = now - card.line_start_time;
+                                let progress = elapsed / fullTimeMs;
+                                
+                                if (progress >= 1) {{
+                                    progress = 1;
+                                    // 確保抵達終點時只觸發一次自動下料
+                                    if (!div.dataset.finished) {{
+                                        div.dataset.finished = 'true';
+                                        socket.emit('auto_move_to_unload', card.id); 
+                                    }}
+                                }}
+
+                                if (activeCardId === card.id) {{
+                                    div.classList.add('expanded');
+                                    div.style.left = '50%';
+                                    div.style.top = '50%';
+                                }} else {{
+                                    div.classList.remove('expanded');
+                                    const point = track.getPointAtLength(progress * trackLength);
+                                    const xPercent = (point.x / 800) * 100;
+                                    const yPercent = (point.y / 1000) * 100;
+                                    div.style.left = xPercent + '%';
+                                    div.style.top = yPercent + '%';
+                                }}
+                            }}
+                        }}
+                    }});
+                    // 呼叫下一幀
+                    requestAnimationFrame(animateLine);
+                }}
+
+                // 啟動動畫迴圈
+                requestAnimationFrame(animateLine);
+
                 setInterval(() => {{ socket.emit('request_sync'); }}, 1000);
             </script>
         </body>
@@ -470,7 +512,6 @@ def create_templates():
                         }});
                         video.srcObject = stream;
                         
-                        // 嘗試開啟自動對焦，解決模糊問題
                         const track = stream.getVideoTracks()[0];
                         const capabilities = track.getCapabilities ? track.getCapabilities() : {{}};
                         if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {{
@@ -499,13 +540,11 @@ def create_templates():
                     canvas.height = video.videoHeight;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                    // 取得原始影片解析度與畫面上 video 元素的顯示尺寸
                     const vw = video.videoWidth;
                     const vh = video.videoHeight;
                     const cw = video.clientWidth;
                     const ch = video.clientHeight;
 
-                    // 計算 object-fit: cover 的縮放比例與邊界偏移
                     const intrinsicAspect = vw / vh;
                     const renderedAspect = cw / ch;
 
@@ -521,13 +560,11 @@ def create_templates():
                         offsetY = (ch - renderedHeight) / 2;
                     }}
 
-                    // 綠色框框 (.scan-box) 在畫面的相對位置與大小 (left: 10%, top: 35%, width: 80%, height: 30%)
                     const boxLeft = cw * 0.10;
                     const boxTop = ch * 0.35;
                     const boxWidth = cw * 0.80;
                     const boxHeight = ch * 0.30;
 
-                    // 將畫面座標精確轉換為原始相機影片像素座標
                     const cropX = (boxLeft - offsetX) / scale;
                     const cropY = (boxTop - offsetY) / scale;
                     const cropW = boxWidth / scale;
