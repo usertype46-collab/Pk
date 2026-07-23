@@ -88,7 +88,7 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台 (完美對照紅色軌跡與站點順序：上料->前處理->水切爐->噴房->烘烤爐->下料)
+        # 1. 模擬器主控台 (噴房與烘烤爐軌跡已向下微調)
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -158,13 +158,13 @@ def create_templates():
             </div>
             
             <div class="factory-map" id="map">
-                <!-- 座標系：800 x 1000，完全對照紅色軌跡圖與正確站點 -->
+                <!-- 座標系：800 x 1000，烘烤爐與噴房軌跡已下修 -->
                 <svg viewBox="0 0 800 1000">
                     <!-- 背景軌跡 (灰色底線) -->
-                    <path d="M 280 320 L 100 320 L 100 100 L 700 100 L 700 350 L 580 350 L 580 200 L 650 200 L 650 400 L 500 400 L 500 250 L 700 250 L 700 900 L 460 900" fill="none" stroke="#e0e0e0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M 280 320 L 100 320 L 100 100 L 700 100 L 700 350 L 580 350 L 580 200 L 650 200 L 650 430 L 500 430 L 500 280 L 700 280 L 700 900 L 460 900" fill="none" stroke="#e0e0e0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
                     
-                    <!-- 動態黑色虛線鏈條 (依序經過：上料 -> 前處理 -> 水切爐 -> 烘烤爐 -> 噴房迴路 -> 下料) -->
-                    <path id="track" d="M 280 320 L 100 320 L 100 100 L 700 100 L 700 350 L 580 350 L 580 200 L 650 200 L 650 400 L 500 400 L 500 250 L 700 250 L 700 900 L 460 900" fill="none" stroke="#222" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
+                    <!-- 動態黑色虛線鏈條 (烘烤爐與噴房區塊已下修) -->
+                    <path id="track" d="M 280 320 L 100 320 L 100 100 L 700 100 L 700 350 L 580 350 L 580 200 L 650 200 L 650 430 L 500 430 L 500 280 L 700 280 L 700 900 L 460 900" fill="none" stroke="#222" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                     
                     <!-- 1. 上料區 -->
                     <rect x="220" y="290" width="120" height="50" fill="#4d94ff" rx="5"/>
@@ -178,13 +178,13 @@ def create_templates():
                     <rect x="580" y="175" width="140" height="50" fill="#4d94ff" rx="5"/>
                     <text x="650" y="208" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map3">水切爐</text>
                     
-                    <!-- 4. 烘烤爐區 -->
-                    <rect x="530" y="225" width="140" height="50" fill="#4d94ff" rx="5"/>
-                    <text x="600" y="258" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map5">烘烤爐</text>
+                    <!-- 4. 烘烤爐區 (已下修) -->
+                    <rect x="530" y="255" width="140" height="50" fill="#4d94ff" rx="5"/>
+                    <text x="600" y="288" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map5">烘烤爐</text>
                     
-                    <!-- 5. 噴房區 -->
-                    <rect x="530" y="375" width="140" height="50" fill="#4d94ff" rx="5"/>
-                    <text x="600" y="408" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map4">噴房</text>
+                    <!-- 5. 噴房區 (已下修) -->
+                    <rect x="530" y="405" width="140" height="50" fill="#4d94ff" rx="5"/>
+                    <text x="600" y="438" fill="white" font-size="24" font-weight="bold" text-anchor="middle" data-i18n="map4">噴房</text>
                     
                     <!-- 6. 下料區 -->
                     <rect x="400" y="875" width="120" height="50" fill="#4d94ff" rx="5"/>
