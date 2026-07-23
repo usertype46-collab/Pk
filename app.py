@@ -499,19 +499,47 @@ def create_templates():
                     canvas.height = video.videoHeight;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                    const cropX = canvas.width * 0.10;
-                    const cropY = canvas.height * 0.35;
-                    const cropW = canvas.width * 0.80;
-                    const cropH = canvas.height * 0.30;
+                    // 取得原始影片解析度與畫面上 video 元素的顯示尺寸
+                    const vw = video.videoWidth;
+                    const vh = video.videoHeight;
+                    const cw = video.clientWidth;
+                    const ch = video.clientHeight;
+
+                    // 計算 object-fit: cover 的縮放比例與邊界偏移
+                    const intrinsicAspect = vw / vh;
+                    const renderedAspect = cw / ch;
+
+                    let scale, offsetX = 0, offsetY = 0;
+
+                    if (intrinsicAspect > renderedAspect) {{
+                        scale = ch / vh;
+                        const renderedWidth = vw * scale;
+                        offsetX = (cw - renderedWidth) / 2;
+                    }} else {{
+                        scale = cw / vw;
+                        const renderedHeight = vh * scale;
+                        offsetY = (ch - renderedHeight) / 2;
+                    }}
+
+                    // 綠色框框 (.scan-box) 在畫面的相對位置與大小 (left: 10%, top: 35%, width: 80%, height: 30%)
+                    const boxLeft = cw * 0.10;
+                    const boxTop = ch * 0.35;
+                    const boxWidth = cw * 0.80;
+                    const boxHeight = ch * 0.30;
+
+                    // 將畫面座標精確轉換為原始相機影片像素座標
+                    const cropX = (boxLeft - offsetX) / scale;
+                    const cropY = (boxTop - offsetY) / scale;
+                    const cropW = boxWidth / scale;
+                    const cropH = boxHeight / scale;
                     
                     const cropCanvas = document.createElement('canvas');
-                    
                     const maxW = 400;
-                    const scale = cropW > maxW ? maxW / cropW : 1;
-                    cropCanvas.width = cropW * scale;
-                    cropCanvas.height = cropH * scale;
+                    const scaleFactor = cropW > maxW ? maxW / cropW : 1;
+                    cropCanvas.width = cropW * scaleFactor;
+                    cropCanvas.height = cropH * scaleFactor;
                     const cropCtx = cropCanvas.getContext('2d');
-                    cropCtx.scale(scale, scale);
+                    cropCtx.scale(scaleFactor, scaleFactor);
                     cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
                     const base64Img = cropCanvas.toDataURL('image/jpeg', 0.85);
