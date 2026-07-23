@@ -93,7 +93,7 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台 (支援滿線動態展示)
+        # 1. 模擬器主控台 (修正背景圖顯示與比例)
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -108,16 +108,18 @@ def create_templates():
                 .status-banner {{ background: #27ae60; color: white; padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; }}
                 
                 .factory-map {{ 
-                    position: relative; width: 100%; max-width: 800px; 
-                    aspect-ratio: 768 / 1024;
-                    /* 修正為新版背景圖 14437.png */
+                    position: relative; width: 100%; max-width: 600px; 
+                    /* 修正為自動適應圖片尺寸 (寬高比依據 14437.png 實際比例調整) */
+                    aspect-ratio: 3 / 4;
                     background-image: url('/14437.png');
-                    background-size: cover;
+                    background-size: 100% 100%;
+                    background-repeat: no-repeat;
                     background-position: center;
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
                     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                    background-color: #e5e5e5;
                 }}
-                .factory-map svg {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }}
+                .factory-map svg {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }}
                 
                 .chain-track {{
                     stroke-dasharray: 10, 8;
@@ -173,7 +175,7 @@ def create_templates():
             </div>
             
             <div class="factory-map" id="map">
-                <svg viewBox="0 0 768 1024">
+                <svg viewBox="0 0 768 1024" preserveAspectRatio="none">
                     <!-- 依據 14437.png 背景重新繪製完美貼合的軌跡路線 -->
                     <path id="track" d="
                         M 380 500 
@@ -597,7 +599,7 @@ def create_templates():
         </html>
         """,
 
-        # 3. 待上料_阿利 (支援帶入掛勾設定並傳送至持續滿線模式)
+        # 3. 待上料_阿利
         'loading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -819,7 +821,7 @@ def load(): return render_template('loading.html')
 @app.route('/unload')
 def unload(): return render_template('unloading.html')
 
-# 改為提供新的背景圖 14437.png
+# 提供背景圖 14437.png 路由
 @app.route('/14437.png')
 def serve_image():
     return send_from_directory('.', '14437.png')
@@ -876,7 +878,6 @@ def send_to_line(data):
         hang, empty, interval, hook = 1, 0, 0, 0
 
     if card_id in sys_state['cards']:
-        # 標記首張首發卡片狀態為上線
         card = sys_state['cards'][card_id]
         card['status'] = 'on_line'
         card['line_start_time'] = int(time.time() * 1000)
@@ -885,7 +886,6 @@ def send_to_line(data):
         card['interval'] = interval
         card['hook'] = hook
 
-        # 設定為當前持續滿線發射的主構件
         sys_state['active_card_id'] = card_id
         with active_card_lock:
             current_active_card_template = card.copy()
@@ -906,15 +906,11 @@ def finish_card(card_id):
         sys_state['cards'][card_id]['finish_time'] = time.strftime("%Y-%m-%d %H:%M:%S", tw_time)
         broadcast_state()
 
-# -------------------------------------------------------------
-# 核心背景服務：實現產線滿線持續自動上料機制 (Continuous Inserter)
-# -------------------------------------------------------------
 def continuous_line_inserter():
     global clone_counter, current_active_card_template
     while True:
         time.sleep(1)
         
-        # 當前有持續上料的構件範本
         if current_active_card_template:
             with active_card_lock:
                 card_template = current_active_card_template.copy()
@@ -927,16 +923,12 @@ def continuous_line_inserter():
             interval = card_template.get('interval', 0)
             total_hooks = max(1, hang + empty + interval)
             
-            # 確保卡片之間有剛好一張卡片大小的視覺間距 (避免全部疊在一起)[span_1](start_span)[span_1](end_span)
-            # 設定最小間距約為產線全程距離的 2%，確保畫面上清晰可見且連貫[span_2](start_span)[span_2](end_span)
             base_line_time_min = 1320.0 / speed_index
             visual_gap_sec = base_line_time_min * 60.0 * 0.02 
             hook_time_sec = total_hooks * (60.0 / speed_index)
             
-            # 選擇兩者中較大的一個，讓密度不會失控[span_3](start_span)[span_3](end_span)
             delay_sec = max(visual_gap_sec, hook_time_sec)
             
-            # 分段 Sleep 確保更換構件時能第一時間中斷並切換新構件
             slept = 0.0
             target_card_id = card_template.get('id')
             while slept < delay_sec:
@@ -945,7 +937,6 @@ def continuous_line_inserter():
                 if not current_active_card_template or current_active_card_template.get('id') != target_card_id:
                     break
                     
-            # 檢查並持續插入同構件複本卡片 (Clone Card)
             if current_active_card_template and current_active_card_template.get('id') == target_card_id:
                 clone_counter += 1
                 now_ms = int(time.time() * 1000)
@@ -960,7 +951,6 @@ def continuous_line_inserter():
                 sys_state['cards'][clone_id] = clone_card
                 broadcast_state()
 
-# 啟動背景滿線持續上料線程
 inserter_thread = threading.Thread(target=continuous_line_inserter, daemon=True)
 inserter_thread.start()
 
