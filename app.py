@@ -1,7 +1,8 @@
 import os
+import time
+import threading
 from flask import Flask, render_template, send_from_directory
 from flask_socketio import SocketIO, emit
-import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -10,11 +11,15 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 sys_state = {
     'line_speed': 1100,
     'cards': {},
-    'active_template': None,   # 用於記錄當前產線正在連續生產的同構件模板
-    'last_spawn_time': 0       # 上次自動插入同構件的時間戳
+    'active_card_id': None  # 紀錄當前持續滿線上料的主構件 ID
 }
 
-# 共用的 i18n 語言包與切換腳本 (包含渲染圖片的輔助函數 renderField)
+# 鎖定機制與全域狀態
+active_card_lock = threading.Lock()
+current_active_card_template = None
+clone_counter = 0
+
+# 共用的 i18n 語言包與切換腳本
 I18N_SCRIPT = """
 <style>
     body { padding-top: 60px !important; }
@@ -32,12 +37,12 @@ I18N_SCRIPT = """
             'ocr_title': '📸 拍照系統', 'ocr_tip': '請將目標對準綠色框框內', 'btn_pic': '📸 拍照儲存', 'btn_close': '關閉',
             'ali_title': '🏗️ 待上料_阿利', 'line_sync': '⬇️ [流水線_上線] 同步傳送區 ⬇️',
             'lbl_hang': '掛:', 'lbl_empty': '空:', 'lbl_space': '間隔:', 'lbl_hook': '接勾:',
-            'btn_to_line': '➕ 同步傳送至流水線並計時', 'calcing': '計算上線時間...',
+            'btn_to_line': '🚀 上線並開始持續滿線插入', 'calcing': '計算上線時間...',
             'unload_title': '✅ 下料與完成紀錄區', 'unload_wait': '待下料區 (模擬器跑完自動傳送至此)',
             'done_list': '歷史完成紀錄', 'btn_done': '✅ 點擊完成',
             'lang_btn': '🇻🇳 切換為越文 (Việt)', 'part_no': '料號:', 'part_name': '品名:', 'qty': '數量:', 'color': '顏色:',
             'est_time': '預估佔線時間: ', 'hrs': ' 小時 ', 'done_time': '完成時間: ', 'alert_del': '⚠️ 確定要刪除這筆資料嗎？',
-            'comp_lbl': '構件'
+            'comp_lbl': '構件', 'full_line_status': '⚡ 滿線模式持續上料中: ', 'none_loading': '暫無 (等待上料)'
         },
         'vi': {
             'sim_title': '🏭 Trình mô phỏng chuyền sơn', 'speed': 'Tốc độ chuyền: ', 'time_lbl': 'Thời gian 1 vòng: ', 'mins': ' Phút',
@@ -47,12 +52,12 @@ I18N_SCRIPT = """
             'ocr_title': '📸 Hệ thống chụp', 'ocr_tip': 'Căn chỉnh văn bản vào khung xanh', 'btn_pic': '📸 Chụp & Lưu', 'btn_close': 'Đóng',
             'ali_title': '🏗️ Chờ lên hàng_Ali', 'line_sync': '⬇️ [Dây chuyền] Truyền đồng bộ ⬇️',
             'lbl_hang': 'Treo:', 'lbl_empty': 'Trống:', 'lbl_space': 'Cách:', 'lbl_hook': 'Móc:',
-            'btn_to_line': '➕ Chuyển lên chuyền & Bắt đầu tính giờ', 'calcing': 'Đang tính...',
+            'btn_to_line': '🚀 Lên chuyền & Nạp liên tục', 'calcing': 'Đang tính...',
             'unload_title': '✅ Khu vực xuống hàng & Lịch sử', 'unload_wait': 'Khu vực chờ xuống hàng',
             'done_list': 'Lịch sử hoàn thành', 'btn_done': '✅ Hoàn thành',
             'lang_btn': '🇹🇼 Đổi ngôn ngữ (中文)', 'part_no': 'Mã LK:', 'part_name': 'Tên LK:', 'qty': 'SL:', 'color': 'Màu:',
             'est_time': 'TG dự kiến: ', 'hrs': ' Giờ ', 'done_time': 'Thời gian HT: ', 'alert_del': '⚠️ Xác nhận xóa dữ liệu này?',
-            'comp_lbl': 'Cấu kiện'
+            'comp_lbl': 'Cấu kiện', 'full_line_status': '⚡ Đang nạp hàng liên tục: ', 'none_loading': 'Chưa có'
         }
     };
     let currentLang = localStorage.getItem('appLang') || 'zh';
@@ -88,7 +93,7 @@ def create_templates():
         os.makedirs('templates')
 
     html_files = {
-        # 1. 模擬器主控台 (已整合圖片背景與精確軌跡)
+        # 1. 模擬器主控台 (支援滿線動態展示)
         'simulator.html': f"""
         <!DOCTYPE html>
         <html>
@@ -100,6 +105,7 @@ def create_templates():
                 body {{ font-family: '微軟正黑體', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }}
                 .dashboard {{ background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
                 .speed-ctrl button {{ font-size: 18px; padding: 5px 15px; margin: 0 10px; cursor: pointer; }}
+                .status-banner {{ background: #27ae60; color: white; padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; }}
                 
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 800px; 
@@ -160,6 +166,9 @@ def create_templates():
                     <button onclick="changeSpeed(100); event.stopPropagation();">+100</button>
                     <br><small><span data-i18n="time_lbl">跑完全程所需時間: </span><span id="total-time" style="font-weight:bold;"></span><span data-i18n="mins"> 分鐘</span></small>
                 </div>
+                <div class="status-banner" id="active-banner">
+                    <span><span data-i18n="full_line_status">⚡ 滿線模式持續上料中: </span><span id="active-card-name" style="text-decoration:underline;">暫無</span></span>
+                </div>
             </div>
             
             <div class="factory-map" id="map">
@@ -203,11 +212,15 @@ def create_templates():
                 const trackLength = track.getTotalLength();
                 let speedIndex = 11;
                 let activeCardId = null; 
+                let sys_state_cache = {{cards:{{}}, active_card_id: null}};
                 
                 socket.on('update_state', (state) => {{
                     document.getElementById('current-speed').innerText = state.line_speed;
                     speedIndex = state.line_speed / 100;
                     document.getElementById('total-time').innerText = Math.round(1320 / speedIndex);
+                    
+                    sys_state_cache = state;
+                    updateActiveBanner();
                     renderLineCards(state.cards);
                 }});
 
@@ -217,21 +230,33 @@ def create_templates():
                     event.stopPropagation(); 
                     activeCardId = activeCardId === id ? null : id;
                     overlay.style.display = activeCardId ? 'block' : 'none';
-                    renderLineCards(sys_state_cache); 
+                    renderLineCards(sys_state_cache.cards); 
                 }}
                 
                 function closeAllCards() {{ 
                     activeCardId = null; 
                     overlay.style.display = 'none';
-                    renderLineCards(sys_state_cache); 
+                    renderLineCards(sys_state_cache.cards); 
                 }}
-                
-                let sys_state_cache = {{}};
 
-                function renderDynamic() {{ renderLineCards(sys_state_cache); }}
+                function updateActiveBanner() {{
+                    const activeId = sys_state_cache.active_card_id;
+                    const el = document.getElementById('active-card-name');
+                    if (activeId && sys_state_cache.cards[activeId]) {{
+                        const c = sys_state_cache.cards[activeId];
+                        let name = c.part_name && !c.part_name.startsWith('data:image') ? c.part_name : c.part_no;
+                        el.innerHTML = `${{renderField(name)}} (${{c.color}})`;
+                    }} else {{
+                        el.innerHTML = t('none_loading');
+                    }}
+                }}
+
+                function renderDynamic() {{ 
+                    updateActiveBanner();
+                    renderLineCards(sys_state_cache.cards); 
+                }}
 
                 function renderLineCards(cards) {{
-                    sys_state_cache = cards;
                     const map = document.getElementById('map');
                     document.querySelectorAll('.mini-card').forEach(e => e.remove());
                     
@@ -580,7 +605,7 @@ def create_templates():
         </html>
         """,
 
-        # 3. 待上料_阿利 (修正下拉式選單每次被 socket 重新渲染時重設的問題)
+        # 3. 待上料_阿利 (支援帶入掛勾設定並傳送至持續滿線模式)
         'loading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -614,42 +639,27 @@ def create_templates():
 
                 function renderDynamic() {{
                     const list = document.getElementById('loading-list');
-                    
-                    // 收集目前頁面上現有的資料卡片 ID 與當前各下拉選單的值，避免因為背景同步重新渲染而把使用者的點選彈回預設值
-                    const existingCardIds = Array.from(list.querySelectorAll('.card')).map(el => el.dataset.cardId);
-                    const incomingLoadingCards = Object.values(sys_state_cache.cards).filter(c => c.status === 'loading');
-                    const incomingIds = incomingLoadingCards.map(c => c.id);
-
-                    // 若卡片清單完全一致，則僅更新文字與時間，不重構 DOM，徹底解決下拉選單閃爍與彈回的問題
-                    const isSameStructure = existingCardIds.length === incomingIds.length && existingCardIds.every((id, idx) => id === incomingIds[idx]);
-
-                    if (isSameStructure) {{
-                        incomingLoadingCards.forEach(card => {{
-                            calcTime(card.id, card.qty);
-                        }});
-                        return;
-                    }}
-
                     list.innerHTML = '';
                     
-                    incomingLoadingCards.forEach(card => {{
-                        const div = document.createElement('div');
-                        div.className = 'card';
-                        div.dataset.cardId = card.id;
-                        div.style.borderColor = card.colorCode;
-                        div.innerHTML = `
-                            <strong>${{t('part_no')}} ${{renderField(card.part_no)}} | ${{t('part_name')}} ${{renderField(card.part_name)}} | ${{card.model_no ? '機/櫃: ' + renderField(card.model_no) + ' | ' : ''}}${{t('qty')}} ${{card.qty}} | ${{t('color')}} ${{card.color}}</strong>
-                            <div class="grid-form">
-                                <label>${{t('lbl_hang')}} <select id="hang_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})"><option value="1">1</option><option value="2">2</option></select></label>
-                                <label>${{t('lbl_empty')}} <select id="empty_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
-                                <label>${{t('lbl_space')}} <select id="interval_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
-                                <label>${{t('lbl_hook')}} <select id="hook_${{card.id}}">${{genOptions(10)}}</select></label>
-                            </div>
-                            <div class="time-calc" id="time_${{card.id}}">${{t('calcing')}}</div>
-                            <button class="btn-line" onclick="sendToLine('${{card.id}}')">${{t('btn_to_line')}}</button>
-                        `;
-                        list.appendChild(div);
-                        setTimeout(() => calcTime(card.id, card.qty), 100);
+                    Object.values(sys_state_cache.cards).forEach(card => {{
+                        if(card.status === 'loading') {{
+                            const div = document.createElement('div');
+                            div.className = 'card';
+                            div.style.borderColor = card.colorCode;
+                            div.innerHTML = `
+                                <strong>${{t('part_no')}} ${{renderField(card.part_no)}} | ${{t('part_name')}} ${{renderField(card.part_name)}} | ${{card.model_no ? '機/櫃: ' + renderField(card.model_no) + ' | ' : ''}}${{t('qty')}} ${{card.qty}} | ${{t('color')}} ${{card.color}}</strong>
+                                <div class="grid-form">
+                                    <label>${{t('lbl_hang')}} <select id="hang_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})"><option value="1">1</option><option value="2">2</option></select></label>
+                                    <label>${{t('lbl_empty')}} <select id="empty_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
+                                    <label>${{t('lbl_space')}} <select id="interval_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
+                                    <label>${{t('lbl_hook')}} <select id="hook_${{card.id}}">${{genOptions(10)}}</select></label>
+                                </div>
+                                <div class="time-calc" id="time_${{card.id}}">${{t('calcing')}}</div>
+                                <button class="btn-line" onclick="sendToLine('${{card.id}}')">${{t('btn_to_line')}}</button>
+                            `;
+                            list.appendChild(div);
+                            setTimeout(() => calcTime(card.id, card.qty), 100);
+                        }}
                     }});
                 }}
 
@@ -666,27 +676,31 @@ def create_templates():
                 }}
 
                 function calcTime(id, qty) {{
-                    const hangEl = document.getElementById('hang_' + id);
-                    const emptyEl = document.getElementById('empty_' + id);
-                    const intervalEl = document.getElementById('interval_' + id);
-                    
-                    if (!hangEl || !emptyEl || !intervalEl) return;
-
-                    const hang = parseFloat(hangEl.value) || 0;
-                    const empty = parseFloat(emptyEl.value) || 0;
-                    const interval = parseFloat(intervalEl.value) || 0;
+                    const hang = parseFloat(document.getElementById('hang_' + id).value) || 0;
+                    const empty = parseFloat(document.getElementById('empty_' + id).value) || 0;
+                    const interval = parseFloat(document.getElementById('interval_' + id).value) || 0;
                     const speedIndex = currentSpeed / 100;
                     
                     const totalMins = Math.round(((hang + empty + interval) * qty) / speedIndex);
                     const h = Math.floor(totalMins / 60);
                     const m = totalMins % 60;
-                    const timeEl = document.getElementById('time_' + id);
-                    if (timeEl) {{
-                        timeEl.innerText = `${{t('est_time')}} ${{h}} ${{t('hrs')}} ${{m}} ${{t('mins')}}`;
-                    }}
+                    document.getElementById('time_' + id).innerText = `${{t('est_time')}} ${{h}} ${{t('hrs')}} ${{m}} ${{t('mins')}}`;
                 }}
 
-                function sendToLine(id) {{ socket.emit('send_to_line', id); }}
+                function sendToLine(id) {{
+                    const hang = parseInt(document.getElementById('hang_' + id).value) || 1;
+                    const empty = parseInt(document.getElementById('empty_' + id).value) || 0;
+                    const interval = parseInt(document.getElementById('interval_' + id).value) || 0;
+                    const hook = parseInt(document.getElementById('hook_' + id).value) || 0;
+
+                    socket.emit('send_to_line', {{
+                        id: id,
+                        hang: hang,
+                        empty: empty,
+                        interval: interval,
+                        hook: hook
+                    }}); 
+                }}
             </script>
         </body>
         </html>
@@ -817,52 +831,7 @@ def unload(): return render_template('unloading.html')
 def serve_image():
     return send_from_directory('.', '14436.png')
 
-# 自動插入同構件卡片至產線邏輯
-def check_auto_spawn():
-    if not sys_state.get('active_template'):
-        return
-    
-    now_ms = int(time.time() * 1000)
-    speed_index = sys_state['line_speed'] / 100
-    full_time_ms = (1320 / speed_index) * 60000
-    
-    # 計算間距時間 (根據轉速動態調整產線卡片間距)
-    spawn_interval_ms = max(4000, int(18000 / speed_index))
-    
-    on_line_cards = [c for c in sys_state['cards'].values() if c['status'] == 'on_line']
-    if not on_line_cards:
-        sys_state['active_template'] = None
-        return
-    
-    # 檢查起點附近是否已經有卡片 (progress < 0.05 代表剛上線區塊)
-    near_start = False
-    for c in on_line_cards:
-        elapsed = now_ms - c.get('line_start_time', now_ms)
-        progress = elapsed / full_time_ms
-        if progress < 0.05:
-            near_start = True
-            break
-    
-    # 若起點空間足夠且距離上次生成時間已達間距，自動插入同構件卡片
-    if not near_start and (now_ms - sys_state.get('last_spawn_time', 0) > spawn_interval_ms):
-        tmpl = sys_state['active_template']
-        new_id = str(int(time.time() * 1000000))
-        new_card = {
-            'id': new_id,
-            'color': tmpl['color'],
-            'colorCode': tmpl['colorCode'],
-            'part_no': tmpl['part_no'],
-            'part_name': tmpl['part_name'],
-            'model_no': tmpl['model_no'],
-            'qty': tmpl['qty'],
-            'status': 'on_line',
-            'line_start_time': now_ms
-        }
-        sys_state['cards'][new_id] = new_card
-        sys_state['last_spawn_time'] = now_ms
-
 def broadcast_state():
-    check_auto_spawn()
     socketio.emit('update_state', sys_state)
 
 @socketio.on('connect')
@@ -871,7 +840,7 @@ def handle_connect():
 
 @socketio.on('request_sync')
 def handle_sync():
-    broadcast_state()
+    emit('update_state', sys_state)
 
 @socketio.on('change_speed')
 def handle_speed(val):
@@ -899,22 +868,35 @@ def change_status(data):
         broadcast_state()
 
 @socketio.on('send_to_line')
-def send_to_line(card_id):
+def send_to_line(data):
+    """將待上料構件上線，並註冊為全域當前持續滿線發射範本"""
+    global current_active_card_template
+    
+    if isinstance(data, dict):
+        card_id = data.get('id')
+        hang = data.get('hang', 1)
+        empty = data.get('empty', 0)
+        interval = data.get('interval', 0)
+        hook = data.get('hook', 0)
+    else:
+        card_id = str(data)
+        hang, empty, interval, hook = 1, 0, 0, 0
+
     if card_id in sys_state['cards']:
+        # 標記首張首發卡片狀態為上線
         card = sys_state['cards'][card_id]
         card['status'] = 'on_line'
-        card['line_start_time'] = int(time.time() * 1000) 
-        
-        # 設定為當前上線構件的模板，用於後續自動插入同構件卡片，直到下個構件上線
-        sys_state['active_template'] = {
-            'color': card['color'],
-            'colorCode': card['colorCode'],
-            'part_no': card['part_no'],
-            'part_name': card['part_name'],
-            'model_no': card['model_no'],
-            'qty': card['qty']
-        }
-        sys_state['last_spawn_time'] = card['line_start_time']
+        card['line_start_time'] = int(time.time() * 1000)
+        card['hang'] = hang
+        card['empty'] = empty
+        card['interval'] = interval
+        card['hook'] = hook
+
+        # 設定為當前持續滿線發射的主構件
+        sys_state['active_card_id'] = card_id
+        with active_card_lock:
+            current_active_card_template = card.copy()
+            
         broadcast_state()
 
 @socketio.on('auto_move_to_unload')
@@ -930,6 +912,58 @@ def finish_card(card_id):
         tw_time = time.gmtime(time.time() + 8 * 3600)
         sys_state['cards'][card_id]['finish_time'] = time.strftime("%Y-%m-%d %H:%M:%S", tw_time)
         broadcast_state()
+
+# -------------------------------------------------------------
+# 核心背景服務：實現產線滿線持續自動上料機制 (Continuous Inserter)
+# -------------------------------------------------------------
+def continuous_line_inserter():
+    global clone_counter, current_active_card_template
+    while True:
+        time.sleep(1)
+        
+        # 當前有持續上料的構件範本
+        if current_active_card_template:
+            with active_card_lock:
+                card_template = current_active_card_template.copy()
+            
+            speed = sys_state.get('line_speed', 1100)
+            speed_index = max(1.0, speed / 100.0)
+            
+            hang = card_template.get('hang', 1)
+            empty = card_template.get('empty', 0)
+            interval = card_template.get('interval', 0)
+            total_hooks = max(1, hang + empty + interval)
+            
+            # 計算掛勾進料間隔秒數 (每個掛勾基本時間 = 60s / speed_index)
+            delay_sec = max(2.0, total_hooks * (60.0 / speed_index))
+            
+            # 分段 Sleep 確保更換構件時能第一時間中斷並切換新構件
+            slept = 0.0
+            target_card_id = card_template.get('id')
+            while slept < delay_sec:
+                time.sleep(0.5)
+                slept += 0.5
+                if not current_active_card_template or current_active_card_template.get('id') != target_card_id:
+                    break
+                    
+            # 檢查並持續插入同構件複本卡片 (Clone Card)
+            if current_active_card_template and current_active_card_template.get('id') == target_card_id:
+                clone_counter += 1
+                now_ms = int(time.time() * 1000)
+                clone_id = f"{target_card_id}_clone_{clone_counter}_{now_ms}"
+                
+                clone_card = card_template.copy()
+                clone_card['id'] = clone_id
+                clone_card['status'] = 'on_line'
+                clone_card['line_start_time'] = now_ms
+                clone_card['is_clone'] = True
+                
+                sys_state['cards'][clone_id] = clone_card
+                broadcast_state()
+
+# 啟動背景滿線持續上料線程
+inserter_thread = threading.Thread(target=continuous_line_inserter, daemon=True)
+inserter_thread.start()
 
 if __name__ == '__main__':
     import shutil
