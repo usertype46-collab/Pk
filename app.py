@@ -9,7 +9,9 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 sys_state = {
     'line_speed': 1100,
-    'cards': {} 
+    'cards': {},
+    'active_template': None,   # 用於記錄當前產線正在連續生產的同構件模板
+    'last_spawn_time': 0       # 上次自動插入同構件的時間戳
 }
 
 # 共用的 i18n 語言包與切換腳本 (包含渲染圖片的輔助函數 renderField)
@@ -101,7 +103,7 @@ def create_templates():
                 
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 800px; 
-                    aspect-ratio: 768 / 1024; /* 根據圖片比例設定 */
+                    aspect-ratio: 768 / 1024;
                     background-image: url('/14436.png');
                     background-size: cover;
                     background-position: center;
@@ -110,7 +112,6 @@ def create_templates():
                 }}
                 .factory-map svg {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }}
                 
-                /* 半透明虛線軌跡，協助開發與視覺引導 */
                 .chain-track {{
                     stroke-dasharray: 10, 8;
                     animation: moveChain 1.5s linear infinite;
@@ -163,7 +164,6 @@ def create_templates():
             
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 768 1024">
-                    <!-- 配合 14436.png 繪製的複雜軌跡線 (從上料到下料) -->
                     <path id="track" d="
                         M 330 750 
                         L 420 750 
@@ -294,7 +294,7 @@ def create_templates():
         </html>
         """,
 
-        # 2. 現場待料區 (無改動)
+        # 2. 現場待料區
         'waiting.html': f"""
         <!DOCTYPE html>
         <html>
@@ -580,7 +580,7 @@ def create_templates():
         </html>
         """,
 
-        # 3. 待上料_阿利 (無改動)
+        # 3. 待上料_阿利
         'loading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -668,7 +668,7 @@ def create_templates():
         </html>
         """,
 
-        # 4. 下料_完成 (無改動)
+        # 4. 下料_完成
         'unloading.html': f"""
         <!DOCTYPE html>
         <html>
@@ -789,12 +789,56 @@ def load(): return render_template('loading.html')
 @app.route('/unload')
 def unload(): return render_template('unloading.html')
 
-# 新增：讓 Flask 直接返回同一目錄下的圖片檔案
 @app.route('/14436.png')
 def serve_image():
     return send_from_directory('.', '14436.png')
 
+# 自動插入同構件卡片至產線邏輯
+def check_auto_spawn():
+    if not sys_state.get('active_template'):
+        return
+    
+    now_ms = int(time.time() * 1000)
+    speed_index = sys_state['line_speed'] / 100
+    full_time_ms = (1320 / speed_index) * 60000
+    
+    # 計算間距時間 (根據轉速動態調整產線卡片間距)
+    spawn_interval_ms = max(4000, int(18000 / speed_index))
+    
+    on_line_cards = [c for c in sys_state['cards'].values() if c['status'] == 'on_line']
+    if not on_line_cards:
+        sys_state['active_template'] = None
+        return
+    
+    # 檢查起點附近是否已經有卡片 (progress < 0.05 代表剛上線區塊)
+    near_start = False
+    for c in on_line_cards:
+        elapsed = now_ms - c.get('line_start_time', now_ms)
+        progress = elapsed / full_time_ms
+        if progress < 0.05:
+            near_start = True
+            break
+    
+    # 若起點空間足夠且距離上次生成時間已達間距，自動插入同構件卡片
+    if not near_start and (now_ms - sys_state.get('last_spawn_time', 0) > spawn_interval_ms):
+        tmpl = sys_state['active_template']
+        new_id = str(int(time.time() * 1000000))
+        new_card = {
+            'id': new_id,
+            'color': tmpl['color'],
+            'colorCode': tmpl['colorCode'],
+            'part_no': tmpl['part_no'],
+            'part_name': tmpl['part_name'],
+            'model_no': tmpl['model_no'],
+            'qty': tmpl['qty'],
+            'status': 'on_line',
+            'line_start_time': now_ms
+        }
+        sys_state['cards'][new_id] = new_card
+        sys_state['last_spawn_time'] = now_ms
+
 def broadcast_state():
+    check_auto_spawn()
     socketio.emit('update_state', sys_state)
 
 @socketio.on('connect')
@@ -803,7 +847,7 @@ def handle_connect():
 
 @socketio.on('request_sync')
 def handle_sync():
-    emit('update_state', sys_state)
+    broadcast_state()
 
 @socketio.on('change_speed')
 def handle_speed(val):
@@ -833,8 +877,20 @@ def change_status(data):
 @socketio.on('send_to_line')
 def send_to_line(card_id):
     if card_id in sys_state['cards']:
-        sys_state['cards'][card_id]['status'] = 'on_line'
-        sys_state['cards'][card_id]['line_start_time'] = int(time.time() * 1000) 
+        card = sys_state['cards'][card_id]
+        card['status'] = 'on_line'
+        card['line_start_time'] = int(time.time() * 1000) 
+        
+        # 設定為當前上線構件的模板，用於後續自動插入同構件卡片，直到下個構件上線
+        sys_state['active_template'] = {
+            'color': card['color'],
+            'colorCode': card['colorCode'],
+            'part_no': card['part_no'],
+            'part_name': card['part_name'],
+            'model_no': card['model_no'],
+            'qty': card['qty']
+        }
+        sys_state['last_spawn_time'] = card['line_start_time']
         broadcast_state()
 
 @socketio.on('auto_move_to_unload')
