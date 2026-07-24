@@ -176,22 +176,22 @@ def create_templates():
                     <path id="track" d="
                         M 458 1180
                         L 458 280
-                        L 91 280
-                        L 91 98
-                        L 931 98
-                        L 931 185
-                        L 580 185
-                        L 580 270
-                        L 931 270
-                        L 931 350
-                        L 580 350
-                        L 580 430
-                        L 931 430
-                        L 931 510
-                        L 580 510
+                        L 121 280
+                        L 121 98
+                        L 921 98
+                        L 921 205
+                        L 580 205
+                        L 580 280
+                        L 921 280
+                        L 921 370
+                        L 580 370
+                        L 580 310
+                        L 921 310
+                        L 921 530
+                        L 580 530
                         L 580 590
-                        L 931 590
-                        L 931 1180
+                        L 921 590
+                        L 921 1180
                         L 458 1180 Z" 
                         fill="none" stroke="#e74c3c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                 </svg>
