@@ -1,22 +1,22 @@
-import os #[span_0](start_span)[span_0](end_span)
-import time #[span_1](start_span)[span_1](end_span)
-import threading #[span_2](start_span)[span_2](end_span)
-from flask import Flask, render_template, send_from_directory #[span_3](start_span)[span_3](end_span)
-from flask_socketio import SocketIO, emit #[span_4](start_span)[span_4](end_span)
+import os
+import time
+import threading
+from flask import Flask, render_template, send_from_directory
+from flask_socketio import SocketIO, emit
 
-app = Flask(__name__) #[span_5](start_span)[span_5](end_span)
-app.config['SECRET_KEY'] = 'secret!' #[span_6](start_span)[span_6](end_span)
-socketio = SocketIO(app, cors_allowed_origins="*") #[span_7](start_span)[span_7](end_span)
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 sys_state = {
     'line_speed': 1100,
     'cards': {},
     'active_card_id': None
-} #[span_8](start_span)[span_8](end_span)
+}
 
-active_card_lock = threading.Lock() #[span_9](start_span)[span_9](end_span)
-current_active_card_template = None #[span_10](start_span)[span_10](end_span)
-clone_counter = 0 #[span_11](start_span)[span_11](end_span)
+active_card_lock = threading.Lock()
+current_active_card_template = None
+clone_counter = 0
 
 I18N_SCRIPT = """
 <style>
@@ -83,7 +83,7 @@ I18N_SCRIPT = """
     }
     window.addEventListener('DOMContentLoaded', applyLang);
 </script>
-""" #[span_12](start_span)[span_12](end_span)
+"""
 
 def create_templates():
     if not os.path.exists('templates'):
@@ -171,44 +171,48 @@ def create_templates():
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 768 1024" preserveAspectRatio="none">
                     <!--
-                    【產線路線圖座標詳細解析】 (基於 14436.png 真實空間比例與透視)
-                    * M 280 520 : 起點在上料正中央
-                    * L 280 280 : 向上直行
-                    * L 100 280 : 向左轉向圓形浸泡槽
-                    * L 100 100 : 向上穿過圓形浸泡槽
-                    * L 700 100 : 向右橫跨前處理區 (三個大型方形槽)
-                    * L 700 180 : 向下直行，準備進入水切爐
-                    * L 450 180 : 向左進入並穿過水切爐
-                    * L 450 260 : 向下直行
-                    * L 700 260 : 向右迴轉
-                    * L 700 360 : 向下直行，準備進入烘烤爐
-                    * L 450 360 : 向左進入並穿過烘烤爐
-                    * L 450 440 : 向下直行出爐
-                    * L 720 440 : 向右移動至廠房最右側
-                    * L 720 700 : 沿右側牆面直線向下，進入大型噴房右側
-                    * L 180 700 : 完全橫穿噴房內部，由噴房最左側穿出
-                    * L 180 880 : 沿廠房最左側直線向下
-                    * L 450 880 : 向右轉向，抵達終點在下料正中央 (雙機械手臂卸載區)
+                    【產線路線圖座標詳細解析】 (基於 14436.png 實景比例與 1922ccda 紅線軌跡完美對照修正)
+                    * M 320 500 : 起點在上料正中央
+                    * L 320 280 : 向上直行
+                    * L 110 280 : 向左轉向圓形浸泡槽
+                    * L 110 110 : 向上穿過圓形浸泡槽
+                    * L 680 110 : 向右橫跨前處理區 (三個大型方形槽)
+                    * L 680 190 : 向下直行，準備進入水切爐
+                    * L 450 190 : 向左進入並穿過水切爐
+                    * L 450 270 : 向下直行
+                    * L 680 270 : 向右迴轉
+                    * L 680 370 : 向下直行，準備進入烘烤爐
+                    * L 450 370 : 向左進入並穿過烘烤爐
+                    * L 450 450 : 向下直行出爐
+                    * L 720 450 : 向右移動至廠房最右側
+                    * L 720 660 : 沿右側牆面直線向下，進入大型噴房右側
+                    * L 180 660 : 完全橫穿噴房內部，由噴房最左側穿出
+                    * L 180 800 : 沿廠房最左側直線向下
+                    * L 720 800 : 向右橫跨廠房底部至右下角
+                    * L 720 900 : 在右下角向下迴轉
+                    * L 280 900 : 向左直線前進，抵達終點在下料 (雙機械手臂) 正中央
                     -->
                     <path id="track" d="
-                        M 280 520 
-                        L 280 280 
-                        L 100 280 
-                        L 100 100 
-                        L 700 100 
-                        L 700 180 
-                        L 450 180 
-                        L 450 260 
-                        L 700 260 
-                        L 700 360 
-                        L 450 360 
-                        L 450 440 
-                        L 720 440 
-                        L 720 700 
-                        L 180 700 
-                        L 180 880 
-                        L 450 880" 
-                        fill="none" stroke="#f1c40f" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
+                        M 320 500 
+                        L 320 280 
+                        L 110 280 
+                        L 110 110 
+                        L 680 110 
+                        L 680 190 
+                        L 450 190 
+                        L 450 270 
+                        L 680 270 
+                        L 680 370 
+                        L 450 370 
+                        L 450 450 
+                        L 720 450 
+                        L 720 660 
+                        L 180 660 
+                        L 180 800 
+                        L 720 800 
+                        L 720 900 
+                        L 280 900" 
+                        fill="none" stroke="#e74c3c" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                 </svg>
             </div>
 
@@ -791,13 +795,13 @@ def create_templates():
                 f.write(content)
 
 @app.route('/')
-def index(): return render_template('simulator.html') #[span_13](start_span)[span_13](end_span)
+def index(): return render_template('simulator.html')
 @app.route('/wait')
-def wait(): return render_template('waiting.html') #[span_14](start_span)[span_14](end_span)
+def wait(): return render_template('waiting.html')
 @app.route('/load')
-def load(): return render_template('loading.html') #[span_15](start_span)[span_15](end_span)
+def load(): return render_template('loading.html')
 @app.route('/unload')
-def unload(): return render_template('unloading.html') #[span_16](start_span)[span_16](end_span)
+def unload(): return render_template('unloading.html')
 
 # 路由更新為對應 14436.png 拓樸實景圖以精確顯示連線
 @app.route('/14436.png')
@@ -805,44 +809,44 @@ def serve_image():
     return send_from_directory('.', '14436.png')
 
 def broadcast_state():
-    socketio.emit('update_state', sys_state) #[span_17](start_span)[span_17](end_span)
+    socketio.emit('update_state', sys_state)
 
 @socketio.on('connect')
 def handle_connect():
-    emit('update_state', sys_state) #[span_18](start_span)[span_18](end_span)
+    emit('update_state', sys_state)
 
 @socketio.on('request_sync')
 def handle_sync():
-    emit('update_state', sys_state) #[span_19](start_span)[span_19](end_span)
+    emit('update_state', sys_state)
 
 @socketio.on('change_speed')
 def handle_speed(val):
-    sys_state['line_speed'] += val #[span_20](start_span)[span_20](end_span)
-    if sys_state['line_speed'] < 900: sys_state['line_speed'] = 900 #[span_21](start_span)[span_21](end_span)
-    if sys_state['line_speed'] > 1400: sys_state['line_speed'] = 1400 #[span_22](start_span)[span_22](end_span)
-    broadcast_state() #[span_23](start_span)[span_23](end_span)
+    sys_state['line_speed'] += val
+    if sys_state['line_speed'] < 900: sys_state['line_speed'] = 900
+    if sys_state['line_speed'] > 1400: sys_state['line_speed'] = 1400
+    broadcast_state()
 
 @socketio.on('add_card')
 def add_card(data):
-    sys_state['cards'][data['id']] = data #[span_24](start_span)[span_24](end_span)
-    broadcast_state() #[span_25](start_span)[span_25](end_span)
+    sys_state['cards'][data['id']] = data
+    broadcast_state()
 
 @socketio.on('delete_card')
 def delete_card(card_id):
-    if card_id in sys_state['cards']: #[span_26](start_span)[span_26](end_span)
-        del sys_state['cards'][card_id] #[span_27](start_span)[span_27](end_span)
-        broadcast_state() #[span_28](start_span)[span_28](end_span)
+    if card_id in sys_state['cards']:
+        del sys_state['cards'][card_id]
+        broadcast_state()
 
 @socketio.on('change_status')
 def change_status(data):
-    card_id = data['id'] #[span_29](start_span)[span_29](end_span)
-    if card_id in sys_state['cards']: #[span_30](start_span)[span_30](end_span)
-        sys_state['cards'][card_id]['status'] = data['status'] #[span_31](start_span)[span_31](end_span)
-        broadcast_state() #[span_32](start_span)[span_32](end_span)
+    card_id = data['id']
+    if card_id in sys_state['cards']:
+        sys_state['cards'][card_id]['status'] = data['status']
+        broadcast_state()
 
 @socketio.on('send_to_line')
 def send_to_line(data):
-    global current_active_card_template #[span_33](start_span)[span_33](end_span)
+    global current_active_card_template
     if isinstance(data, dict):
         card_id = data.get('id')
         hang = data.get('hang', 1)
@@ -853,86 +857,86 @@ def send_to_line(data):
         card_id = str(data)
         hang, empty, interval, hook = 1, 0, 0, 0
 
-    if card_id in sys_state['cards']: #[span_34](start_span)[span_34](end_span)
-        card = sys_state['cards'][card_id] #[span_35](start_span)[span_35](end_span)
-        card['status'] = 'on_line' #[span_36](start_span)[span_36](end_span)
-        card['line_start_time'] = int(time.time() * 1000) #[span_37](start_span)[span_37](end_span)
-        card['hang'] = hang #[span_38](start_span)[span_38](end_span)
-        card['empty'] = empty #[span_39](start_span)[span_39](end_span)
-        card['interval'] = interval #[span_40](start_span)[span_40](end_span)
-        card['hook'] = hook #[span_41](start_span)[span_41](end_span)
+    if card_id in sys_state['cards']:
+        card = sys_state['cards'][card_id]
+        card['status'] = 'on_line'
+        card['line_start_time'] = int(time.time() * 1000)
+        card['hang'] = hang
+        card['empty'] = empty
+        card['interval'] = interval
+        card['hook'] = hook
 
-        sys_state['active_card_id'] = card_id #[span_42](start_span)[span_42](end_span)
-        with active_card_lock: #[span_43](start_span)[span_43](end_span)
-            current_active_card_template = card.copy() #[span_44](start_span)[span_44](end_span)
+        sys_state['active_card_id'] = card_id
+        with active_card_lock:
+            current_active_card_template = card.copy()
             
-        broadcast_state() #[span_45](start_span)[span_45](end_span)
+        broadcast_state()
 
 @socketio.on('auto_move_to_unload')
 def auto_unload(card_id):
-    if card_id in sys_state['cards'] and sys_state['cards'][card_id]['status'] == 'on_line': #[span_46](start_span)[span_46](end_span)
-        sys_state['cards'][card_id]['status'] = 'unloading' #[span_47](start_span)[span_47](end_span)
-        broadcast_state() #[span_48](start_span)[span_48](end_span)
+    if card_id in sys_state['cards'] and sys_state['cards'][card_id]['status'] == 'on_line':
+        sys_state['cards'][card_id]['status'] = 'unloading'
+        broadcast_state()
 
 @socketio.on('finish_card')
 def finish_card(card_id):
-    if card_id in sys_state['cards']: #[span_49](start_span)[span_49](end_span)
-        sys_state['cards'][card_id]['status'] = 'completed' #[span_50](start_span)[span_50](end_span)
-        tw_time = time.gmtime(time.time() + 8 * 3600) #[span_51](start_span)[span_51](end_span)
-        sys_state['cards'][card_id]['finish_time'] = time.strftime("%Y-%m-%d %H:%M:%S", tw_time) #[span_52](start_span)[span_52](end_span)
-        broadcast_state() #[span_53](start_span)[span_53](end_span)
+    if card_id in sys_state['cards']:
+        sys_state['cards'][card_id]['status'] = 'completed'
+        tw_time = time.gmtime(time.time() + 8 * 3600)
+        sys_state['cards'][card_id]['finish_time'] = time.strftime("%Y-%m-%d %H:%M:%S", tw_time)
+        broadcast_state()
 
 def continuous_line_inserter():
-    global clone_counter, current_active_card_template #[span_54](start_span)[span_54](end_span)
+    global clone_counter, current_active_card_template
     while True:
-        time.sleep(1) #[span_55](start_span)[span_55](end_span)
-        if current_active_card_template: #[span_56](start_span)[span_56](end_span)
-            with active_card_lock: #[span_57](start_span)[span_57](end_span)
-                card_template = current_active_card_template.copy() #[span_58](start_span)[span_58](end_span)
+        time.sleep(1)
+        if current_active_card_template:
+            with active_card_lock:
+                card_template = current_active_card_template.copy()
             
-            speed = sys_state.get('line_speed', 1100) #[span_59](start_span)[span_59](end_span)
-            speed_index = max(1.0, speed / 100.0) #[span_60](start_span)[span_60](end_span)
+            speed = sys_state.get('line_speed', 1100)
+            speed_index = max(1.0, speed / 100.0)
             
-            hang = card_template.get('hang', 1) #[span_61](start_span)[span_61](end_span)
-            empty = card_template.get('empty', 0) #[span_62](start_span)[span_62](end_span)
-            interval = card_template.get('interval', 0) #[span_63](start_span)[span_63](end_span)
-            total_hooks = max(1, hang + empty + interval) #[span_64](start_span)[span_64](end_span)
+            hang = card_template.get('hang', 1)
+            empty = card_template.get('empty', 0)
+            interval = card_template.get('interval', 0)
+            total_hooks = max(1, hang + empty + interval)
             
-            base_line_time_min = 1320.0 / speed_index #[span_65](start_span)[span_65](end_span)
-            visual_gap_sec = base_line_time_min * 60.0 * 0.012 #[span_66](start_span)[span_66](end_span)
-            hook_time_sec = total_hooks * (60.0 / speed_index) #[span_67](start_span)[span_67](end_span)
-            delay_sec = max(visual_gap_sec, hook_time_sec) #[span_68](start_span)[span_68](end_span)
+            base_line_time_min = 1320.0 / speed_index
+            visual_gap_sec = base_line_time_min * 60.0 * 0.012
+            hook_time_sec = total_hooks * (60.0 / speed_index)
+            delay_sec = max(visual_gap_sec, hook_time_sec)
             
-            slept = 0.0 #[span_69](start_span)[span_69](end_span)
-            target_card_id = card_template.get('id') #[span_70](start_span)[span_70](end_span)
+            slept = 0.0
+            target_card_id = card_template.get('id')
             while slept < delay_sec:
-                time.sleep(0.5) #[span_71](start_span)[span_71](end_span)
-                slept += 0.5 #[span_72](start_span)[span_72](end_span)
-                if not current_active_card_template or current_active_card_template.get('id') != target_card_id: #[span_73](start_span)[span_73](end_span)
+                time.sleep(0.5)
+                slept += 0.5
+                if not current_active_card_template or current_active_card_template.get('id') != target_card_id:
                     break
                     
-            if current_active_card_template and current_active_card_template.get('id') == target_card_id: #[span_74](start_span)[span_74](end_span)
-                clone_counter += 1 #[span_75](start_span)[span_75](end_span)
-                now_ms = int(time.time() * 1000) #[span_76](start_span)[span_76](end_span)
-                clone_id = f"{target_card_id}_clone_{clone_counter}_{now_ms}" #[span_77](start_span)[span_77](end_span)
+            if current_active_card_template and current_active_card_template.get('id') == target_card_id:
+                clone_counter += 1
+                now_ms = int(time.time() * 1000)
+                clone_id = f"{target_card_id}_clone_{clone_counter}_{now_ms}"
                 
-                clone_card = card_template.copy() #[span_78](start_span)[span_78](end_span)
-                clone_card['id'] = clone_id #[span_79](start_span)[span_79](end_span)
-                clone_card['status'] = 'on_line' #[span_80](start_span)[span_80](end_span)
-                clone_card['line_start_time'] = now_ms #[span_81](start_span)[span_81](end_span)
-                clone_card['is_clone'] = True #[span_82](start_span)[span_82](end_span)
+                clone_card = card_template.copy()
+                clone_card['id'] = clone_id
+                clone_card['status'] = 'on_line'
+                clone_card['line_start_time'] = now_ms
+                clone_card['is_clone'] = True
                 
-                sys_state['cards'][clone_id] = clone_card #[span_83](start_span)[span_83](end_span)
-                broadcast_state() #[span_84](start_span)[span_84](end_span)
+                sys_state['cards'][clone_id] = clone_card
+                broadcast_state()
 
-inserter_thread = threading.Thread(target=continuous_line_inserter, daemon=True) #[span_85](start_span)[span_85](end_span)
-inserter_thread.start() #[span_86](start_span)[span_86](end_span)
+inserter_thread = threading.Thread(target=continuous_line_inserter, daemon=True)
+inserter_thread.start()
 
 if __name__ == '__main__':
-    import shutil #[span_87](start_span)[span_87](end_span)
-    if os.path.exists('templates'): #[span_88](start_span)[span_88](end_span)
-        shutil.rmtree('templates') #[span_89](start_span)[span_89](end_span)
+    import shutil
+    if os.path.exists('templates'):
+        shutil.rmtree('templates')
     
-    create_templates() #[span_90](start_span)[span_90](end_span)
-    port = int(os.environ.get('PORT', 5000)) #[span_91](start_span)[span_91](end_span)
-    socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True) #[span_92](start_span)[span_92](end_span)
+    create_templates()
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
