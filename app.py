@@ -23,7 +23,10 @@ I18N_SCRIPT = """
     body { padding-top: 60px !important; }
     .lang-btn { position: fixed; top: 10px; right: 10px; z-index: 1000; background: #34495e; color: white; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.3s; }
     .lang-btn:hover { background: #2c3e50; }
+    .settings-btn { position: fixed; top: 10px; right: 170px; z-index: 1000; background: #e67e22; color: white; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.3s; }
+    .settings-btn:hover { background: #d35400; }
 </style>
+<button class="settings-btn" id="settingsBtn" onclick="toggleSettings()">⚙️ 設置 / Cài đặt</button>
 <button class="lang-btn" id="langBtn" onclick="toggleLang()">🌐 切換語言 / Ngôn ngữ</button>
 <script>
     const i18n = {
@@ -40,7 +43,10 @@ I18N_SCRIPT = """
             'done_list': '歷史完成紀錄', 'btn_done': '✅ 點擊完成',
             'lang_btn': '🇻🇳 切換為越文 (Việt)', 'part_no': '料號:', 'part_name': '品名:', 'qty': '數量:', 'color': '顏色:',
             'est_time': '預估佔線時間: ', 'hrs': ' 小時 ', 'done_time': '完成時間: ', 'alert_del': '⚠️ 確定要刪除這筆資料嗎？',
-            'comp_lbl': '構件', 'full_line_status': '⚡ 滿線模式持續上料中: ', 'none_loading': '暫無 (等待上料)'
+            'comp_lbl': '構件', 'full_line_status': '⚡ 滿線模式持續上料中: ', 'none_loading': '暫無 (等待上料)',
+            'settings_title': '⚙️ 軌道與卡片客製化設定', 'save_settings': '儲存並套用', 'reset_settings': '重設預設值',
+            'card_width': '卡片最小寬度 (px):', 'card_height': '卡片高度 (px):', 'card_font': '卡片字體大小 (px):',
+            'track_path_lbl': 'SVG 軌道 Path 座標 (d):'
         },
         'vi': {
             'sim_title': '🏭 Trình mô phỏng chuyền sơn', 'speed': 'Tốc độ chuyền: ', 'time_lbl': 'Thời gian 1 vòng: ', 'mins': ' Phút',
@@ -55,7 +61,10 @@ I18N_SCRIPT = """
             'done_list': 'Lịch sử hoàn thành', 'btn_done': '✅ Hoàn thành',
             'lang_btn': '🇹🇼 Đổi ngôn ngữ (中文)', 'part_no': 'Mã LK:', 'part_name': 'Tên LK:', 'qty': 'SL:', 'color': 'Màu:',
             'est_time': 'TG dự kiến: ', 'hrs': ' Giờ ', 'done_time': 'Thời gian HT: ', 'alert_del': 'Xác nhận xóa dữ liệu này?',
-            'comp_lbl': 'Cấu kiện', 'full_line_status': '⚡ Đang nạp hàng liên tục: ', 'none_loading': 'Chưa có'
+            'comp_lbl': 'Cấu kiện', 'full_line_status': '⚡ Đang nạp hàng liên tục: ', 'none_loading': 'Chưa có',
+            'settings_title': '⚙️ Cài đặt tùy chỉnh đường đi & Thẻ', 'save_settings': 'Lưu & Áp dụng', 'reset_settings': 'Mặc định',
+            'card_width': 'Chiều rộng thẻ tối thiểu (px):', 'card_height': 'Chiều cao thẻ (px):', 'card_font': 'Kích thước chữ thẻ (px):',
+            'track_path_lbl': 'Tọa độ Path SVG (d):'
         }
     };
     let currentLang = localStorage.getItem('appLang') || 'zh';
@@ -74,6 +83,8 @@ I18N_SCRIPT = """
         });
         const langBtn = document.getElementById('langBtn');
         if(langBtn) langBtn.innerHTML = t('lang_btn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        if(settingsBtn) settingsBtn.innerHTML = '⚙️ ' + (currentLang === 'zh' ? '設置' : 'Cài đặt');
     }
     function renderField(val) {
         if (typeof val === 'string' && val.startsWith('data:image')) {
@@ -125,9 +136,9 @@ def create_templates():
                 }}
 
                 .mini-card {{ 
-                    position: absolute; width: auto; min-width: 50px; height: 26px; border-radius: 4px; 
+                    position: absolute; width: auto; min-width: var(--card-min-w, 50px); height: var(--card-h, 26px); border-radius: 4px; 
                     border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.5); transform: translate(-50%, -50%); cursor: pointer; 
-                    display: flex; align-items: center; justify-content: center; font-size: 12px; 
+                    display: flex; align-items: center; justify-content: center; font-size: var(--card-font-sz, 12px); 
                     color: white; text-shadow: 1px 1px 2px black; font-weight: bold; 
                     transition: all 0.3s; z-index: 10; padding: 0 5px; white-space: nowrap;
                 }}
@@ -149,11 +160,42 @@ def create_templates():
                     cursor: pointer; font-weight: bold; background: rgba(0,0,0,0.7);
                     border-radius: 50%; width: 32px; height: 32px; text-align: center; line-height: 28px; border: 2px solid white; color: white;
                 }}
+
+                /* Settings Modal */
+                #settingsModal {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; }}
+                .settings-content {{ background: white; width: 90%; max-width: 600px; padding: 25px; border-radius: 10px; max-height: 90vh; overflow-y: auto; }}
+                .settings-content label {{ display: block; margin-top: 10px; font-weight: bold; font-size: 14px; }}
+                .settings-content input, .settings-content textarea {{ width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; }}
+                .settings-content textarea {{ height: 120px; }}
+                .settings-actions {{ margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; }}
+                .settings-actions button {{ padding: 10px 20px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }}
             </style>
             {I18N_SCRIPT}
         </head>
         <body onclick="closeAllCards()">
             <div id="overlay"></div>
+            
+            <div id="settingsModal" onclick="event.stopPropagation()">
+                <div class="settings-content">
+                    <h2 data-i18n="settings_title">⚙️ 軌道與卡片客製化設定</h2>
+                    <label data-i18n="card_width">卡片最小寬度 (px):</label>
+                    <input type="number" id="setCardMinW" value="50">
+                    <label data-i18n="card_height">卡片高度 (px):</label>
+                    <input type="number" id="setCardH" value="26">
+                    <label data-i18n="card_font">卡片字體大小 (px):</label>
+                    <input type="number" id="setCardFont" value="12">
+                    
+                    <label data-i18n="track_path_lbl">SVG 軌道 Path 座標 (d):</label>
+                    <textarea id="setTrackPath"></textarea>
+                    
+                    <div class="settings-actions">
+                        <button onclick="resetSettings()" style="background:#95a5a6; color:white;" data-i18n="reset_settings">重設預設值</button>
+                        <button onclick="saveSettings()" style="background:#27ae60; color:white;" data-i18n="save_settings">儲存並套用</button>
+                        <button onclick="toggleSettings()" style="background:#c0392b; color:white;" data-i18n="btn_close">關閉</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="dashboard">
                 <h2 data-i18n="sim_title">🏭 粉體塗裝流水線模擬器</h2>
                 <div class="speed-ctrl">
@@ -169,30 +211,25 @@ def create_templates():
             
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 1000 1333" preserveAspectRatio="none">
-                    <!--
-                    【調整後校正軌道】
-                    上料 -> 前處理(上方) -> 水切爐 -> 烘烤爐/噴房 -> 下料(下方)
-                    -->
                     <path id="track" d="
-                        M 458 1180
-                        L 458 280
-                        L 121 280
-                        L 121 98
-                        L 921 98
-                        L 921 205
-                        L 580 205
-                        L 580 280
-                        L 921 280
-                        L 921 370
-                        L 580 370
-                        L 580 310
-                        L 921 310
-                        L 921 530
-                        L 580 530
-                        L 580 590
-                        L 921 590
-                        L 921 1180
-                        L 458 1180 Z" 
+                        M 461 1180
+                        L 461 280
+                        L 91 280
+                        L 91 98
+                        L 931 98
+                        L 931 185
+                        L 580 186
+                        L 580 271
+                        L 930 271
+                        L 930 352
+                        L 580 352
+                        L 580 432
+                        L 930 432
+                        L 930 510
+                        L 580 510
+                        L 580 470
+                        L 930 1180
+                        L 461 1180 Z" 
                         fill="none" stroke="#e74c3c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                 </svg>
             </div>
@@ -201,7 +238,83 @@ def create_templates():
                 const socket = io();
                 const track = document.getElementById('track');
                 const overlay = document.getElementById('overlay');
-                const trackLength = track.getTotalLength();
+                
+                const defaultPathD = `
+                    M 461 1180
+                    L 461 280
+                    L 91 280
+                    L 91 98
+                    L 931 98
+                    L 931 185
+                    L 580 186
+                    L 580 271
+                    L 930 271
+                    L 930 352
+                    L 580 352
+                    L 580 432
+                    L 930 432
+                    L 930 510
+                    L 580 510
+                    L 580 470
+                    L 930 1180
+                    L 461 1180 Z
+                `.trim();
+
+                function loadSettings() {
+                    const savedW = localStorage.getItem('cardMinW') || '50';
+                    const savedH = localStorage.getItem('cardH') || '26';
+                    const savedFont = localStorage.getItem('cardFont') || '12';
+                    const savedPath = localStorage.getItem('trackPathD') || defaultPathD;
+
+                    document.documentElement.style.setProperty('--card-min-w', savedW + 'px');
+                    document.documentElement.style.setProperty('--card-h', savedH + 'px');
+                    document.documentElement.style.setProperty('--card-font-sz', savedFont + 'px');
+
+                    track.setAttribute('d', savedPath);
+
+                    document.getElementById('setCardMinW').value = savedW;
+                    document.getElementById('setCardH').value = savedH;
+                    document.getElementById('setCardFont').value = savedFont;
+                    document.getElementById('setTrackPath').value = savedPath;
+                }
+
+                function toggleSettings() {
+                    const modal = document.getElementById('settingsModal');
+                    modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+                }
+
+                function saveSettings() {
+                    const w = document.getElementById('setCardMinW').value;
+                    const h = document.getElementById('setCardH').value;
+                    const f = document.getElementById('setCardFont').value;
+                    const p = document.getElementById('setTrackPath').value;
+
+                    localStorage.setItem('cardMinW', w);
+                    localStorage.setItem('cardH', h);
+                    localStorage.setItem('cardFont', f);
+                    localStorage.setItem('trackPathD', p);
+
+                    loadSettings();
+                    toggleSettings();
+                    if(typeof renderLineCards === 'function' && sys_state_cache.cards) {
+                        renderLineCards(sys_state_cache.cards);
+                    }
+                }
+
+                function resetSettings() {
+                    localStorage.removeItem('cardMinW');
+                    localStorage.removeItem('cardH');
+                    localStorage.removeItem('cardFont');
+                    localStorage.removeItem('trackPathD');
+                    loadSettings();
+                    toggleSettings();
+                }
+
+                window.addEventListener('DOMContentLoaded', () => {
+                    loadSettings();
+                });
+
+                let trackLength = track.getTotalLength();
                 let speedIndex = 11;
                 let activeCardId = null; 
                 let sys_state_cache = {{cards:{{}}, active_card_id: null}};
@@ -249,6 +362,7 @@ def create_templates():
                 }}
 
                 function renderLineCards(cards) {{
+                    trackLength = track.getTotalLength();
                     const map = document.getElementById('map');
                     document.querySelectorAll('.mini-card').forEach(e => e.remove());
                     
@@ -797,7 +911,7 @@ def handle_connect():
 
 @socketio.on('request_sync')
 def handle_sync():
-    emit('update_state', sys_state)
+    emit('update_state', sys_space if 'sys_space' in globals() else sys_state)
 
 @socketio.on('change_speed')
 def handle_speed(val):
