@@ -170,12 +170,14 @@ def create_templates():
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 1000 1333" preserveAspectRatio="none">
                     <!--
-                    【修正後精準貼合實體輸送帶的座標系統】 (基於 1000x1333 比例對齊黑色軌道中心線)
+                    【修正後精準貼合實體輸送帶的座標系統】 (含前處理順路轉折與噴房迴圈)
                     -->
                     <path id="track" d="
                         M 458 1130
-                        L 458 280
-                        L 91 280
+                        L 458 380
+                        L 220 380
+                        L 220 200
+                        L 91 200
                         L 91 98
                         L 931 98
                         L 931 185
@@ -186,6 +188,10 @@ def create_templates():
                         L 580 325
                         L 580 397
                         L 931 397
+                        L 931 468
+                        L 580 468
+                        L 580 540
+                        L 931 540
                         L 931 1130
                         L 458 1130 Z" 
                         fill="none" stroke="#e74c3c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
