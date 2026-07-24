@@ -54,7 +54,7 @@ I18N_SCRIPT = """
             'unload_title': '✅ Khu vực xuống hàng & Lịch sử', 'unload_wait': 'Khu vực chờ xuống hàng',
             'done_list': 'Lịch sử hoàn thành', 'btn_done': '✅ Hoàn thành',
             'lang_btn': '🇹🇼 Đổi ngôn ngữ (中文)', 'part_no': 'Mã LK:', 'part_name': 'Tên LK:', 'qty': 'SL:', 'color': 'Màu:',
-            'est_time': 'TG dự kiến: ', 'hrs': ' Giờ ', 'done_time': 'Thời gian HT: ', 'alert_del': '⚠️ Xác nhận xóa dữ liệu này?',
+            'est_time': 'TG dự kiến: ', 'hrs': ' Giờ ', 'done_time': 'Thời gian HT: ', 'alert_del': 'Xác nhận xóa dữ liệu này?',
             'comp_lbl': 'Cấu kiện', 'full_line_status': '⚡ Đang nạp hàng liên tục: ', 'none_loading': 'Chưa có'
         }
     };
@@ -170,29 +170,29 @@ def create_templates():
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 1000 1333" preserveAspectRatio="none">
                     <!--
-                    【修正後標準流水線順序】
-                    上料 -> 前處理 -> 水切爐 -> 噴房 -> 烘烤爐 -> 下料
+                    【調整後校正軌道】
+                    上料 -> 前處理(上方) -> 水切爐 -> 烘烤爐/噴房 -> 下料(下方)
                     -->
                     <path id="track" d="
-                        M 458 1130
-                        L 458 380
-                        L 91 380
+                        M 458 1180
+                        L 458 280
+                        L 91 280
                         L 91 98
                         L 931 98
                         L 931 185
                         L 580 185
-                        L 580 254
-                        L 931 254
-                        L 931 540
-                        L 580 540
-                        L 580 468
-                        L 931 468
-                        L 931 397
-                        L 580 397
-                        L 580 325
-                        L 931 325
-                        L 931 1130
-                        L 458 1130 Z" 
+                        L 580 270
+                        L 931 270
+                        L 931 350
+                        L 580 350
+                        L 580 430
+                        L 931 430
+                        L 931 510
+                        L 580 510
+                        L 580 590
+                        L 931 590
+                        L 931 1180
+                        L 458 1180 Z" 
                         fill="none" stroke="#e74c3c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                 </svg>
             </div>
