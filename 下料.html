@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>下料站點</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #2c3e50; font-family: sans-serif;}
+        .card { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; }
+        button { padding: 15px 30px; font-size: 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s;}
+        button:hover { background: #2980b9; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>⬆️ 下料站點</h1>
+        <p>點擊按鈕將物料推入塗裝流水線</p>
+        <button onclick="addMaterial()">掛載新物料</button>
+    </div>
+
+    <script>
+        const socket = io('http://localhost:5000');
+        
+        function addMaterial() {
+            // 發送新增物料事件至後端
+            socket.emit('add_material', { station: '下料區' });
+            
+            const btn = document.querySelector('button');
+            btn.innerText = '已推送！';
+            btn.style.background = '#2ecc71';
+            setTimeout(() => {
+                btn.innerText = '掛載新物料';
+                btn.style.background = '#3498db';
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
