@@ -46,7 +46,7 @@ I18N_SCRIPT = """
             'sim_title': '🏭 Trình mô phỏng chuyền sơn', 'speed': 'Tốc độ chuyền: ', 'time_lbl': 'Thời gian 1 vòng: ', 'mins': ' Phút',
             'wait_title': '📦 Khu vực chờ vật liệu', 'part_ph': 'Nhập / Quét mã LK', 'name_ph': 'Nhập / Quét tên LK',
             'scan_btn': '📷 Quét', 'add_btn': '➕ Thêm vào hàng chờ', 'list_wait': 'Danh sách chờ (Theo thứ tự)',
-            'ali_sync': 'Khu vực đồng bộ [Chờ lên hàng_Ali]', 'btn_send_ali': 'Chuyển cho Ali', 'btn_del': 'Xóa',
+            'ali_sync': 'Khu vực đồng bộ [Chờ lên hàng_Ali]', 'btn_send_ali': '➕ Chuyển cho Ali', 'btn_del': 'Xóa',
             'ocr_title': '📸 Hệ thống chụp', 'ocr_tip': 'Căn chỉnh văn bản vào khung xanh', 'btn_pic': '📸 Chụp & Lưu', 'btn_close': 'Đóng',
             'ali_title': '🏗️ Chờ lên hàng_Ali', 'line_sync': '⬇️ [Dây chuyền] Truyền đồng bộ ⬇️',
             'lbl_hang': 'Treo:', 'lbl_empty': 'Trống:', 'lbl_space': 'Cách:', 'lbl_hook': 'Móc:',
@@ -170,10 +170,7 @@ def create_templates():
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 1000 1333" preserveAspectRatio="none">
                     <!--
-                    【修正後軌跡】
-                    1. 上料 -> 前處理：順暢沿槽體繞行至頂部軌道
-                    2. 取消噴房 S 型彎道
-                    3. 水切爐 -> 先進噴房 -> 迴轉進入烘烤爐 -> 下料
+                    【修正後精準貼合實體輸送帶的座標系統】 (含前處理順路轉折與噴房迴圈)
                     -->
                     <path id="track" d="
                         M 458 1130
@@ -183,16 +180,18 @@ def create_templates():
                         L 91 200
                         L 91 98
                         L 931 98
-                        L 931 220
-                        L 620 220
-                        L 620 310
-                        L 931 310
-                        L 931 680
-                        L 680 680
-                        L 680 430
-                        L 820 430
-                        L 820 530
-                        L 931 530
+                        L 931 185
+                        L 580 185
+                        L 580 254
+                        L 931 254
+                        L 931 325
+                        L 580 325
+                        L 580 397
+                        L 931 397
+                        L 931 468
+                        L 580 468
+                        L 580 540
+                        L 931 540
                         L 931 1130
                         L 458 1130 Z" 
                         fill="none" stroke="#e74c3c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
