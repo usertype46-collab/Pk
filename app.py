@@ -118,7 +118,7 @@ def create_templates():
                 .chain-track {{
                     stroke-dasharray: 10, 8;
                     animation: moveChain 1.5s linear infinite;
-                    opacity: 0.5;
+                    opacity: 0.8;
                 }}
                 @keyframes moveChain {{
                     from {{ stroke-dashoffset: 18; }}
@@ -170,44 +170,27 @@ def create_templates():
             
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 768 1024" preserveAspectRatio="none">
-                    <!--
-                    【產線路線圖座標詳細解析】 (精準對齊 14436.png 實景比例與黑色實體輸送帶)
-                    * M 348 630 : 起點 [上料] 確切位置，沿著黑色軌道向上出發
-                    * L 348 300 : 向上直行至轉角
-                    * L 88 300  : 向左轉向圓形浸泡槽外側軌道
-                    * L 88 118  : 向上穿過圓形浸泡槽到達頂部邊緣
-                    * L 710 118 : 向右橫跨前處理區 (完全貼合頂部黑色軌道)
-                    * L 710 195 : 向下直行，抵達主線道，準備進入水切爐
-                    * L 555 195 : 向左進入水切爐
-                    * L 555 255 : 爐內向下直行轉折
-                    * L 710 255 : 向右出水切爐並回到右側主線道
-                    * L 710 340 : 向下直行，準備進入烘烤爐
-                    * L 555 340 : 向左進入烘烤爐
-                    * L 555 435 : 爐內向下直行轉折
-                    * L 710 435 : 向右出烘烤爐並回到右側主線道
-                    * L 710 725 : 沿右側直線深降向下，精確對齊進入噴房前的位置
-                    * L 165 725 : 完全橫穿噴房內部，由噴房最左側穿出
-                    * L 165 925 : 沿廠房最左側軌道直線向下
-                    * L 330 925 : 向右抵達終點 [下料] (雙機械手臂) 正中央
-                    -->
                     <path id="track" d="
                         M 348 630 
                         L 348 300 
                         L 88 300 
-                        L 88 118 
-                        L 710 118 
-                        L 710 195 
-                        L 555 195 
-                        L 555 255 
-                        L 710 255 
-                        L 710 340 
-                        L 555 340 
-                        L 555 435 
-                        L 710 435 
-                        L 710 725 
-                        L 165 725 
-                        L 165 925 
-                        L 330 925" 
+                        L 88 135 
+                        L 555 135 
+                        L 555 240 
+                        L 710 240 
+                        L 710 325 
+                        L 555 325 
+                        L 555 425 
+                        L 710 425 
+                        L 710 840 
+                        L 640 840 
+                        L 640 735 
+                        L 280 735 
+                        L 280 840 
+                        L 140 840 
+                        L 140 940 
+                        L 348 940 
+                        L 348 630" 
                         fill="none" stroke="#e74c3c" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                 </svg>
             </div>
@@ -799,7 +782,6 @@ def load(): return render_template('loading.html')
 @app.route('/unload')
 def unload(): return render_template('unloading.html')
 
-# 路由更新為對應 14436.png 拓樸實景圖以精確顯示連線
 @app.route('/14436.png')
 def serve_image():
     return send_from_directory('.', '14436.png')
