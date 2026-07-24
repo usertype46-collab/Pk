@@ -1,13 +1,21 @@
+"""
+🏭 粉體塗裝流水線模擬器 - 進階客製化版
+此版本基於原有的 Flask 與 SocketIO 架構[span_0](start_span)[span_0](end_span)，針對軌道座標與卡片樣式進行了深度客製化。
+包含了完整的設定面板、SVG 軌道座標的毫米級修正，以及更豐富的 UI/UX 設計。
+"""
+
 import os
 import time
 import threading
 from flask import Flask, render_template, send_from_directory
 from flask_socketio import SocketIO, emit
 
+# 初始化 Flask 應用程式與 SocketIO[span_1](start_span)[span_1](end_span)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+# 系統狀態快取[span_2](start_span)[span_2](end_span)
 sys_state = {
     'line_speed': 1100,
     'cards': {},
@@ -18,20 +26,40 @@ active_card_lock = threading.Lock()
 current_active_card_template = None
 clone_counter = 0
 
+# 擴充的 I18N 與共用樣式腳本，加入了更豐富的介面設計與動態效果[span_3](start_span)[span_3](end_span)
 I18N_SCRIPT = """
 <style>
-    body { padding-top: 60px !important; }
-    .lang-btn { position: fixed; top: 10px; right: 10px; z-index: 1000; background: #34495e; color: white; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.3s; }
-    .lang-btn:hover { background: #2c3e50; }
-    .settings-btn { position: fixed; top: 10px; right: 170px; z-index: 1000; background: #e67e22; color: white; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.3s; }
-    .settings-btn:hover { background: #d35400; }
+    :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #e67e22;
+        --success-color: #27ae60;
+        --danger-color: #c0392b;
+        --bg-color: #f0f2f5;
+    }
+    body { padding-top: 70px !important; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    /* 懸浮按鈕優化 */
+    .top-controls { position: fixed; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 12px; }
+    .control-btn {
+        display: flex; align-items: center; gap: 8px;
+        background: var(--primary-color); color: white; border: none; 
+        padding: 10px 18px; border-radius: 25px; cursor: pointer; 
+        font-weight: 600; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .control-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.3); }
+    .control-btn.settings { background: var(--secondary-color); }
+    .control-btn.settings:hover { background: #d35400; }
+    
 </style>
-<button class="settings-btn" id="settingsBtn" onclick="toggleSettings()">⚙️ 設置 / Cài đặt</button>
-<button class="lang-btn" id="langBtn" onclick="toggleLang()">🌐 切換語言 / Ngôn ngữ</button>
+<div class="top-controls">
+    <button class="control-btn settings" id="settingsBtn" onclick="toggleSettings()">⚙️ <span>設置 / Cài đặt</span></button>
+    <button class="control-btn" id="langBtn" onclick="toggleLang()">🌐 <span>切換語言</span></button>
+</div>
 <script>
     const i18n = {
         'zh': {
-            'sim_title': '🏭 粉體塗裝流水線模擬器', 'speed': '流水線轉速: ', 'time_lbl': '跑完全程所需時間: ', 'mins': ' 分鐘',
+            'sim_title': '🏭 粉體塗裝流水線模擬器 (客製化版)', 'speed': '流水線轉速: ', 'time_lbl': '跑完全程所需時間: ', 'mins': ' 分鐘',
             'wait_title': '📦 現場待料區', 'part_ph': '手動輸入或掃描料號', 'name_ph': '手動輸入或掃描品名',
             'scan_btn': '📷 掃描', 'add_btn': '➕ 新增待上線構件', 'list_wait': '待處理清單 (順序排列)',
             'ali_sync': '[待上料_阿利] 同步接收區', 'btn_send_ali': '➕ 傳送阿利', 'btn_del': '刪除',
@@ -39,19 +67,19 @@ I18N_SCRIPT = """
             'ali_title': '🏗️ 待上料_阿利', 'line_sync': '⬇️ [流水線_上線] 同步傳送區 ⬇️',
             'lbl_hang': '掛:', 'lbl_empty': '空:', 'lbl_space': '間隔:', 'lbl_hook': '接勾:',
             'btn_to_line': '🚀 上線並開始持續滿線插入', 'calcing': '計算上線時間...',
-            'unload_title': '✅ 下料與完成紀錄區', 'unload_wait': '待下料區 (模擬器跑完自動傳送至此)',
+            'unload_title': '✅ 下料與完成紀錄區', 'unload_wait': '待下料區 (自動傳送)',
             'done_list': '歷史完成紀錄', 'btn_done': '✅ 點擊完成',
-            'lang_btn': '🇻🇳 切換為越文 (Việt)', 'part_no': '料號:', 'part_name': '品名:', 'qty': '數量:', 'color': '顏色:',
+            'lang_btn': '🇻🇳 切換越文', 'part_no': '料號:', 'part_name': '品名:', 'qty': '數量:', 'color': '顏色:',
             'est_time': '預估佔線時間: ', 'hrs': ' 小時 ', 'done_time': '完成時間: ', 'alert_del': '⚠️ 確定要刪除這筆資料嗎？',
             'comp_lbl': '構件', 'full_line_status': '⚡ 滿線模式持續上料中: ', 'none_loading': '暫無 (等待上料)',
-            'settings_title': '⚙️ 軌道與卡片客製化設定', 'save_settings': '儲存並套用', 'reset_settings': '重設預設值',
-            'card_width': '卡片最小寬度 (px):', 'card_height': '卡片高度 (px):', 'card_font': '卡片字體大小 (px):',
-            'track_path_lbl': 'SVG 軌道 Path 座標 (d):'
+            'settings_title': '⚙️ 系統進階設定與軌道客製化', 'save_settings': '💾 儲存並即時套用', 'reset_settings': '🔄 重設原廠預設值',
+            'card_width': '卡片最小寬度 (px) - 影響顯示範圍:', 'card_height': '卡片高度 (px) - 影響整體大小:', 'card_font': '卡片字體大小 (px):',
+            'track_path_lbl': '🛠️ SVG 軌道 Path 座標 (d) [支援即時修正]:'
         },
         'vi': {
-            'sim_title': '🏭 Trình mô phỏng chuyền sơn', 'speed': 'Tốc độ chuyền: ', 'time_lbl': 'Thời gian 1 vòng: ', 'mins': ' Phút',
+            'sim_title': '🏭 Trình mô phỏng chuyền sơn (Tùy chỉnh)', 'speed': 'Tốc độ: ', 'time_lbl': 'Thời gian 1 vòng: ', 'mins': ' Phút',
             'wait_title': '📦 Khu vực chờ vật liệu', 'part_ph': 'Nhập / Quét mã LK', 'name_ph': 'Nhập / Quét tên LK',
-            'scan_btn': '📷 Quét', 'add_btn': '➕ Thêm vào hàng chờ', 'list_wait': 'Danh sách chờ (Theo thứ tự)',
+            'scan_btn': '📷 Quét', 'add_btn': '➕ Thêm vào hàng chờ', 'list_wait': 'Danh sách chờ',
             'ali_sync': 'Khu vực đồng bộ [Chờ lên hàng_Ali]', 'btn_send_ali': '➕ Chuyển cho Ali', 'btn_del': 'Xóa',
             'ocr_title': '📸 Hệ thống chụp', 'ocr_tip': 'Căn chỉnh văn bản vào khung xanh', 'btn_pic': '📸 Chụp & Lưu', 'btn_close': 'Đóng',
             'ali_title': '🏗️ Chờ lên hàng_Ali', 'line_sync': '⬇️ [Dây chuyền] Truyền đồng bộ ⬇️',
@@ -59,12 +87,12 @@ I18N_SCRIPT = """
             'btn_to_line': '🚀 Lên chuyền & Nạp liên tục', 'calcing': 'Đang tính...',
             'unload_title': '✅ Khu vực xuống hàng & Lịch sử', 'unload_wait': 'Khu vực chờ xuống hàng',
             'done_list': 'Lịch sử hoàn thành', 'btn_done': '✅ Hoàn thành',
-            'lang_btn': '🇹🇼 Đổi ngôn ngữ (中文)', 'part_no': 'Mã LK:', 'part_name': 'Tên LK:', 'qty': 'SL:', 'color': 'Màu:',
+            'lang_btn': '🇹🇼 Đổi sang 中文', 'part_no': 'Mã LK:', 'part_name': 'Tên LK:', 'qty': 'SL:', 'color': 'Màu:',
             'est_time': 'TG dự kiến: ', 'hrs': ' Giờ ', 'done_time': 'Thời gian HT: ', 'alert_del': 'Xác nhận xóa dữ liệu này?',
             'comp_lbl': 'Cấu kiện', 'full_line_status': '⚡ Đang nạp hàng liên tục: ', 'none_loading': 'Chưa có',
-            'settings_title': '⚙️ Cài đặt tùy chỉnh đường đi & Thẻ', 'save_settings': 'Lưu & Áp dụng', 'reset_settings': 'Mặc định',
-            'card_width': 'Chiều rộng thẻ tối thiểu (px):', 'card_height': 'Chiều cao thẻ (px):', 'card_font': 'Kích thước chữ thẻ (px):',
-            'track_path_lbl': 'Tọa độ Path SVG (d):'
+            'settings_title': '⚙️ Cài đặt hệ thống & Đường ray', 'save_settings': '💾 Lưu & Áp dụng', 'reset_settings': '🔄 Mặc định',
+            'card_width': 'Chiều rộng thẻ (px):', 'card_height': 'Chiều cao thẻ (px):', 'card_font': 'Kích thước chữ (px):',
+            'track_path_lbl': '🛠️ Tọa độ Path SVG (d):'
         }
     };
     let currentLang = localStorage.getItem('appLang') || 'zh';
@@ -81,14 +109,14 @@ I18N_SCRIPT = """
             if(el.tagName === 'INPUT') el.placeholder = t(key);
             else el.innerHTML = t(key);
         });
-        const langBtn = document.getElementById('langBtn');
+        const langBtn = document.querySelector('#langBtn span');
         if(langBtn) langBtn.innerHTML = t('lang_btn');
-        const settingsBtn = document.getElementById('settingsBtn');
-        if(settingsBtn) settingsBtn.innerHTML = '⚙️ ' + (currentLang === 'zh' ? '設置' : 'Cài đặt');
+        const settingsBtn = document.querySelector('#settingsBtn span');
+        if(settingsBtn) settingsBtn.innerHTML = currentLang === 'zh' ? '設置' : 'Cài đặt';
     }
     function renderField(val) {
         if (typeof val === 'string' && val.startsWith('data:image')) {
-            return `<img src="${val}" style="max-height: 40px; vertical-align: middle; border-radius: 4px; border: 1px solid #ccc; margin: 2px;">`;
+            return `<img src="${val}" style="max-height: 40px; vertical-align: middle; border-radius: 6px; border: 2px solid #bdc3c7; margin: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
         }
         return val;
     }
@@ -97,6 +125,10 @@ I18N_SCRIPT = """
 """
 
 def create_templates():
+    """
+    動態生成前端 HTML 模板。
+    包含根據要求精確調整過的 SVG 軌道座標，以及深度客製化的 UI 介面[span_4](start_span)[span_4](end_span)。
+    """
     if not os.path.exists('templates'):
         os.makedirs('templates')
 
@@ -105,70 +137,99 @@ def create_templates():
         <!DOCTYPE html>
         <html>
         <head>
+            <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>粉體塗裝流水線模擬器</title>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
             <style>
-                body {{ font-family: '微軟正黑體', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }}
-                .dashboard {{ background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
-                .speed-ctrl button {{ font-size: 18px; padding: 5px 15px; margin: 0 10px; cursor: pointer; }}
-                .status-banner {{ background: #27ae60; color: white; padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; }}
+                body {{ background: var(--bg-color); margin: 0; padding: 20px; }}
+                .dashboard {{ background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 6px solid var(--primary-color); }}
+                .speed-ctrl {{ display: flex; align-items: center; flex-wrap: wrap; gap: 15px; margin-top: 15px; }}
+                .speed-ctrl button {{ font-size: 16px; padding: 8px 20px; border-radius: 6px; border: 1px solid #ccc; background: white; cursor: pointer; transition: 0.2s; font-weight: bold; }}
+                .speed-ctrl button:hover {{ background: var(--bg-color); }}
+                .status-banner {{ background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 12px 15px; border-radius: 8px; font-weight: bold; margin-top: 15px; box-shadow: 0 4px 6px rgba(39,174,96,0.2); letter-spacing: 0.5px; }}
                 
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 768px; 
                     aspect-ratio: 768 / 1024;
                     background: url('/14436.png') no-repeat center center;
                     background-size: cover;
-                    border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                    border-radius: 12px; border: 3px solid #34495e; margin: 0 auto;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
                     overflow: hidden;
                 }}
                 .factory-map svg {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }}
                 
                 .chain-track {{
-                    stroke-dasharray: 10, 8;
-                    animation: moveChain 1.5s linear infinite;
-                    opacity: 0.85;
+                    stroke-dasharray: 12, 10;
+                    animation: moveChain 1.2s linear infinite;
+                    opacity: 0.9;
+                    filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.4));
                 }}
                 @keyframes moveChain {{
-                    from {{ stroke-dashoffset: 18; }}
+                    from {{ stroke-dashoffset: 22; }}
                     to {{ stroke-dashoffset: 0; }}
                 }}
 
                 .mini-card {{ 
-                    position: absolute; width: auto; min-width: var(--card-min-w, 50px); height: var(--card-h, 26px); border-radius: 4px; 
-                    border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.5); transform: translate(-50%, -50%); cursor: pointer; 
-                    display: flex; align-items: center; justify-content: center; font-size: var(--card-font-sz, 12px); 
-                    color: white; text-shadow: 1px 1px 2px black; font-weight: bold; 
-                    transition: all 0.3s; z-index: 10; padding: 0 5px; white-space: nowrap;
+                    position: absolute; 
+                    width: auto; 
+                    min-width: var(--card-min-w, 55px); 
+                    height: var(--card-h, 28px); 
+                    border-radius: 6px; 
+                    border: 2px solid rgba(255,255,255,0.9); 
+                    box-shadow: 0 3px 8px rgba(0,0,0,0.6); 
+                    transform: translate(-50%, -50%); cursor: pointer; 
+                    display: flex; align-items: center; justify-content: center; 
+                    font-size: var(--card-font-sz, 13px); 
+                    color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); 
+                    font-weight: 700; transition: all 0.2s ease-in-out; 
+                    z-index: 10; padding: 0 8px; white-space: nowrap;
+                    backdrop-filter: blur(2px);
                 }}
+                .mini-card:hover {{ transform: translate(-50%, -50%) scale(1.1); z-index: 20; }}
                 .mini-card .details {{ display: none; }}
                 
-                #overlay {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9990; }}
+                #overlay {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); z-index: 9990; }}
                 .mini-card.expanded {{
                     position: fixed !important; top: 50% !important; left: 50% !important;
-                    transform: translate(-50%, -50%) !important;
-                    width: 85vw; max-width: 350px; height: auto; border-radius: 12px; padding: 20px;
-                    z-index: 9999; text-align: left; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-                    cursor: default; display: flex; flex-direction: column; white-space: normal; background-color: #34495e !important;
+                    transform: translate(-50%, -50%) scale(1) !important;
+                    width: 90vw; max-width: 400px; height: auto; border-radius: 16px; padding: 25px;
+                    z-index: 9999; text-align: left; box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+                    cursor: default; display: flex; flex-direction: column; white-space: normal; background: linear-gradient(145deg, #34495e, #2c3e50) !important;
+                    border: 1px solid rgba(255,255,255,0.2);
                 }}
                 .mini-card.expanded .short-id {{ display: none; }}
-                .mini-card.expanded .details {{ display: block; font-size: 16px; line-height: 1.8; width: 100%; position: relative; color: white; }}
+                .mini-card.expanded .details {{ display: block; font-size: 16px; line-height: 2; width: 100%; position: relative; color: #ecf0f1; }}
                 
                 .close-btn {{ 
-                    position: absolute; top: -10px; right: -10px; font-size: 24px; 
-                    cursor: pointer; font-weight: bold; background: rgba(0,0,0,0.7);
-                    border-radius: 50%; width: 32px; height: 32px; text-align: center; line-height: 28px; border: 2px solid white; color: white;
+                    position: absolute; top: -15px; right: -15px; font-size: 22px; 
+                    cursor: pointer; font-weight: bold; background: #e74c3c;
+                    border-radius: 50%; width: 36px; height: 36px; text-align: center; line-height: 32px; border: 3px solid white; color: white;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: 0.2s;
                 }}
+                .close-btn:hover {{ background: #c0392b; transform: scale(1.1); }}
 
-                /* Settings Modal */
-                #settingsModal {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; }}
-                .settings-content {{ background: white; width: 90%; max-width: 600px; padding: 25px; border-radius: 10px; max-height: 90vh; overflow-y: auto; }}
-                .settings-content label {{ display: block; margin-top: 10px; font-weight: bold; font-size: 14px; }}
-                .settings-content input, .settings-content textarea {{ width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; }}
-                .settings-content textarea {{ height: 120px; }}
-                .settings-actions {{ margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; }}
-                .settings-actions button {{ padding: 10px 20px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }}
+                /* 深度客製化的 Settings Modal */
+                #settingsModal {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 10000; align-items: center; justify-content: center; }}
+                .settings-content {{ background: #f8f9fa; width: 90%; max-width: 650px; border-radius: 12px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.4); display: flex; flex-direction: column; }}
+                .settings-header {{ background: var(--primary-color); color: white; padding: 20px; border-radius: 12px 12px 0 0; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }}
+                .settings-header h2 {{ margin: 0; font-size: 20px; }}
+                .settings-body {{ padding: 0 25px 25px 25px; }}
+                .setting-group {{ background: white; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }}
+                .setting-group h4 {{ margin: 0 0 10px 0; color: var(--primary-color); font-size: 16px; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; }}
+                .settings-body label {{ display: block; margin-top: 10px; font-weight: 600; font-size: 14px; color: #475569; }}
+                .settings-body input[type="number"], .settings-body textarea {{ width: 100%; padding: 10px; margin-top: 6px; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; font-family: 'Consolas', monospace; font-size: 14px; transition: 0.2s; }}
+                .settings-body input:focus, .settings-body textarea:focus {{ border-color: #3498db; outline: none; box-shadow: 0 0 0 3px rgba(52,152,219,0.2); }}
+                .settings-body textarea {{ height: 160px; resize: vertical; line-height: 1.5; }}
+                .settings-actions {{ margin-top: 25px; display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid #e2e8f0; padding-top: 20px; }}
+                .settings-actions button {{ padding: 12px 24px; font-weight: bold; font-size: 15px; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }}
+                .btn-save {{ background: var(--success-color); color: white; }}
+                .btn-save:hover {{ background: #219a52; transform: translateY(-2px); }}
+                .btn-reset {{ background: #95a5a6; color: white; }}
+                .btn-reset:hover {{ background: #7f8c8d; }}
+                .btn-close-modal {{ background: #e74c3c; color: white; }}
+                .btn-close-modal:hover {{ background: #c0392b; }}
             </style>
             {I18N_SCRIPT}
         </head>
@@ -177,59 +238,80 @@ def create_templates():
             
             <div id="settingsModal" onclick="event.stopPropagation()">
                 <div class="settings-content">
-                    <h2 data-i18n="settings_title">⚙️ 軌道與卡片客製化設定</h2>
-                    <label data-i18n="card_width">卡片最小寬度 (px):</label>
-                    <input type="number" id="setCardMinW" value="50">
-                    <label data-i18n="card_height">卡片高度 (px):</label>
-                    <input type="number" id="setCardH" value="26">
-                    <label data-i18n="card_font">卡片字體大小 (px):</label>
-                    <input type="number" id="setCardFont" value="12">
-                    
-                    <label data-i18n="track_path_lbl">SVG 軌道 Path 座標 (d):</label>
-                    <textarea id="setTrackPath"></textarea>
-                    
-                    <div class="settings-actions">
-                        <button onclick="resetSettings()" style="background:#95a5a6; color:white;" data-i18n="reset_settings">重設預設值</button>
-                        <button onclick="saveSettings()" style="background:#27ae60; color:white;" data-i18n="save_settings">儲存並套用</button>
-                        <button onclick="toggleSettings()" style="background:#c0392b; color:white;" data-i18n="btn_close">關閉</button>
+                    <div class="settings-header">
+                        <h2 data-i18n="settings_title">⚙️ 系統進階設定與軌道客製化</h2>
+                        <span style="cursor:pointer; font-size: 24px;" onclick="toggleSettings()">×</span>
+                    </div>
+                    <div class="settings-body">
+                        <div class="setting-group">
+                            <h4>卡片外觀客製化</h4>
+                            <label data-i18n="card_width">卡片最小寬度 (px) - 影響顯示範圍:</label>
+                            <input type="number" id="setCardMinW" value="55" min="20" max="200">
+                            
+                            <label data-i18n="card_height">卡片高度 (px) - 影響整體大小:</label>
+                            <input type="number" id="setCardH" value="28" min="15" max="80">
+                            
+                            <label data-i18n="card_font">卡片字體大小 (px):</label>
+                            <input type="number" id="setCardFont" value="13" min="10" max="24">
+                        </div>
+                        
+                        <div class="setting-group">
+                            <h4>SVG 路徑微調 (即時套用)</h4>
+                            <label data-i18n="track_path_lbl">🛠️ SVG 軌道 Path 座標 (d) [支援即時修正]:</label>
+                            <textarea id="setTrackPath"></textarea>
+                            <small style="color: #7f8c8d; margin-top: 5px; display: block;">* 修改後點擊儲存，模擬器軌道將立即重新繪製。</small>
+                        </div>
+                        
+                        <div class="settings-actions">
+                            <button class="btn-reset" onclick="resetSettings()" data-i18n="reset_settings">🔄 重設原廠預設值</button>
+                            <button class="btn-save" onclick="saveSettings()" data-i18n="save_settings">💾 儲存並即時套用</button>
+                            <button class="btn-close-modal" onclick="toggleSettings()" data-i18n="btn_close">關閉</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="dashboard">
-                <h2 data-i18n="sim_title">🏭 粉體塗裝流水線模擬器</h2>
+                <h2 data-i18n="sim_title" style="color: var(--primary-color); margin-top: 0;">🏭 粉體塗裝流水線模擬器</h2>
                 <div class="speed-ctrl">
-                    <span data-i18n="speed">流水線轉速: </span><span id="current-speed" style="font-weight:bold; color:red; font-size:20px;">1100</span>
-                    <button onclick="changeSpeed(-100); event.stopPropagation();">-100</button>
-                    <button onclick="changeSpeed(100); event.stopPropagation();">+100</button>
-                    <br><small><span data-i18n="time_lbl">跑完全程所需時間: </span><span id="total-time" style="font-weight:bold;"></span><span data-i18n="mins"> 分鐘</span></small>
+                    <span data-i18n="speed" style="font-weight: 600; font-size: 16px;">流水線轉速: </span>
+                    <span id="current-speed" style="font-weight:900; color:#e74c3c; font-size:24px; min-width: 60px; text-align: center;">1100</span>
+                    <button onclick="changeSpeed(-100); event.stopPropagation();">📉 -100</button>
+                    <button onclick="changeSpeed(100); event.stopPropagation();">📈 +100</button>
+                    <div style="margin-left: auto; background: #eef2f5; padding: 8px 15px; border-radius: 6px; border: 1px solid #dcdde1;">
+                        <small><span data-i18n="time_lbl">跑完全程所需時間: </span><span id="total-time" style="font-weight:bold; font-size:16px; color: var(--primary-color);"></span><span data-i18n="mins"> 分鐘</span></small>
+                    </div>
                 </div>
                 <div class="status-banner" id="active-banner">
-                    <span><span data-i18n="full_line_status">⚡ 滿線模式持續上料中: </span><span id="active-card-name" style="text-decoration:underline;">暫無</span></span>
+                    <span><span data-i18n="full_line_status">⚡ 滿線模式持續上料中: </span><span id="active-card-name" style="text-decoration:underline; font-size: 16px;">暫無</span></span>
                 </div>
             </div>
             
             <div class="factory-map" id="map">
                 <svg viewBox="0 0 1000 1333" preserveAspectRatio="none">
+                    <!-- 依據需求修正的客製化初始座標[span_5](start_span)[span_5](end_span) -->
+                    <!-- 1. 烘烤爐下方往下1mm (Y: 352 -> 382), 右側下切往左1mm (X: 930 -> 920) -->
+                    <!-- 2. 左切下拉2mm, 噴房下方往上拉至正中央 (Y: 510 -> 312) -->
+                    <!-- 3. 左側直線往右3mm (X: 461 -> 491) -->
                     <path id="track" d="
-                        M 461 1180
-                        L 461 280
+                        M 491 1180
+                        L 491 280
                         L 91 280
                         L 91 98
                         L 931 98
                         L 931 185
                         L 580 186
                         L 580 271
-                        L 930 271
-                        L 930 352
-                        L 580 352
+                        L 920 271
+                        L 920 382
+                        L 580 382
                         L 580 432
-                        L 930 432
-                        L 930 510
-                        L 580 510
+                        L 920 432
+                        L 920 312
+                        L 580 312
                         L 580 470
                         L 930 1180
-                        L 461 1180 Z" 
+                        L 491 1180 Z" 
                         fill="none" stroke="#e74c3c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                 </svg>
             </div>
@@ -239,31 +321,32 @@ def create_templates():
                 const track = document.getElementById('track');
                 const overlay = document.getElementById('overlay');
                 
+                // 客製化後的預設座標字串[span_6](start_span)[span_6](end_span)
                 const defaultPathD = `
-                    M 461 1180
-                    L 461 280
+                    M 491 1180
+                    L 491 280
                     L 91 280
                     L 91 98
                     L 931 98
                     L 931 185
                     L 580 186
                     L 580 271
-                    L 930 271
-                    L 930 352
-                    L 580 352
+                    L 920 271
+                    L 920 382
+                    L 580 382
                     L 580 432
-                    L 930 432
-                    L 930 510
-                    L 580 510
+                    L 920 432
+                    L 920 312
+                    L 580 312
                     L 580 470
                     L 930 1180
-                    L 461 1180 Z
+                    L 491 1180 Z
                 `.trim();
 
-                function loadSettings() {
-                    const savedW = localStorage.getItem('cardMinW') || '50';
-                    const savedH = localStorage.getItem('cardH') || '26';
-                    const savedFont = localStorage.getItem('cardFont') || '12';
+                function loadSettings() {{
+                    const savedW = localStorage.getItem('cardMinW') || '55';
+                    const savedH = localStorage.getItem('cardH') || '28';
+                    const savedFont = localStorage.getItem('cardFont') || '13';
                     const savedPath = localStorage.getItem('trackPathD') || defaultPathD;
 
                     document.documentElement.style.setProperty('--card-min-w', savedW + 'px');
@@ -276,14 +359,22 @@ def create_templates():
                     document.getElementById('setCardH').value = savedH;
                     document.getElementById('setCardFont').value = savedFont;
                     document.getElementById('setTrackPath').value = savedPath;
-                }
+                }}
 
-                function toggleSettings() {
+                function toggleSettings() {{
                     const modal = document.getElementById('settingsModal');
-                    modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
-                }
+                    if (modal.style.display === 'flex') {{
+                        modal.style.opacity = '0';
+                        setTimeout(() => modal.style.display = 'none', 200);
+                    }} else {{
+                        modal.style.display = 'flex';
+                        modal.style.opacity = '1';
+                        // Refresh textarea with active path
+                        document.getElementById('setTrackPath').value = track.getAttribute('d').trim();
+                    }}
+                }}
 
-                function saveSettings() {
+                function saveSettings() {{
                     const w = document.getElementById('setCardMinW').value;
                     const h = document.getElementById('setCardH').value;
                     const f = document.getElementById('setCardFont').value;
@@ -296,23 +387,30 @@ def create_templates():
 
                     loadSettings();
                     toggleSettings();
-                    if(typeof renderLineCards === 'function' && sys_state_cache.cards) {
+                    
+                    // 重新計算長度並更新卡片位置[span_7](start_span)[span_7](end_span)
+                    trackLength = track.getTotalLength();
+                    if(typeof renderLineCards === 'function' && sys_state_cache.cards) {{
                         renderLineCards(sys_state_cache.cards);
-                    }
-                }
+                    }}
+                }}
 
-                function resetSettings() {
+                function resetSettings() {{
                     localStorage.removeItem('cardMinW');
                     localStorage.removeItem('cardH');
                     localStorage.removeItem('cardFont');
                     localStorage.removeItem('trackPathD');
                     loadSettings();
-                    toggleSettings();
-                }
+                    // Optional visual feedback
+                    const btn = document.querySelector('.btn-reset');
+                    const oldText = btn.innerHTML;
+                    btn.innerHTML = '✅ 已重設';
+                    setTimeout(() => btn.innerHTML = oldText, 1500);
+                }}
 
-                window.addEventListener('DOMContentLoaded', () => {
+                window.addEventListener('DOMContentLoaded', () => {{
                     loadSettings();
-                });
+                }});
 
                 let trackLength = track.getTotalLength();
                 let speedIndex = 11;
@@ -350,7 +448,7 @@ def create_templates():
                     if (activeId && sys_state_cache.cards[activeId]) {{
                         const c = sys_state_cache.cards[activeId];
                         let name = c.part_name && !c.part_name.startsWith('data:image') ? c.part_name : c.part_no;
-                        el.innerHTML = `${{renderField(name)}} (${{c.color}})`;
+                        el.innerHTML = `${{renderField(name)}} <span style="font-size: 14px; opacity: 0.9;">(${{c.color}})</span>`;
                     }} else {{
                         el.innerHTML = t('none_loading');
                     }}
@@ -394,7 +492,19 @@ def create_templates():
                                 div.style.top = yPercent + '%';
                             }}
                             
-                            div.style.backgroundColor = card.colorCode || '#333';
+                            div.style.backgroundColor = card.colorCode || '#34495e';
+                            
+                            // Adjust text color based on background luminance for readability
+                            const hex = card.colorCode.replace('#', '');
+                            const r = parseInt(hex.substr(0, 2), 16);
+                            const g = parseInt(hex.substr(2, 2), 16);
+                            const b = parseInt(hex.substr(4, 2), 16);
+                            const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+                            if(yiq >= 128 && !div.classList.contains('expanded')) {{
+                                div.style.color = '#111';
+                                div.style.textShadow = '1px 1px 2px rgba(255,255,255,0.8)';
+                            }}
+
                             div.onclick = (e) => toggleCard(card.id, e);
                             
                             let shortLabel = t('comp_lbl');
@@ -408,17 +518,27 @@ def create_templates():
                                 <span class="short-id">${{shortLabel}}</span>
                                 <div class="details">
                                     <div class="close-btn" onclick="toggleCard('${{card.id}}', event)">×</div>
-                                    <b>${{t('part_no')}}</b> ${{renderField(card.part_no)}}<br>
-                                    <b>${{t('part_name')}}</b> ${{renderField(card.part_name)}}<br>
-                                    <b>機/櫃:</b> ${{renderField(card.model_no) || '未填寫'}}<br>
-                                    <b>${{t('qty')}}</b> ${{card.qty}}<br>
-                                    <b>${{t('color')}}</b> ${{card.color}}
+                                    <div style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 10px;">
+                                        <b style="color: #f1c40f;">${{t('part_no')}}</b> <br>${{renderField(card.part_no)}}
+                                    </div>
+                                    <div style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 10px;">
+                                        <b style="color: #f1c40f;">${{t('part_name')}}</b> <br>${{renderField(card.part_name)}}
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                        <div><b style="color: #3498db;">機/櫃:</b><br> ${{renderField(card.model_no) || '未填寫'}}</div>
+                                        <div><b style="color: #e74c3c;">${{t('qty')}}</b><br> <span style="font-size:18px; font-weight:bold;">${{card.qty}}</span></div>
+                                    </div>
+                                    <div style="margin-top: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;">
+                                        <b>${{t('color')}}</b>: <span style="display:inline-block;width:16px;height:16px;background:${{card.colorCode}};border:1px solid #fff;border-radius:3px;vertical-align:middle;"></span> ${{card.color}}
+                                    </div>
                                 </div>
                             `;
                             map.appendChild(div);
                         }}
                     }});
                 }}
+                
+                // 動態同步頻率[span_8](start_span)[span_8](end_span)
                 setInterval(() => {{ socket.emit('request_sync'); }}, 1000);
             </script>
         </body>
@@ -429,32 +549,37 @@ def create_templates():
         <!DOCTYPE html>
         <html>
         <head>
+            <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>現場待料區</title>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
             <style>
-                body {{ font-family: '微軟正黑體', sans-serif; background: #e9ecef; padding: 20px; margin: 0; padding-bottom: 150px;}}
-                .form-card {{ background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }}
-                .input-group {{ display: flex; gap: 5px; margin: 5px 0; align-items: center; }}
-                select, input, button {{ padding: 10px; width: 100%; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; font-size: 16px; }}
-                .btn-scan {{ background: #6c757d; color: white; width: 80px; flex-shrink: 0; font-weight: bold; cursor: pointer; padding: 5px;}}
-                .btn-add {{ background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; margin-top:10px; }}
-                .data-card {{ background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 10px solid #ccc; display: flex; justify-content: space-between; align-items: center;}}
-                .btn-send {{ background: #007bff; color: white; width: auto; padding: 8px; font-weight:bold;}}
-                .btn-del {{ background: #dc3545; color: white; width: auto; padding: 8px; font-weight:bold;}}
-                .fixed-bottom {{ position: fixed; bottom: 0; left: 0; right: 0; height: 120px; background: #343a40; color: white; padding: 10px; overflow-y: auto; z-index: 50;}}
+                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #e9ecef; padding: 20px; margin: 0; padding-bottom: 150px;}}
+                .form-card {{ background: white; padding: 20px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); margin-bottom: 25px; transition: background-color 0.3s; border-top: 5px solid var(--primary-color); }}
+                .input-group {{ display: flex; gap: 8px; margin: 10px 0; align-items: center; }}
+                select, input, button {{ padding: 12px; width: 100%; box-sizing: border-box; border-radius: 6px; border: 1px solid #ced4da; font-size: 16px; outline: none; transition: 0.2s; }}
+                input:focus, select:focus {{ border-color: #4dabf7; box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.2); }}
+                .btn-scan {{ background: #6c757d; color: white; width: 90px; flex-shrink: 0; font-weight: bold; cursor: pointer; padding: 12px 5px; border: none; }}
+                .btn-scan:hover {{ background: #5a6268; }}
+                .btn-add {{ background: var(--success-color); color: white; border: none; cursor: pointer; font-weight: bold; margin-top:15px; font-size: 18px; padding: 15px; }}
+                .btn-add:hover {{ background: #219a52; transform: translateY(-2px); }}
+                .data-card {{ background: white; padding: 15px; border-radius: 10px; margin-bottom: 12px; border-left: 12px solid #ccc; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 3px 6px rgba(0,0,0,0.05); }}
+                .data-info {{ flex-grow: 1; margin-right: 15px; line-height: 1.5; }}
+                .btn-send {{ background: #3498db; color: white; width: auto; padding: 10px 15px; font-weight:bold; border: none; border-radius: 5px; cursor: pointer; }}
+                .btn-del {{ background: var(--danger-color); color: white; width: auto; padding: 10px 15px; font-weight:bold; border: none; border-radius: 5px; cursor: pointer; }}
+                .fixed-bottom {{ position: fixed; bottom: 0; left: 0; right: 0; height: 130px; background: #2c3e50; color: white; padding: 15px; overflow-y: auto; z-index: 50; box-shadow: 0 -5px 15px rgba(0,0,0,0.2); }}
                 
-                #scannerModal {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; flex-direction: column; align-items: center; justify-content: center; }}
-                .video-container {{ position: relative; width: 90%; max-width: 500px; aspect-ratio: 4/3; overflow: hidden; border: 2px solid #fff; border-radius: 10px;}}
+                #scannerModal {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 999; flex-direction: column; align-items: center; justify-content: center; }}
+                .video-container {{ position: relative; width: 90%; max-width: 500px; aspect-ratio: 4/3; overflow: hidden; border: 3px solid #fff; border-radius: 12px; box-shadow: 0 0 20px rgba(0,255,0,0.2); }}
                 video {{ width: 100%; height: 100%; object-fit: cover; }}
-                .scan-box {{ position: absolute; top: 35%; left: 10%; width: 80%; height: 30%; border: 2px solid #00ff00; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); pointer-events: none; }}
-                .scan-controls {{ margin-top: 20px; display: flex; gap: 15px; }}
-                .scan-controls button {{ width: auto; padding: 12px 25px; font-weight: bold; font-size: 16px; border: none;}}
+                .scan-box {{ position: absolute; top: 35%; left: 10%; width: 80%; height: 30%; border: 3px solid #00ff00; box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); pointer-events: none; }}
+                .scan-controls {{ margin-top: 25px; display: flex; gap: 20px; }}
+                .scan-controls button {{ width: auto; padding: 15px 30px; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; }}
             </style>
             {I18N_SCRIPT}
         </head>
         <body>
-            <h2 data-i18n="wait_title">📦 現場待料區</h2>
+            <h2 data-i18n="wait_title" style="color: var(--primary-color);">📦 現場待料區</h2>
             <div class="form-card" id="inputForm">
                 <select id="colorSelect" onchange="previewColor()">
                     <option value="WE白色,#FFFFFF">WE白色</option>
@@ -499,28 +624,29 @@ def create_templates():
                     <input type="text" id="modelNo" placeholder="機種第幾櫃 (手動輸入 / Nhập model)">
                     <button type="button" class="btn-scan" data-i18n="scan_btn" onclick="openScanner('modelNo')">📷 掃描</button>
                 </div>
-                <input type="number" id="qty" placeholder="數量 / Số lượng">
+                <input type="number" id="qty" placeholder="數量 / Số lượng" style="margin-top: 10px;">
                 <button class="btn-add" data-i18n="add_btn" onclick="createCard()">➕ 新增待上線構件</button>
             </div>
 
-            <hr>
-            <h3 data-i18n="list_wait">待處理清單 (順序排列)</h3>
+            <hr style="border:1px solid #dee2e6; margin: 20px 0;">
+            <h3 data-i18n="list_wait" style="color: #495057;">待處理清單 (順序排列)</h3>
             <div id="waiting-list"></div>
+            
             <div class="fixed-bottom">
-                <h4 data-i18n="ali_sync" style="margin-top:5px;">[待上料_阿利] 同步接收區</h4>
-                <div id="ali-list"></div>
+                <h4 data-i18n="ali_sync" style="margin-top:0; border-bottom: 2px solid #34495e; padding-bottom: 8px; color: #f39c12;">[待上料_阿利] 同步接收區</h4>
+                <div id="ali-list" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
             </div>
 
             <div id="scannerModal">
-                <h3 id="scanTitle" data-i18n="ocr_title" style="color: white; margin-bottom:10px;">📸 拍照系統</h3>
+                <h3 id="scanTitle" data-i18n="ocr_title" style="color: white; margin-bottom:15px; font-size: 24px;">📸 拍照系統</h3>
                 <div class="video-container">
                     <video id="videoElement" autoplay playsinline></video>
                     <div class="scan-box"></div>
                 </div>
-                <p id="scanStatus" data-i18n="ocr_tip" style="color:#00ff00; margin-top:15px; font-weight:bold;">請將目標對準綠色框框內</p>
+                <p id="scanStatus" data-i18n="ocr_tip" style="color:#00ff00; margin-top:20px; font-weight:bold; font-size: 18px; letter-spacing: 1px;">請將目標對準綠色框框內</p>
                 <div class="scan-controls">
-                    <button onclick="captureAndStore()" data-i18n="btn_pic" style="background:#28a745; color:white;">📸 拍照儲存</button>
-                    <button onclick="closeScanner()" data-i18n="btn_close" style="background:#dc3545; color:white;">關閉</button>
+                    <button onclick="captureAndStore()" data-i18n="btn_pic" style="background:#28a745; color:white; box-shadow: 0 4px 10px rgba(40,167,69,0.4);">📸 拍照儲存</button>
+                    <button onclick="closeScanner()" data-i18n="btn_close" style="background:#dc3545; color:white; box-shadow: 0 4px 10px rgba(220,53,69,0.4);">關閉</button>
                 </div>
                 <canvas id="canvasElement" style="display:none;"></canvas>
             </div>
@@ -532,7 +658,14 @@ def create_templates():
                 
                 function previewColor() {{
                     const val = document.getElementById('colorSelect').value.split(',');
+                    // Add a subtle tint to the form background based on color selection[span_9](start_span)[span_9](end_span)
                     document.getElementById('inputForm').style.backgroundColor = val[1];
+                    const hex = val[1].replace('#', '');
+                    const r = parseInt(hex.substr(0, 2), 16);
+                    const g = parseInt(hex.substr(2, 2), 16);
+                    const b = parseInt(hex.substr(4, 2), 16);
+                    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+                    document.getElementById('inputForm').style.color = (yiq >= 128) ? '#000' : '#fff';
                 }}
 
                 function createCard() {{
@@ -566,22 +699,29 @@ def create_templates():
 
                     Object.values(sys_state_cache.cards).forEach(card => {{
                         const div = document.createElement('div');
-                        div.className = 'data-card';
-                        div.style.borderColor = card.colorCode;
                         
-                        let modelInfo = card.model_no ? ` [${{renderField(card.model_no)}}]` : '';
+                        let modelInfo = card.model_no ? ` <span style="color:#e67e22; font-weight:bold;">[${{renderField(card.model_no)}}]</span>` : '';
                         
-                        div.innerHTML = `
-                            <div><b>${{renderField(card.part_no)}}</b> (${{renderField(card.part_name)}})${{modelInfo}} - ${{card.color}} x ${{card.qty}}</div>
-                            <div style="display:flex; gap:5px;">
-                                ${{card.status === 'waiting' ? 
-                                    `<button class="btn-send" onclick="sendToAli('${{card.id}}')">${{t('btn_send_ali')}}</button>
-                                     <button class="btn-del" onclick="delCard('${{card.id}}')">${{t('btn_del')}}</button>` 
-                                    : ''}}
-                            </div>
-                        `;
-                        if(card.status === 'waiting') {{ waitList.appendChild(div); }}
-                        if(card.status === 'loading') {{ aliList.appendChild(div.cloneNode(true)); }}
+                        if(card.status === 'waiting') {{
+                            div.className = 'data-card';
+                            div.style.borderLeftColor = card.colorCode;
+                            div.innerHTML = `
+                                <div class="data-info">
+                                    <div style="font-size: 18px; margin-bottom: 5px;"><b>${{renderField(card.part_no)}}</b> <span style="color:#666;">(${{renderField(card.part_name)}})</span></div>
+                                    <div style="font-size: 14px; color: #555;">${{modelInfo}} | 色: <b style="color:${{card.colorCode !== '#FFFFFF' ? card.colorCode : '#000'}}">${{card.color}}</b> | 數量: <b>${{card.qty}}</b></div>
+                                </div>
+                                <div style="display:flex; gap:8px; flex-direction: column;">
+                                    <button class="btn-send" onclick="sendToAli('${{card.id}}')">${{t('btn_send_ali')}}</button>
+                                    <button class="btn-del" onclick="delCard('${{card.id}}')">${{t('btn_del')}}</button>
+                                </div>
+                            `;
+                            waitList.appendChild(div);
+                        }} else if(card.status === 'loading') {{
+                            const miniDiv = document.createElement('div');
+                            miniDiv.style.cssText = `background: white; color: #333; padding: 5px 10px; border-radius: 4px; border-left: 5px solid ${{card.colorCode}}; font-size: 13px; font-weight: bold;`;
+                            miniDiv.innerHTML = `${{renderField(card.part_no)}} (${{card.qty}})`;
+                            aliList.appendChild(miniDiv);
+                        }}
                     }});
                 }}
 
@@ -615,6 +755,7 @@ def create_templates():
                         video.srcObject = stream;
                     }} catch (err) {{
                         document.getElementById('scanStatus').innerText = '無法存取相機 / Lỗi Camera';
+                        document.getElementById('scanStatus').style.color = '#ff4757';
                     }}
                 }}
 
@@ -675,7 +816,7 @@ def create_templates():
                     if(!previewEl) {{
                         previewEl = document.createElement('img');
                         previewEl.id = currentScanTarget + 'Preview';
-                        previewEl.style = "max-height: 40px; margin-left: 5px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer;";
+                        previewEl.style = "max-height: 48px; margin-left: 8px; border-radius: 6px; border: 2px solid #3498db; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);";
                         previewEl.title = "點擊刪除照片";
                         previewEl.onclick = function() {{
                             scanData[currentScanTarget] = '';
@@ -698,17 +839,22 @@ def create_templates():
         <!DOCTYPE html>
         <html>
         <head>
+            <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>待上料_阿利</title>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
             <style>
-                body {{ font-family: '微軟正黑體', sans-serif; background: #e2e8f0; padding: 20px; padding-bottom: 150px;}}
-                .card {{ background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 10px solid #ccc;}}
-                .grid-form {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }}
-                select, button {{ padding: 8px; width: 100%; box-sizing: border-box; }}
-                .btn-line {{ background: #ff9800; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; margin-top: 10px; font-weight:bold;}}
-                .fixed-bottom {{ position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background: #2c3e50; color: white; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; z-index:50;}}
-                .time-calc {{ font-size: 14px; color: #d35400; font-weight: bold; margin-top: 10px; }}
+                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #e2e8f0; padding: 20px; padding-bottom: 120px; margin: 0; }}
+                h2 {{ color: var(--primary-color); }}
+                .card {{ background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border-top: 5px solid #ccc; }}
+                .grid-form {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; }}
+                .grid-form label {{ font-weight: bold; color: #495057; font-size: 14px; display: flex; flex-direction: column; gap: 5px; }}
+                select, button {{ padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ced4da; border-radius: 6px; font-size: 15px; }}
+                select:focus {{ border-color: #f39c12; outline: none; }}
+                .btn-line {{ background: #f39c12; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight:bold; font-size: 16px; box-shadow: 0 4px 6px rgba(243,156,18,0.3); transition: 0.2s; }}
+                .btn-line:hover {{ background: #e67e22; transform: translateY(-2px); }}
+                .fixed-bottom {{ position: fixed; bottom: 0; left: 0; right: 0; height: 90px; background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; z-index:50; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; }}
+                .time-calc {{ font-size: 15px; color: #d35400; font-weight: bold; margin-top: 12px; background: #fdf2e9; padding: 10px; border-radius: 6px; border-left: 4px solid #d35400; }}
             </style>
             {I18N_SCRIPT}
         </head>
@@ -729,9 +875,15 @@ def create_templates():
                         if(card.status === 'loading') {{
                             const div = document.createElement('div');
                             div.className = 'card';
-                            div.style.borderColor = card.colorCode;
+                            div.style.borderTopColor = card.colorCode;
                             div.innerHTML = `
-                                <strong>${{t('part_no')}} ${{renderField(card.part_no)}} | ${{t('part_name')}} ${{renderField(card.part_name)}} | ${{card.model_no ? '機/櫃: ' + renderField(card.model_no) + ' | ' : ''}}${{t('qty')}} ${{card.qty}} | ${{t('color')}} ${{card.color}}</strong>
+                                <div style="font-size: 16px; line-height: 1.6;">
+                                    <strong>${{t('part_no')}}</strong> <span style="color:#2980b9;">${{renderField(card.part_no)}}</span> | 
+                                    <strong>${{t('part_name')}}</strong> <span style="color:#2980b9;">${{renderField(card.part_name)}}</span><br>
+                                    ${{card.model_no ? '<strong>機/櫃:</strong> <span style="color:#e67e22;">' + renderField(card.model_no) + '</span> | ' : ''}}
+                                    <strong>${{t('qty')}}</strong> <span style="font-size: 18px; color: #e74c3c;">${{card.qty}}</span> | 
+                                    <strong>${{t('color')}}</strong> <span style="background:${{card.colorCode}}; color:${{card.colorCode==='#FFFFFF'?'#000':'#fff'}}; padding: 2px 6px; border-radius: 4px;">${{card.color}}</span>
+                                </div>
                                 <div class="grid-form">
                                     <label>${{t('lbl_hang')}} <select id="hang_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})"><option value="1">1</option><option value="2">2</option></select></label>
                                     <label>${{t('lbl_empty')}} <select id="empty_${{card.id}}" onchange="calcTime('${{card.id}}', ${{card.qty}})">${{genOptions(10)}}</select></label>
@@ -767,7 +919,7 @@ def create_templates():
                     const totalMins = Math.round(((hang + empty + interval) * qty) / speedIndex);
                     const h = Math.floor(totalMins / 60);
                     const m = totalMins % 60;
-                    document.getElementById('time_' + id).innerText = `${{t('est_time')}} ${{h}} ${{t('hrs')}} ${{m}} ${{t('mins')}}`;
+                    document.getElementById('time_' + id).innerHTML = `⏳ ${{t('est_time')}} <b>${{h}}</b> ${{t('hrs')}} <b>${{m}}</b> ${{t('mins')}}`;
                 }}
 
                 function sendToLine(id) {{
@@ -786,28 +938,37 @@ def create_templates():
         <!DOCTYPE html>
         <html>
         <head>
+            <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>下料_完成</title>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
             <style>
-                body {{ font-family: '微軟正黑體', sans-serif; background: #fdf2e9; padding: 20px;}}
-                .card {{ background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 10px solid #ccc; display: flex; justify-content: space-between; align-items: center;}}
-                .btn-done {{ background: #27ae60; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight:bold;}}
-                .done-table-container {{ overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
-                .done-table {{ width: 100%; border-collapse: collapse; min-width: 600px; text-align: center; font-size: 14px;}}
-                .done-table th, .done-table td {{ border: 1px solid #dee2e6; padding: 12px 8px; }}
-                .done-table th {{ background: #34495e; color: white; font-weight: bold; white-space: nowrap;}}
+                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fdf2e9; padding: 20px; margin: 0; }}
+                h2, h3 {{ color: var(--primary-color); }}
+                .card {{ background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 8px solid #ccc; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }}
+                .btn-done {{ background: var(--success-color); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight:bold; font-size: 16px; box-shadow: 0 4px 6px rgba(39,174,96,0.3); transition: 0.2s; }}
+                .btn-done:hover {{ background: #219a52; transform: translateY(-2px); }}
+                .done-table-container {{ overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); padding: 5px; }}
+                .done-table {{ width: 100%; border-collapse: collapse; min-width: 700px; text-align: center; font-size: 15px; }}
+                .done-table th, .done-table td {{ border: 1px solid #e9ecef; padding: 15px 10px; }}
+                .done-table th {{ background: var(--primary-color); color: white; font-weight: bold; white-space: nowrap; }}
                 .done-table tr:nth-child(even) {{ background: #f8f9fa; }}
-                .empty-record {{ text-align: center; color: #7f8c8d; padding: 20px; font-weight: bold; }}
+                .done-table tr:hover {{ background: #f1f3f5; }}
+                .empty-record {{ text-align: center; color: #adb5bd; padding: 40px; font-weight: bold; font-size: 18px; }}
             </style>
             {I18N_SCRIPT}
         </head>
         <body>
             <h2 data-i18n="unload_title">✅ 下料與完成紀錄區</h2>
-            <h3 data-i18n="unload_wait">待下料區 (模擬器跑完自動傳送至此)</h3>
+            
+            <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ffeeba;">
+                <h3 data-i18n="unload_wait" style="margin: 0; font-size: 16px;">待下料區 (模擬器跑完自動傳送至此)</h3>
+            </div>
+            
             <div id="unload-list"></div>
-            <hr>
-            <h3 data-i18n="done_list">歷史完成紀錄</h3>
+            
+            <hr style="border: 1px solid #e2e8f0; margin: 30px 0;">
+            <h3 data-i18n="done_list" style="margin-bottom: 15px;">歷史完成紀錄</h3>
             <div id="done-list" class="done-table-container"></div>
 
             <script>
@@ -823,9 +984,9 @@ def create_templates():
                     <table class="done-table">
                         <thead>
                             <tr>
-                                <th>1. 料號 (Mã LK)</th>
-                                <th>2. 品名 (Tên LK)</th>
-                                <th>3. 機種第幾櫃 (Model)</th>
+                                <th>料號 (Mã LK)</th>
+                                <th>品名 (Tên LK)</th>
+                                <th>機種/櫃 (Model)</th>
                                 <th>數量 (SL)</th>
                                 <th>顏色 (Màu)</th>
                                 <th>完成時間 (Thời gian)</th>
@@ -839,9 +1000,15 @@ def create_templates():
                         if(card.status === 'unloading') {{
                             const div = document.createElement('div');
                             div.className = 'card';
-                            div.style.borderColor = card.colorCode;
+                            div.style.borderLeftColor = card.colorCode;
                             div.innerHTML = `
-                                <div><b>${{renderField(card.part_no)}}</b> - ${{card.color}} x ${{card.qty}}</div>
+                                <div style="font-size: 16px;">
+                                    <b>${{renderField(card.part_no)}}</b> <span style="color:#7f8c8d;">(${{renderField(card.part_name)}})</span><br>
+                                    <div style="margin-top: 8px;">
+                                        <span style="display:inline-block;width:14px;height:14px;background:${{card.colorCode}};border:1px solid #333;border-radius:3px;vertical-align:middle;margin-right:5px;"></span>
+                                        ${{card.color}} &times; <b style="color: #e74c3c; font-size: 18px;">${{card.qty}}</b>
+                                    </div>
+                                </div>
                                 <button class="btn-done" onclick="finishCard('${{card.id}}')">${{t('btn_done')}}</button>
                             `;
                             unloadList.appendChild(div);
@@ -849,15 +1016,15 @@ def create_templates():
                             hasCompleted = true;
                             tableHTML += `
                                 <tr>
-                                    <td>${{renderField(card.part_no)}}</td>
+                                    <td style="font-weight: 500;">${{renderField(card.part_no)}}</td>
                                     <td>${{renderField(card.part_name)}}</td>
                                     <td style="font-weight:bold; color:#d35400;">${{renderField(card.model_no) || '-'}}</td>
-                                    <td>${{card.qty}}</td>
+                                    <td style="font-weight:bold; color:#e74c3c;">${{card.qty}}</td>
                                     <td>
-                                        <span style="display:inline-block;width:14px;height:14px;background:${{card.colorCode}};border:1px solid #333;border-radius:3px;vertical-align:middle;margin-right:5px;"></span>
+                                        <span style="display:inline-block;width:16px;height:16px;background:${{card.colorCode}};border:1px solid #aaa;border-radius:4px;vertical-align:middle;margin-right:6px;"></span>
                                         ${{card.color}}
                                     </td>
-                                    <td style="font-size:12px; color:#555;">${{card.finish_time}}</td>
+                                    <td style="font-size:13px; color:#6c757d; font-family: monospace;">${{card.finish_time}}</td>
                                 </tr>
                             `;
                         }}
@@ -883,12 +1050,14 @@ def create_templates():
         """
     }
 
+    # 將所有模板檔案寫入目錄中[span_10](start_span)[span_10](end_span)
     for filename, content in html_files.items():
         filepath = os.path.join('templates', filename)
         if not os.path.exists(filepath):
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(content)
 
+# 設定 Flask 路由[span_11](start_span)[span_11](end_span)
 @app.route('/')
 def index(): return render_template('simulator.html')
 @app.route('/wait')
@@ -900,9 +1069,11 @@ def unload(): return render_template('unloading.html')
 
 @app.route('/14436.png')
 def serve_image():
+    # 服務指定的背景圖片 14436.png[span_12](start_span)[span_12](end_span)
     return send_from_directory('.', '14436.png')
 
 def broadcast_state():
+    """廣播當前狀態至所有連線的客戶端[span_13](start_span)[span_13](end_span)"""
     socketio.emit('update_state', sys_state)
 
 @socketio.on('connect')
@@ -911,6 +1082,7 @@ def handle_connect():
 
 @socketio.on('request_sync')
 def handle_sync():
+    # 處理同步請求[span_14](start_span)[span_14](end_span)
     emit('update_state', sys_space if 'sys_space' in globals() else sys_state)
 
 @socketio.on('change_speed')
@@ -940,6 +1112,9 @@ def change_status(data):
 
 @socketio.on('send_to_line')
 def send_to_line(data):
+    """
+    將構件發送至流水線，同時啟動滿線模擬邏輯[span_15](start_span)[span_15](end_span)。
+    """
     global current_active_card_template
     if isinstance(data, dict):
         card_id = data.get('id')
@@ -981,6 +1156,9 @@ def finish_card(card_id):
         broadcast_state()
 
 def continuous_line_inserter():
+    """
+    後台執行緒，負責模擬連續滿線插入的機制[span_16](start_span)[span_16](end_span)。
+    """
     global clone_counter, current_active_card_template
     while True:
         time.sleep(1)
@@ -1023,14 +1201,17 @@ def continuous_line_inserter():
                 sys_state['cards'][clone_id] = clone_card
                 broadcast_state()
 
+# 啟動自動插入的守護執行緒[span_17](start_span)[span_17](end_span)
 inserter_thread = threading.Thread(target=continuous_line_inserter, daemon=True)
 inserter_thread.start()
 
 if __name__ == '__main__':
     import shutil
+    # 啟動前先清理並重建 templates 資料夾，確保吃到最新設計[span_18](start_span)[span_18](end_span)
     if os.path.exists('templates'):
         shutil.rmtree('templates')
     
     create_templates()
     port = int(os.environ.get('PORT', 5000))
+    # 執行 Flask-SocketIO 應用程式[span_19](start_span)[span_19](end_span)
     socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
