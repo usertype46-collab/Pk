@@ -106,7 +106,6 @@ def create_templates():
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 768px; 
                     aspect-ratio: 768 / 1024;
-                    /* 背景圖 14436.png 顯示現場最新的拓樸結構 */
                     background: url('/14436.png') no-repeat center center;
                     background-size: cover;
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
@@ -118,7 +117,7 @@ def create_templates():
                 .chain-track {{
                     stroke-dasharray: 10, 8;
                     animation: moveChain 1.5s linear infinite;
-                    opacity: 0.8;
+                    opacity: 0.85;
                 }}
                 @keyframes moveChain {{
                     from {{ stroke-dashoffset: 18; }}
@@ -169,29 +168,32 @@ def create_templates():
             </div>
             
             <div class="factory-map" id="map">
-                <svg viewBox="0 0 768 1024" preserveAspectRatio="none">
+                <svg viewBox="0 0 1000 1333" preserveAspectRatio="none">
+                    <!--
+                    【修正後精準貼合實體輸送帶的座標系統】 (基於 1000x1333 比例對齊黑色軌道中心線)
+                    -->
                     <path id="track" d="
-                        M 348 630 
-                        L 348 300 
-                        L 88 300 
-                        L 88 135 
-                        L 555 135 
-                        L 555 240 
-                        L 710 240 
-                        L 710 325 
-                        L 555 325 
-                        L 555 425 
-                        L 710 425 
-                        L 710 840 
-                        L 640 840 
-                        L 640 735 
-                        L 280 735 
-                        L 280 840 
-                        L 140 840 
-                        L 140 940 
-                        L 348 940 
-                        L 348 630" 
-                        fill="none" stroke="#e74c3c" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
+                        M 450 820 
+                        L 450 395 
+                        L 115 395 
+                        L 115 180 
+                        L 725 180 
+                        L 725 315 
+                        L 930 315 
+                        L 930 430 
+                        L 725 430 
+                        L 725 560 
+                        L 930 560 
+                        L 930 1110 
+                        L 840 1110 
+                        L 840 965 
+                        L 365 965 
+                        L 365 1110 
+                        L 185 1110 
+                        L 185 1245 
+                        L 450 1245 
+                        L 450 820" 
+                        fill="none" stroke="#e74c3c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
                 </svg>
             </div>
 
@@ -272,8 +274,8 @@ def create_templates():
                                 div.style.left = '50%';
                                 div.style.top = '50%';
                             }} else {{
-                                const xPercent = (point.x / 768) * 100;
-                                const yPercent = (point.y / 1024) * 100;
+                                const xPercent = (point.x / 1000) * 100;
+                                const yPercent = (point.y / 1333) * 100;
                                 div.style.left = xPercent + '%';
                                 div.style.top = yPercent + '%';
                             }}
