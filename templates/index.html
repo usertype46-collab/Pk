@@ -1,1 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客製化粉體塗裝流水線模擬器</title>
+    
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #1e1e1e; color: #fff; }
+        .app-container { display: flex; height: 100vh; }
+        .canvas-area { flex: 1; position: relative; overflow: hidden; background: #2d2d2d; }
+        .sidebar { width: 300px; background: #333; padding: 20px; box-shadow: -2px 0 5px rgba(0,0,0,0.5); z-index: 10; }
+        .btn { background: #e67e22; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; width: 100%; margin-bottom: 10px; font-weight: bold; }
+        .btn:hover { background: #d35400; }
+        .btn-edit { background: #2980b9; }
+        .btn-edit:hover { background: #2471a3; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 14px; color: #aaa; }
+        .form-group input { width: 100%; padding: 8px; box-sizing: border-box; background: #444; border: 1px solid #555; color: white; border-radius: 4px; }
+        
+        /* D3 SVG 樣式 */
+        .track-line { fill: none; stroke: #555; stroke-width: 8px; stroke-dasharray: 10, 5; animation: flow 20s linear infinite; }
+        .node-circle { fill: #e74c3c; stroke: #fff; stroke-width: 2px; cursor: grab; }
+        .node-circle:active { cursor: grabbing; }
+        .building-label { fill: #fff; font-size: 20px; font-weight: bold; text-anchor: middle; pointer-events: none; }
+        
+        @keyframes flow {
+            from { stroke-dashoffset: 1000; }
+            to { stroke-dashoffset: 0; }
+        }
+        
+        /* 動態卡片樣式 */
+        .material-card {
+            position: absolute;
+            background: rgba(46, 204, 113, 0.9);
+            border: 2px solid #27ae60;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+            pointer-events: none; /* 避免干擾 D3 拖拉 */
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
+    <script type="text/js-worker" id="simulation-worker">
+        let nodes = [];
+        let speed = 10;
+        let cards = {};
+
+        // 計算兩點距離
+        function getDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+
+        // 沿著軌道計算當前座標
+        function calculatePosition(progress) {
+            if (nodes.length < 2) return { x: 0, y: 0 };
+            
+            let totalLength = 0;
+            let segments = [];
+            
+            for (let i = 0; i < nodes.length; i++) {
+                let p1 = nodes[i];
+                let p2 = nodes[(i + 1) % nodes.length]; // 閉環
+                let dist = getDistance(p1, p2);
+                segments.push({ p1, p2, dist, accum: totalLength });
+                totalLength += dist;
+            }
+
+            let currentDist = (progress * speed) % totalLength;
+            
+            for (let seg of segments) {
+                if (currentDist >= seg.accum && currentDist <= seg.accum + seg.dist) {
+                    let ratio = (currentDist - seg.accum) / seg.dist;
+                    return {
+                        x: seg.p1.x + (seg.p2.x - seg.p1.x) * ratio,
+                        y: seg.p1.y + (seg.p2.y - seg.p1.y) * ratio
+                    };
+                }
+            }
+            return nodes[0];
+        }
+
+        // 模擬引擎循環
+        setInterval(() => {
+            let timeNow = Date.now();
+            let updates = {};
+            // 這裡簡化模擬：利用時間差推進所有卡片
+            postMessage({ type: 'TICK', progress: timeNow / 1000 });
+        }, 30); // 約 30fps 更新率
+
+        self.onmessage = function(e) {
+            if (e.data.type === 'UPDATE_STATE') {
+                nodes = e.data.nodes;
+                speed = e.data.speed;
+            }
+        };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const socket = io();
+
+        function App() {
+            const [nodes, setNodes] = useState([]);
+            const [cardStyle, setCardStyle] = useState({ width: 120, height: 80 });
+            const [isEditMode, setIsEditMode] = useState(false);
+            const [workerProgress, setWorkerProgress] = useState(0);
+            
+            const svgRef = useRef();
+            const workerRef = useRef();
+
+            // 1. 初始化 Socket 與 Web Worker
+            useEffect(() => {
+                socket.on('init_state', (state) => {
+                    setNodes(state.track_nodes || []);
+                    setCardStyle(state.card_style || { width: 120, height: 80 });
+                });
+
+                socket.on('state_updated', (state) => {
+                    setNodes(state.track_nodes);
+                    setCardStyle(state.card_style);
+                });
+
+                // 初始化 Web Worker
+                const workerScript = document.getElementById('simulation-worker').textContent;
+                const blob = new Blob([workerScript], { type: 'application/javascript' });
+                workerRef.current = new Worker(URL.createObjectURL(blob));
+                
+                workerRef.current.onmessage = (e) => {
+                    if (e.data.type === 'TICK') {
+                        setWorkerProgress(e.data.progress);
+                    }
+                };
+
+                return () => {
+                    socket.off('init_state');
+                    socket.off('state_updated');
+                    workerRef.current.terminate();
+                }
+            }, []);
+
+            // 同步資料到 Worker
+            useEffect(() => {
+                if (workerRef.current && nodes.length > 0) {
+                    workerRef.current.postMessage({ type: 'UPDATE_STATE', nodes, speed: 100 }); // speed 可根據後端調整
+                }
+            }, [nodes]);
+
+            // 2. D3.js 繪圖與拖拉邏輯 (React 與 D3 結合)
+            useEffect(() => {
+                if (nodes.length === 0 || !svgRef.current) return;
+                
+                const svg = d3.select(svgRef.current);
+                svg.selectAll("*").remove(); // 清空重繪
+
+                // 繪製軌道線 (閉環)
+                const lineGenerator = d3.line()
+                    .x(d => d.x)
+                    .y(d => d.y)
+                    .curve(d3.curveLinearClosed);
+
+                svg.append("path")
+                    .datum(nodes)
+                    .attr("class", "track-line")
+                    .attr("d", lineGenerator);
+
+                // 繪製建築物文字 (噴房/烘烤爐)
+                svg.append("text").attr("class", "building-label").attr("x", 500).attr("y", 90).text("烘烤爐");
+                svg.append("text").attr("class", "building-label").attr("x", 100).attr("y", 540).text("噴房");
+
+                // 繪製控制節點 (僅在編輯模式)
+                if (isEditMode) {
+                    const dragBehavior = d3.drag()
+                        .on("drag", (event, d) => {
+                            // 拖拉時即時更新座標
+                            d.x = event.x;
+                            d.y = event.y;
+                            
+                            // 更新線條
+                            svg.select(".track-line").attr("d", lineGenerator);
+                            // 更新圓點
+                            d3.select(event.sourceEvent.target).attr("cx", d.x).attr("cy", d.y);
+                        })
+                        .on("end", () => {
+                            // 拖拉結束，觸發 React state 更新與存檔至後端/Supabase
+                            const newNodes = [...nodes];
+                            setNodes(newNodes);
+                            socket.emit('update_settings', { track_nodes: newNodes });
+                        });
+
+                    svg.selectAll("circle")
+                        .data(nodes)
+                        .enter()
+                        .append("circle")
+                        .attr("class", "node-circle")
+                        .attr("cx", d => d.x)
+                        .attr("cy", d => d.y)
+                        .attr("r", 10)
+                        .call(dragBehavior)
+                        .append("title")
+                        .text(d => d.note || `節點 ${d.id}`);
+                }
+            }, [nodes, isEditMode]);
+
+            // 3. 處理表單更新
+            const handleStyleChange = (e, key) => {
+                const val = parseInt(e.target.value) || 0;
+                const newStyle = { ...cardStyle, [key]: val };
+                setCardStyle(newStyle);
+                socket.emit('update_settings', { card_style: newStyle });
+            };
+
+            // 4. 利用 Worker 算出的進度，動態計算一張範例卡片的位置 (實務上這裡會是迴圈渲染多張卡片)
+            const getDynamicPosition = () => {
+                if (nodes.length < 2) return { x: -1000, y: -1000 };
+                // 這裡的邏輯與 Worker 內的 calculatePosition 同步
+                // 為了展示 UI，我們在主線程根據 Worker 傳來的時間搓算出渲染點
+                let totalLength = 0;
+                let segments = [];
+                for (let i = 0; i < nodes.length; i++) {
+                    let p1 = nodes[i];
+                    let p2 = nodes[(i + 1) % nodes.length];
+                    let dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+                    segments.push({ p1, p2, dist, accum: totalLength });
+                    totalLength += dist;
+                }
+                let currentDist = (workerProgress * 100) % totalLength;
+                for (let seg of segments) {
+                    if (currentDist >= seg.accum && currentDist <= seg.accum + seg.dist) {
+                        let ratio = (currentDist - seg.accum) / seg.dist;
+                        return {
+                            x: seg.p1.x + (seg.p2.x - seg.p1.x) * ratio,
+                            y: seg.p1.y + (seg.p2.y - seg.p1.y) * ratio
+                        };
+                    }
+                }
+                return nodes[0];
+            };
+
+            const cardPos = getDynamicPosition();
+
+            return (
+                <div className="app-container">
+                    <div className="canvas-area">
+                        {/* D3 畫布 */}
+                        <svg ref={svgRef} width="100%" height="100%"></svg>
+                        
+                        {/* 動態渲染卡片層 (分離 DOM 與 SVG，讓卡片支援複雜 CSS/HTML 結構) */}
+                        <div 
+                            className="material-card" 
+                            style={{ 
+                                left: cardPos.x, 
+                                top: cardPos.y, 
+                                width: cardStyle.width, 
+                                height: cardStyle.height 
+                            }}
+                        >
+                            物料 A-01
+                        </div>
+                    </div>
+                    
+                    {/* 右側客製化設定面板 */}
+                    <div className="sidebar">
+                        <h2>⚙️ 模擬器設定面板</h2>
+                        <button 
+                            className={`btn ${isEditMode ? 'btn-edit' : ''}`}
+                            onClick={() => setIsEditMode(!isEditMode)}
+                        >
+                            {isEditMode ? '💾 儲存並退出編輯' : '📐 進入軌道客製化模式'}
+                        </button>
+                        
+                        {isEditMode && <p style={{color:'#f1c40f', fontSize: '12px'}}>提示：請直接拖拉畫面上的紅色節點來微調路線座標。</p>}
+                        
+                        <hr style={{borderColor: '#555'}} />
+                        
+                        <h3>卡片樣式設定</h3>
+                        <div className="form-group">
+                            <label>卡片寬度 (px)</label>
+                            <input type="number" value={cardStyle.width} onChange={e => handleStyleChange(e, 'width')} />
+                        </div>
+                        <div className="form-group">
+                            <label>卡片高度 (px)</label>
+                            <input type="number" value={cardStyle.height} onChange={e => handleStyleChange(e, 'height')} />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
