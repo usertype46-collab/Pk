@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>待上料_阿利</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col pb-24">
+    <div class="p-4 bg-orange-500 text-white shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold">待上料區_阿利</h1>
+        <span id="sys-speed" class="bg-orange-700 px-2 py-1 rounded text-sm">線速: 同步中...</span>
+    </div>
+
+    <div id="card-container" class="flex-1 p-4 overflow-y-auto space-y-4"></div>
+
+    <div class="fixed bottom-0 w-full bg-slate-800 text-white p-4 shadow-lg">
+        <span class="font-bold">⬇️ 下方站點：[流水線_上線]</span>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentSpeed = 1100;
+        let speedVal = 11; // 1100 -> 11
+
+        socket.on('sync_state', (state) => {
+            currentSpeed = state.line_speed;
+            speedVal = currentSpeed / 100;
+            document.getElementById('sys-speed').innerText = `目前線速: ${currentSpeed}`;
+            renderCards(state.loading_cards);
+        });
+
+        function renderCards(cards) {
+            const container = document.getElementById('card-container');
+            container.innerHTML = '';
+            cards.forEach(c => {
+                const html = `
+                    <div id="${c.id}" class="bg-white rounded-lg shadow-md p-4 border-l-8 border-orange-400">
+                        <div class="flex justify-between font-bold mb-2">
+                            <span>顏色: ${c.color}</span>
+                            <span>數量: ${c.qty}</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 mb-3 bg-gray-50 p-2 rounded">
+                            <div>
+                                <label class="text-xs text-gray-500 block">掛(5)</label>
+                                <select id="hang_${c.id}" onchange="calcTime('${c.id}', ${c.qty})" class="w-full border p-1 rounded"><option value="1">1</option><option value="2">2</option></select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 block">空(6)</label>
+                                <select id="empty_${c.id}" onchange="calcTime('${c.id}', ${c.qty})" class="w-full border p-1 rounded">${generateOptions(0,10)}</select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 block">間隔(7)</label>
+                                <select id="gap_${c.id}" onchange="calcTime('${c.id}', ${c.qty})" class="w-full border p-1 rounded">${generateOptions(0,10)}</select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 block">接勾(8)</label>
+                                <select id="hook_${c.id}" class="w-full border p-1 rounded">${generateOptions(0,10)}</select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 text-red-600 font-bold bg-red-50 p-2 rounded text-center">
+                            預估線上時間: <span id="time_${c.id}">--</span>
+                        </div>
+
+                        <button onclick="sendToLine('${c.id}')" class="w-full bg-orange-500 text-white font-bold py-2 rounded shadow hover:bg-orange-600">
+                            + 傳送至【流水線】開始跑線
+                        </button>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+                calcTime(c.id, c.qty); // 初始化計算
+            });
+        }
+
+        function generateOptions(min, max) {
+            let opts = '';
+            for(let i=min; i<=max; i++) opts += `<option value="${i}">${i}</option>`;
+            return opts;
+        }
+
+        function calcTime(id, qty) {
+            const hang = parseFloat(document.getElementById(`hang_${id}`).value || 0);
+            const empty = parseFloat(document.getElementById(`empty_${id}`).value || 0);
+            const gap = parseFloat(document.getElementById(`gap_${id}`).value || 0);
+            
+            // 算法: (掛+空+間隔) × 數量 ÷ 流水線速度值
+            const minutes = ((hang + empty + gap) * qty) / speedVal;
+            
+            // 轉換為時分
+            const hrs = Math.floor(minutes / 60);
+            const mins = Math.round(minutes % 60);
+            document.getElementById(`time_${id}`).innerText = hrs > 0 ? `${hrs}小時 ${mins}分` : `${mins}分鐘`;
+            
+            // 儲存原始分鐘數以便模擬器使用
+            document.getElementById(`time_${id}`).dataset.totalMins = minutes;
+        }
+
+        function sendToLine(id) {
+            const cardDiv = document.getElementById(id);
+            const mins = document.getElementById(`time_${id}`).dataset.totalMins;
+            
+            // 獲取現有資料並加上時間參數
+            socket.emit('move_card', { 
+                card: { id: id, color: cardDiv.querySelector('span').innerText.split(': ')[1], time_required: mins }, 
+                source: 'loading_cards', 
+                target: 'simulator_cards' 
+            });
+        }
+    </script>
+</body>
+</html>
