@@ -1,46 +1,42 @@
-// public/simulationWorker.js
-let cards = {};
-let lineSpeed = 1100;
 let isRunning = false;
-let animationInterval;
+let currentSpeed = 1100; // 預設轉速[span_6](start_span)[span_6](end_span)
+let activeCards = [];
 
 self.onmessage = function(e) {
-    const { type, payload } = e.data;
-    if (type === 'SYNC_STATE') {
-        cards = payload.cards;
-        lineSpeed = payload.line_speed || 1100;
-        if (!isRunning) {
-            isRunning = true;
-            startSimulation();
-        }
-    } else if (type === 'STOP') {
+    const { command, speed, cards } = e.data;
+    
+    if (command === 'init') {
+        isRunning = true;
+        simulateLoop();
+    } else if (command === 'update') {
+        if (speed) currentSpeed = speed;
+        if (cards) activeCards = cards;
+    } else if (command === 'stop') {
         isRunning = false;
-        clearInterval(animationInterval);
     }
 };
 
-function startSimulation() {
-    animationInterval = setInterval(() => {
-        const now = Date.now();
-        const speedIndex = Math.max(1.0, lineSpeed / 100.0);
-        const fullTimeMs = (1320.0 / speedIndex) * 60000;
-        
-        const progressUpdates = {};
-        
-        Object.values(cards).forEach(card => {
-            if (card.status === 'on_line') {
-                const elapsed = now - (card.line_start_time || now);
-                let progress = elapsed / fullTimeMs;
-                
-                if (progress >= 1) {
-                    progress = 1;
-                    // 標記需要自動進入下料區的卡片
-                    self.postMessage({ type: 'AUTO_UNLOAD', cardId: card.id });
-                }
-                progressUpdates[card.id] = progress;
-            }
-        });
-        
-        self.postMessage({ type: 'PROGRESS_UPDATE', payload: progressUpdates });
-    }, 16); // 約 60FPS 的更新頻率
+function simulateLoop() {
+    if (!isRunning) return;
+    
+    const now = Date.now();
+    // 轉速指數計算 (speed / 100)，跑完全程基準為 1320 分鐘[span_7](start_span)[span_7](end_span)
+    const speedIndex = Math.max(1.0, currentSpeed / 100.0);
+    const fullTimeMs = (1320 / speedIndex) * 60000; 
+
+    const updates = activeCards.map(card => {
+        const elapsed = now - card.line_start_time;
+        let progress = elapsed / fullTimeMs;
+        let shouldUnload = false;
+
+        if (progress >= 1) {
+            progress = 1;
+            shouldUnload = true;
+        }
+
+        return { id: card.id, progress, shouldUnload };
+    });
+
+    self.postMessage({ type: 'tick', updates });
+    setTimeout(simulateLoop, 16); // ~60 FPS
 }
