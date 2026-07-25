@@ -2,173 +2,37 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>上料系統與路徑編輯 (React + D3)</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>上料站點</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #f1f5f9; }
-        .canvas-container { position: relative; width: 100vw; height: 100vh; }
-        .bg-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0.8; z-index: 0; }
-        svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: auto; }
-        .panel { position: absolute; top: 20px; right: 20px; z-index: 20; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #2c3e50; font-family: sans-serif;}
+        .card { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; }
+        button { padding: 15px 30px; font-size: 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s;}
+        button:hover { background: #2980b9; transform: scale(1.05); }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div class="card">
+        <h1>⬆️ 上料站點</h1>
+        <p>點擊按鈕將物料推入塗裝流水線</p>
+        <button onclick="addMaterial()">掛載新物料</button>
+    </div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-        const supabase = supabase.createClient(
-            'https://cnkxsxhgdtuxknrzufhv.supabase.co',
-            'sb_publishable_QEoX_f9G_Gf9kaaDZpaH-g_ageY5WFK'
-        );
-
-        function App() {
-            const [nodes, setNodes] = useState([]);
-            const [cardSize, setCardSize] = useState({ width: 150, height: 100 });
-            const [progress, setProgress] = useState(0);
-            const svgRef = useRef(null);
-            const workerRef = useRef(null);
-
-            // 初始化 Supabase 資料與 Web Worker
-            useEffect(() => {
-                fetchData();
-                
-                workerRef.current = new Worker('worker.js');
-                workerRef.current.onmessage = (e) => {
-                    if (e.data.type === 'TICK') setProgress(e.data.progress);
-                };
-                workerRef.current.postMessage({ command: 'start' });
-
-                return () => workerRef.current.terminate();
-            }, []);
-
-            const fetchData = async () => {
-                const { data: nodesData } = await supabase.from('track_nodes').select('*').order('created_at');
-                const { data: settingsData } = await supabase.from('card_settings').select('*').limit(1).single();
-                
-                if (nodesData) setNodes(nodesData);
-                if (settingsData) setCardSize({ width: settingsData.width, height: settingsData.height });
-            };
-
-            // D3 拖拉邏輯與路徑繪製
-            useEffect(() => {
-                if (!svgRef.current || nodes.length === 0) return;
-                
-                const svg = d3.select(svgRef.current);
-                svg.selectAll("*").remove(); // 清除重繪
-
-                // 繪製軌道線條 (CatmullRom 曲線使軌道平滑)
-                const lineGenerator = d3.line()
-                    .x(d => d.x)
-                    .y(d => d.y)
-                    .curve(d3.curveCatmullRom.alpha(0.5));
-
-                const path = svg.append("path")
-                    .datum(nodes)
-                    .attr("d", lineGenerator)
-                    .attr("fill", "none")
-                    .attr("stroke", "#333")
-                    .attr("stroke-width", 8)
-                    .attr("stroke-dasharray", "10,5"); // 模擬輸送帶樣式
-
-                // 動態物料 (沿著路徑移動)
-                const pathLength = path.node().getTotalLength();
-                const point = path.node().getPointAtLength(progress * pathLength);
-                
-                svg.append("rect")
-                    .attr("x", point.x - cardSize.width / 2)
-                    .attr("y", point.y - cardSize.height / 2)
-                    .attr("width", cardSize.width)
-                    .attr("height", cardSize.height)
-                    .attr("fill", "#3B82F6")
-                    .attr("rx", 8);
-
-                svg.append("text")
-                    .attr("x", point.x)
-                    .attr("y", point.y)
-                    .attr("fill", "white")
-                    .attr("text-anchor", "middle")
-                    .attr("alignment-baseline", "middle")
-                    .text("模擬物料");
-
-                // D3 拖拉行為
-                const drag = d3.drag()
-                    .on("drag", function(event, d) {
-                        const newNodes = nodes.map(n => 
-                            n.id === d.id ? { ...n, x: event.x, y: event.y } : n
-                        );
-                        setNodes(newNodes);
-                    })
-                    .on("end", async function(event, d) {
-                        // 拖拉結束後回傳 Supabase
-                        await supabase.from('track_nodes')
-                            .update({ x: event.x, y: event.y })
-                            .eq('id', d.id);
-                    });
-
-                // 繪製可拖拉的節點
-                const nodeGroups = svg.selectAll(".node")
-                    .data(nodes)
-                    .enter().append("g")
-                    .attr("class", "node")
-                    .attr("transform", d => `translate(${d.x},${d.y})`)
-                    .style("cursor", "grab")
-                    .call(drag);
-
-                nodeGroups.append("circle")
-                    .attr("r", 15)
-                    .attr("fill", "#EF4444")
-                    .attr("stroke", "white")
-                    .attr("stroke-width", 3);
-
-                nodeGroups.append("text")
-                    .attr("y", -25)
-                    .attr("text-anchor", "middle")
-                    .attr("fill", "#1F2937")
-                    .attr("font-weight", "bold")
-                    .text(d => d.label);
-
-            }, [nodes, progress, cardSize]);
-
-            const updateCardSize = async (e) => {
-                const { name, value } = e.target;
-                const newSize = { ...cardSize, [name]: parseInt(value) };
-                setCardSize(newSize);
-                await supabase.from('card_settings').update(newSize).eq('id', 1);
-            };
-
-            return (
-                <div className="canvas-container">
-                    {/* 背景參考圖 */}
-                    <img src="14436.png" alt="Factory Layout" className="bg-image" />
-                    
-                    <svg ref={svgRef}></svg>
-                    
-                    <div className="panel flex flex-col gap-3">
-                        <h2 className="text-xl font-bold">上料端客製化面板</h2>
-                        <div>
-                            <label className="block text-sm font-medium">卡片寬度 (px)</label>
-                            <input type="range" name="width" min="50" max="300" value={cardSize.width} onChange={updateCardSize} className="w-full" />
-                            <span>{cardSize.width}px</span>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium">卡片高度 (px)</label>
-                            <input type="range" name="height" min="50" max="300" value={cardSize.height} onChange={updateCardSize} className="w-full" />
-                            <span>{cardSize.height}px</span>
-                        </div>
-                    </div>
-                </div>
-            );
+    <script>
+        const socket = io('http://localhost:5000');
+        
+        function addMaterial() {
+            // 發送新增物料事件至後端
+            socket.emit('add_material', { station: '上料區' });
+            
+            const btn = document.querySelector('button');
+            btn.innerText = '已推送！';
+            btn.style.background = '#2ecc71';
+            setTimeout(() => {
+                btn.innerText = '掛載新物料';
+                btn.style.background = '#3498db';
+            }, 1000);
         }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
     </script>
 </body>
 </html>
