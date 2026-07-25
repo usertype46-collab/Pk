@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>待料區監控</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { margin: 0; background-color: #f8fafc; font-family: sans-serif; }</style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const supabase = supabase.createClient('https://cnkxsxhgdtuxknrzufhv.supabase.co', 'sb_publishable_QEoX_f9G_Gf9kaaDZpaH-g_ageY5WFK');
+
+        function WaitArea() {
+            const [queue, setQueue] = useState([]);
+            const [settings, setSettings] = useState({ width: 150, height: 100 });
+
+            useEffect(() => {
+                // 模擬抓取待料清單
+                setQueue([{ id: 1, name: '物料 A' }, { id: 2, name: '物料 B' }, { id: 3, name: '物料 C' }]);
+                
+                const fetchSettings = async () => {
+                    const { data } = await supabase.from('card_settings').select('*').single();
+                    if(data) setSettings(data);
+                };
+                fetchSettings();
+            }, []);
+
+            return (
+                <div className="p-8">
+                    <h1 className="text-3xl font-bold mb-6 text-blue-800">待料區佇列監控</h1>
+                    <div className="flex gap-4 overflow-x-auto p-4 bg-gray-200 rounded-lg shadow-inner border-2 border-dashed border-gray-400">
+                        {queue.map((item, index) => (
+                            <div key={item.id} 
+                                 className="flex items-center justify-center bg-white shadow-lg rounded-md border-l-4 border-blue-500 transition-transform transform hover:scale-105"
+                                 style={{ minWidth: `${settings.width}px`, height: `${settings.height}px` }}>
+                                <span className="font-semibold text-gray-700">#{index + 1} {item.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+        ReactDOM.createRoot(document.getElementById('root')).render(<WaitArea />);
+    </script>
+</body>
+</html>
