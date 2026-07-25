@@ -1,34 +1,30 @@
 // worker.js
-let speed = 1100;
-let isRunning = true;
-let cards = {};
+let isRunning = false;
+let progress = 0;
+let speed = 0.005; // 模擬移動速度
 
-// 接收主執行緒的參數更新
-self.onmessage = function(e) {
-    const data = e.data;
-    if (data.type === 'UPDATE_SPEED') {
-        speed = data.speed;
-    } else if (data.type === 'UPDATE_CARDS') {
-        cards = data.cards;
+self.onmessage = (e) => {
+    if (e.data.command === 'start') {
+        isRunning = true;
+        simulate();
+    } else if (e.data.command === 'stop') {
+        isRunning = false;
+    } else if (e.data.command === 'setSpeed') {
+        speed = e.data.speed;
     }
 };
 
-// 模擬引擎 Ticker (每 50ms 更新一次進度)
-setInterval(() => {
+function simulate() {
     if (!isRunning) return;
     
-    // 計算每張卡片的進度
-    for (let id in cards) {
-        // 假設總路徑長度為 100%，依據速度計算當前進度
-        cards[id].progress += (speed / 100000); 
-        if (cards[id].progress > 1) {
-            cards[id].progress = 1; // 跑完路線
-        }
+    progress += speed;
+    if (progress > 1) {
+        progress = 0; // 循環回到起點
     }
     
-    // 將計算結果回傳給主執行緒進行渲染
-    self.postMessage({
-        type: 'TICK',
-        cards: cards
-    });
-}, 50);
+    // 將計算好的進度回傳給主執行緒
+    self.postMessage({ type: 'TICK', progress: progress });
+    
+    // 使用 setTimeout 模擬 RequestAnimationFrame 在背景的運作
+    setTimeout(simulate, 16); 
+}
