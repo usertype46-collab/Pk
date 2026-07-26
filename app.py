@@ -1,4 +1,3 @@
-import time
 import threading
 import os
 
@@ -68,7 +67,9 @@ def load_state_from_supabase():
                 'interval': row['interval'],
                 'hook': row['hook'],
                 'line_start_time': row['line_start_time'],
-                'finish_time': row['finish_time']
+                'finish_time': row['finish_time'],
+                'inserted_qty': 0, # 初始化上線數量
+                'unloaded_qty': 0  # 初始化下料數量
             }
         sys_state['cards'] = cards
         
@@ -132,7 +133,6 @@ def handle_speed(val):
 
 @socketio.on('update_track_path')
 def handle_update_track(data):
-    # 支援接收字典（包含路徑、起點、終點、方向）或純字串路徑
     if isinstance(data, dict):
         if 'path_d' in data:
             sys_state['track_path'] = data['path_d']
@@ -158,6 +158,8 @@ def handle_update_track(data):
 @socketio.on('add_card')
 def add_card(data):
     sys_state['cards'][data['id']] = data
+    sys_state['cards'][data['id']]['inserted_qty'] = 0
+    sys_state['cards'][data['id']]['unloaded_qty'] = 0
     try:
         if supabase:
             supabase.table('powder_cards').upsert({
@@ -167,7 +169,7 @@ def add_card(data):
                 'part_no': data['part_no'],
                 'part_name': data['part_name'],
                 'model_no': data['model_no'],
-                'qty': int(data['qty'] or 0),
+                'qty': int(data['qty'] or 1), # 確保防呆至少為 1
                 'status': data['status'],
                 'hang': 1, 'empty': 0, 'interval': 0, 'hook': 0
             }).execute()
@@ -219,6 +221,8 @@ def send_to_line(data):
         card['empty'] = empty
         card['interval'] = interval
         card['hook'] = hook
+        card['inserted_qty'] = 0 # 重置
+        card['unloaded_qty'] = 0 # 重置
 
         sys_state['active_card_id'] = card_id
         with active_card_lock:
@@ -264,7 +268,7 @@ def finish_card(card_id):
             pass
         broadcast_state()
 
-# --- 背景持續上線執行緒 ---
+# --- 背景持續上線執行緒 (加入數量滿載自動停止判斷) ---
 def continuous_line_inserter():
     global clone_counter, current_active_card_template
     while True:
@@ -273,6 +277,15 @@ def continuous_line_inserter():
             with active_card_lock:
                 card_template = current_active_card_template.copy()
             
+            target_card_id = card_template.get('id')
+            
+            # 檢查數量是否已經滿載，排滿自動停止插入
+            parent_card = sys_state['cards'].get(target_card_id)
+            if not parent_card or parent_card.get('inserted_qty', 0) >= int(parent_card.get('qty', 1)):
+                with active_card_lock:
+                    current_active_card_template = None
+                continue
+
             speed = sys_state.get('line_speed', 1100)
             speed_index = max(1.0, speed / 100.0)
             
@@ -287,7 +300,6 @@ def continuous_line_inserter():
             delay_sec = max(visual_gap_sec, hook_time_sec)
             
             slept = 0.0
-            target_card_id = card_template.get('id')
             while slept < delay_sec:
                 time.sleep(0.5)
                 slept += 0.5
@@ -295,6 +307,13 @@ def continuous_line_inserter():
                     break
                     
             if current_active_card_template and current_active_card_template.get('id') == target_card_id:
+                # 再次確認數量防呆
+                parent_card = sys_state['cards'].get(target_card_id)
+                if not parent_card or parent_card.get('inserted_qty', 0) >= int(parent_card.get('qty', 1)):
+                    with active_card_lock:
+                        current_active_card_template = None
+                    continue
+
                 clone_counter += 1
                 now_ms = int(time.time() * 1000)
                 clone_id = f"{target_card_id}_clone_{clone_counter}_{now_ms}"
@@ -304,12 +323,80 @@ def continuous_line_inserter():
                 clone_card['status'] = 'on_line'
                 clone_card['line_start_time'] = now_ms
                 clone_card['is_clone'] = True
+                clone_card['parent_id'] = target_card_id
+                
+                # 增加上線進度計數
+                sys_state['cards'][target_card_id]['inserted_qty'] = sys_state['cards'][target_card_id].get('inserted_qty', 0) + 1
                 
                 sys_state['cards'][clone_id] = clone_card
                 broadcast_state()
 
 inserter_thread = threading.Thread(target=continuous_line_inserter, daemon=True)
 inserter_thread.start()
+
+# --- 背景持續檢查抵達終點並推進下料區的執行緒 ---
+def continuous_line_checker():
+    while True:
+        time.sleep(1)
+        now_ms = int(time.time() * 1000)
+        
+        speed = sys_state.get('line_speed', 1100)
+        speed_index = max(1.0, speed / 100.0)
+        
+        t_start = sys_state.get('track_start', 0.0)
+        t_end = sys_state.get('track_end', 1.0)
+        t_dir = str(sys_state.get('track_direction', '1'))
+        
+        if t_dir == '1':
+            span = (t_end - t_start) if t_end >= t_start else (1.0 - t_start + t_end)
+        else:
+            span = (t_start - t_end) if t_start >= t_end else (t_start + 1.0 - t_end)
+        if span == 0: span = 1.0
+        
+        total_time_ms = round(1320.0 / speed_index) * 60 * 1000 * span
+        
+        clones_to_remove = []
+        with active_card_lock:
+            for cid, card in list(sys_state['cards'].items()):
+                if card.get('is_clone') and card.get('status') == 'on_line':
+                    elapsed = now_ms - card.get('line_start_time', now_ms)
+                    if elapsed >= total_time_ms:
+                        clones_to_remove.append(cid)
+        
+        if clones_to_remove:
+            state_changed = False
+            for cid in clones_to_remove:
+                clone = sys_state['cards'].pop(cid, None)
+                if clone:
+                    state_changed = True
+                    parent_id = clone.get('parent_id')
+                    if parent_id and parent_id in sys_state['cards']:
+                        parent = sys_state['cards'][parent_id]
+                        parent['unloaded_qty'] = parent.get('unloaded_qty', 0) + 1
+                        
+                        # 第一片到達時，將母卡推入下料區顯示
+                        if parent['status'] == 'on_line':
+                            parent['status'] = 'unloading'
+                            try:
+                                if supabase: supabase.table('powder_cards').update({'status': 'unloading'}).eq('id', parent_id).execute()
+                            except Exception: pass
+                        
+                        # 當下料數量達到應有數量時，自動完成歸檔
+                        if parent['unloaded_qty'] >= int(parent.get('qty', 1)):
+                            parent['status'] = 'completed'
+                            tw_time = time.gmtime(time.time() + 8 * 3600)
+                            ftime = time.strftime("%Y-%m-%d %H:%M:%S", tw_time)
+                            parent['finish_time'] = ftime
+                            try:
+                                if supabase: 
+                                    supabase.table('powder_cards').update({'status': 'completed', 'finish_time': ftime}).eq('id', parent_id).execute()
+                            except Exception: pass
+            
+            if state_changed:
+                broadcast_state()
+
+checker_thread = threading.Thread(target=continuous_line_checker, daemon=True)
+checker_thread.start()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
