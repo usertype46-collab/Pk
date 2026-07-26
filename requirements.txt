@@ -1,4 +1,4 @@
-Flask==3.0.2
-Flask-SocketIO==5.3.6
-supabase==2.3.4
-eventlet==0.33.3
+flask
+flask-socketio
+supabase
+simple-websocket
