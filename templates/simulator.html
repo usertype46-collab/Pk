@@ -63,8 +63,10 @@
         .settings-content input, .settings-content textarea { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; }
         .settings-content textarea { height: 100px; }
         .node-handle-container { position: relative; width: 100%; height: 350px; background: #222; border-radius: 8px; margin-top: 10px; overflow: hidden; border: 2px solid #e74c3c; }
-        .node-handle { position: absolute; width: 16px; height: 16px; background: #f1c40f; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); cursor: grab; z-index: 5; }
+        .node-handle { position: absolute; width: 16px; height: 16px; background: #f1c40f; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); cursor: grab; z-index: 5; transition: 0.2s; }
         .node-handle:active { cursor: grabbing; background: #e74c3c; }
+        /* 新增選取節點的樣式 */
+        .node-handle.selected { background: #2ecc71; border-color: #27ae60; transform: translate(-50%, -50%) scale(1.4); z-index: 15; box-shadow: 0 0 10px rgba(46, 204, 113, 0.8); }
         .settings-actions { margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; }
         .settings-actions button { padding: 10px 20px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
 
@@ -94,6 +96,17 @@
             <textarea id="setTrackPath"></textarea>
 
             <label data-i18n="visual_editor_lbl">🎯 互動式節點拉動微調區 (拖動黃色圓點可即時改變路徑)</label>
+            
+            <!-- 新增：微調方向與控制按鈕 -->
+            <div id="fineTuneControls" style="display: flex; gap: 5px; margin-top: 10px; align-items: center; background: #ecf0f1; padding: 10px; border-radius: 6px; flex-wrap: wrap;">
+                <span style="font-size: 14px; font-weight: bold;"><span data-i18n="sel_node">選取節點: </span><span id="selectedNodeLabel" style="color: #e74c3c;" data-i18n="node_none">無</span></span>
+                <button onclick="fineTuneNode(0, -1)" style="padding: 5px 10px; cursor: pointer; margin-left:10px; border: 1px solid #bdc3c7; border-radius: 4px; background: white;" data-i18n="btn_up">⬆️ 上</button>
+                <button onclick="fineTuneNode(0, 1)" style="padding: 5px 10px; cursor: pointer; border: 1px solid #bdc3c7; border-radius: 4px; background: white;" data-i18n="btn_down">⬇️ 下</button>
+                <button onclick="fineTuneNode(-1, 0)" style="padding: 5px 10px; cursor: pointer; border: 1px solid #bdc3c7; border-radius: 4px; background: white;" data-i18n="btn_left">⬅️ 左</button>
+                <button onclick="fineTuneNode(1, 0)" style="padding: 5px 10px; cursor: pointer; border: 1px solid #bdc3c7; border-radius: 4px; background: white;" data-i18n="btn_right">➡️ 右</button>
+                <span style="font-size: 12px; margin-left: 10px; color: #7f8c8d;" data-i18n="fine_tune_hint">(微調 1px)</span>
+            </div>
+
             <div class="node-handle-container" id="nodeContainer">
                 <svg id="nodeSvg" viewBox="0 0 1000 1333" style="width:100%; height:100%; position:absolute; top:0; left:0; pointer-events:none;">
                     <path id="previewPath" d="" fill="none" stroke="#f1c40f" stroke-width="4" stroke-dasharray="6,6"/>
@@ -146,7 +159,9 @@
                 'comp_lbl': '構件', 'full_line_status': '⚡ 滿線模式持續上料中: ', 'none_loading': '暫無 (等待上料)',
                 'settings_title': '⚙️ 軌道與卡片客製化設定', 'save_settings': '儲存並同步', 'reset_settings': '重設預設值',
                 'card_width': '卡片最小寬度 (px):', 'card_height': '卡片高度 (px):', 'card_font': '卡片字體大小 (px):',
-                'track_path_lbl': 'SVG 軌道 Path 座標 (d):', 'visual_editor_lbl': '🎯 互動式節點拉動微調區'
+                'track_path_lbl': 'SVG 軌道 Path 座標 (d):', 'visual_editor_lbl': '🎯 互動式節點拉動微調區',
+                // 新增微調面板翻譯
+                'sel_node': '選取節點: ', 'node_none': '無', 'btn_up': '⬆️ 上', 'btn_down': '⬇️ 下', 'btn_left': '⬅️ 左', 'btn_right': '➡️ 右', 'fine_tune_hint': '(微調 1px)'
             },
             'vi': {
                 'sim_title': '🏭 Trình mô phỏng chuyền sơn', 'speed': 'Tốc độ chuyền: ', 'time_lbl': 'Thời gian 1 vòng: ', 'mins': ' Phút',
@@ -164,7 +179,9 @@
                 'comp_lbl': 'Cấu kiện', 'full_line_status': '⚡ Đang nạp hàng liên tục: ', 'none_loading': 'Chưa có',
                 'settings_title': '⚙️ Cài đặt tùy chỉnh đường đi & Thẻ', 'save_settings': 'Lưu & Đồng bộ', 'reset_settings': 'Mặc định',
                 'card_width': 'Chiều rộng thẻ tối thiểu (px):', 'card_height': 'Chiều cao thẻ (px):', 'card_font': 'Kích thước chữ thẻ (px):',
-                'track_path_lbl': 'Tọa độ Path SVG (d):', 'visual_editor_lbl': '🎯 Khu vực kéo thả điểm mốc'
+                'track_path_lbl': 'Tọa độ Path SVG (d):', 'visual_editor_lbl': '🎯 Khu vực kéo thả điểm mốc',
+                // 新增微調面板翻譯
+                'sel_node': 'Nút đã chọn: ', 'node_none': 'Trống', 'btn_up': '⬆️ Lên', 'btn_down': '⬇️ Xuống', 'btn_left': '⬅️ Trái', 'btn_right': '➡️ Phải', 'fine_tune_hint': '(Chỉnh 1px)'
             }
         };
         let currentLang = localStorage.getItem('appLang') || 'zh';
@@ -185,6 +202,15 @@
             if(langBtn) langBtn.innerHTML = t('lang_btn');
             const settingsBtn = document.getElementById('settingsBtn');
             if(settingsBtn) settingsBtn.innerHTML = '⚙️ ' + (currentLang === 'zh' ? '設置' : 'Cài đặt');
+
+            // 處理動態變化的節點 Label，若無選取則恢復翻譯文字
+            if(selectedNodeIndex === null) {
+                const lbl = document.getElementById('selectedNodeLabel');
+                if(lbl) {
+                    lbl.innerHTML = t('node_none');
+                    lbl.setAttribute('data-i18n', 'node_none');
+                }
+            }
         }
         function renderField(val) {
             if (typeof val === 'string' && val.startsWith('data:image')) {
@@ -221,6 +247,7 @@
         `.trim();
 
         let currentPathCoords = [];
+        let selectedNodeIndex = null; // 新增：紀錄當前選取的節點索引
 
         function parsePathToCoords(dStr) {
             const coords = [];
@@ -255,7 +282,46 @@
             document.getElementById('setCardFont').value = savedFont;
         }
 
+        // 新增：選取節點與更新樣式
+        function selectNode(index) {
+            selectedNodeIndex = index;
+            const lbl = document.getElementById('selectedNodeLabel');
+            lbl.innerText = index;
+            lbl.removeAttribute('data-i18n'); // 移除 i18n 屬性避免被語言切換覆蓋掉數字
+
+            document.querySelectorAll('.node-handle').forEach((el, i) => {
+                if(i === index) el.classList.add('selected');
+                else el.classList.remove('selected');
+            });
+        }
+
+        // 新增：透過按鈕微調節點座標
+        function fineTuneNode(dx, dy) {
+            if (selectedNodeIndex === null) return;
+            let pt = currentPathCoords[selectedNodeIndex];
+            pt.x = Math.max(0, Math.min(1000, pt.x + dx));
+            pt.y = Math.max(0, Math.min(1333, pt.y + dy));
+            
+            const container = document.getElementById('nodeContainer');
+            const handles = container.querySelectorAll('.node-handle');
+            if(handles[selectedNodeIndex]) {
+                handles[selectedNodeIndex].style.left = (pt.x / 1000 * 100) + '%';
+                handles[selectedNodeIndex].style.top = (pt.y / 1333 * 100) + '%';
+            }
+            
+            document.getElementById('previewPath').setAttribute('d', coordsToPathD(currentPathCoords));
+            document.getElementById('setTrackPath').value = coordsToPathD(currentPathCoords);
+        }
+
         function initVisualEditor(dStr) {
+            // 初始化時重設選取狀態
+            selectedNodeIndex = null;
+            const lbl = document.getElementById('selectedNodeLabel');
+            if(lbl) {
+                lbl.innerText = t('node_none');
+                lbl.setAttribute('data-i18n', 'node_none');
+            }
+
             currentPathCoords = parsePathToCoords(dStr);
             const container = document.getElementById('nodeContainer');
             container.querySelectorAll('.node-handle').forEach(el => el.remove());
@@ -269,11 +335,13 @@
                 let isDragging = false;
                 handle.onmousedown = (e) => {
                     isDragging = true;
+                    selectNode(index); // 點擊時選取節點
                     e.stopPropagation();
                 };
                 
                 handle.ontouchstart = (e) => {
                     isDragging = true;
+                    selectNode(index); // 點擊時選取節點
                     e.stopPropagation();
                 };
 
