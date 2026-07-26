@@ -1,3 +1,7 @@
+# 必須放在所有 import 之前！將標準函式庫替換為 eventlet 的非阻塞版本
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import time
 import threading
