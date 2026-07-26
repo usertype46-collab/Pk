@@ -115,7 +115,22 @@
             <label data-i18n="card_font">卡片字體大小 (px):</label>
             <input type="number" id="setCardFont" value="12">
             
-            <label data-i18n="track_path_lbl">SVG 軌道 Path 座標 (d):</label>
+            <hr style="margin:20px 0; border:1px solid #ecf0f1;">
+
+            <!-- 新增軌道起點、終點與方向設定 -->
+            <label data-i18n="track_start_lbl">軌道起點 (0.0 ~ 1.0):</label>
+            <input type="number" id="setTrackStart" step="0.01" min="0" max="1" value="0.0">
+            
+            <label data-i18n="track_end_lbl">軌道終點 (0.0 ~ 1.0):</label>
+            <input type="number" id="setTrackEnd" step="0.01" min="0" max="1" value="1.0">
+            
+            <label data-i18n="track_dir_lbl">輸送方向:</label>
+            <select id="setTrackDirection">
+                <option value="1" data-i18n="dir_forward">順向 (Forward)</option>
+                <option value="-1" data-i18n="dir_backward">逆向 (Backward)</option>
+            </select>
+
+            <label data-i18n="track_path_lbl" style="margin-top:15px;">SVG 軌道 Path 座標 (d):</label>
             <textarea id="setTrackPath"></textarea>
 
             <label data-i18n="visual_editor_lbl">🎯 互動式節點拉動微調區 (拖動黃色圓點可即時改變路徑)</label>
@@ -185,7 +200,8 @@
                 'card_width': '卡片最小寬度 (px):', 'card_height': '卡片高度 (px):', 'card_font': '卡片字體大小 (px):',
                 'track_path_lbl': 'SVG 軌道 Path 座標 (d):', 'visual_editor_lbl': '🎯 互動式節點拉動微調區',
                 'sel_node': '選取節點: ', 'node_none': '無', 'btn_up': '⬆️ 上', 'btn_down': '⬇️ 下', 'btn_left': '⬅️ 左', 'btn_right': '➡️ 右', 'fine_tune_hint': '(微調 1px)',
-                'card_shape': '卡片形狀樣式:', 'shape_rect': '矩形 (Rectangle)', 'shape_rounded': '圓角 (Rounded)', 'shape_pill': '膠囊 (Pill)', 'shape_circle': '圓形 (Circle)', 'shape_leaf': '葉片 (Leaf)', 'shape_tag': '標籤 (Tag)'
+                'card_shape': '卡片形狀樣式:', 'shape_rect': '矩形 (Rectangle)', 'shape_rounded': '圓角 (Rounded)', 'shape_pill': '膠囊 (Pill)', 'shape_circle': '圓形 (Circle)', 'shape_leaf': '葉片 (Leaf)', 'shape_tag': '標籤 (Tag)',
+                'track_start_lbl': '軌道起點 (0.0 ~ 1.0):', 'track_end_lbl': '軌道終點 (0.0 ~ 1.0):', 'track_dir_lbl': '輸送方向:', 'dir_forward': '順向 (Forward)', 'dir_backward': '逆向 (Backward)'
             },
             'vi': {
                 'sim_title': '🏭 Trình mô phỏng chuyền sơn', 'speed': 'Tốc độ chuyền: ', 'time_lbl': 'Thời gian 1 vòng: ', 'mins': ' Phút',
@@ -205,7 +221,8 @@
                 'card_width': 'Chiều rộng thẻ tối thiểu (px):', 'card_height': 'Chiều cao thẻ (px):', 'card_font': 'Kích thước chữ thẻ (px):',
                 'track_path_lbl': 'Tọa độ Path SVG (d):', 'visual_editor_lbl': '🎯 Khu vực kéo thả điểm mốc',
                 'sel_node': 'Nút đã chọn: ', 'node_none': 'Trống', 'btn_up': '⬆️ Lên', 'btn_down': '⬇️ Xuống', 'btn_left': '⬅️ Trái', 'btn_right': '➡️ Phải', 'fine_tune_hint': '(Chỉnh 1px)',
-                'card_shape': 'Kiểu dáng thẻ:', 'shape_rect': 'Chữ nhật', 'shape_rounded': 'Góc bo tròn', 'shape_pill': 'Viên nang', 'shape_circle': 'Hình tròn', 'shape_leaf': 'Hình lá', 'shape_tag': 'Thẻ (Tag)'
+                'card_shape': 'Kiểu dáng thẻ:', 'shape_rect': 'Chữ nhật', 'shape_rounded': 'Góc bo tròn', 'shape_pill': 'Viên nang', 'shape_circle': 'Hình tròn', 'shape_leaf': 'Hình lá', 'shape_tag': 'Thẻ (Tag)',
+                'track_start_lbl': 'Điểm bắt đầu (0.0 ~ 1.0):', 'track_end_lbl': 'Điểm kết thúc (0.0 ~ 1.0):', 'track_dir_lbl': 'Hướng di chuyển:', 'dir_forward': 'Tiến (Forward)', 'dir_backward': 'Lùi (Backward)'
             }
         };
         let currentLang = localStorage.getItem('appLang') || 'zh';
@@ -404,7 +421,7 @@
             document.getElementById('setTrackPath').value = dStr;
         }
 
-        // --- 核心更新迴圈 (修復卡片不顯示問題) ---
+        // --- 核心更新迴圈 (加入軌道起訖點與方向計算) ---
         function animateCards() {
             if (!track || track.getTotalLength() === 0) {
                 requestAnimationFrame(animateCards);
@@ -418,74 +435,107 @@
             const currentCardIds = new Set();
             const shapeClass = 'shape-' + (localStorage.getItem('cardShape') || 'rounded');
 
+            // 抓取伺服器同步的最新設置，賦予預設值以防出錯
+            let trackStart = parseFloat(sys_state_cache.track_start);
+            if (isNaN(trackStart)) trackStart = 0.0;
+            
+            let trackEnd = parseFloat(sys_state_cache.track_end);
+            if (isNaN(trackEnd)) trackEnd = 1.0;
+            
+            let trackDir = sys_state_cache.track_direction || '1'; 
+
+            // 計算有效行進距離比例 (考慮跨越 0.0/1.0 邊界的循環邏輯)
+            let span = 1.0;
+            if (trackDir == '1') {
+                span = trackEnd >= trackStart ? (trackEnd - trackStart) : (1.0 - trackStart + trackEnd);
+            } else {
+                span = trackStart >= trackEnd ? (trackStart - trackEnd) : (trackStart + 1.0 - trackEnd);
+            }
+            if (span === 0) span = 1.0; 
+
             if (sys_state_cache.cards) {
                 Object.values(sys_state_cache.cards).forEach(card => {
                     if (card.status === 'on_line' && card.line_start_time) {
                         currentCardIds.add(card.id);
                         let elapsed = now - card.line_start_time;
-                        let progress = elapsed / totalTimeMs;
+                        let baseProgress = elapsed / totalTimeMs;
                         
+                        let isFinished = false;
+                        if (baseProgress >= span) {
+                            isFinished = true;
+                            baseProgress = span; // 到達終點即停止運算，箝制於終點
+                        }
+                        
+                        // 將相對運行進度映射回實際 Path 的 0.0 ~ 1.0 坐標系
+                        let finalRatio = 0;
+                        if (trackDir == '1') {
+                            finalRatio = (trackStart + baseProgress) % 1.0;
+                        } else {
+                            finalRatio = (trackStart - baseProgress) % 1.0;
+                            if (finalRatio < 0) finalRatio += 1.0; 
+                        }
+
                         // 抵達終點的卡片處理
-                        if (progress >= 1.0) {
-                            if (!card.is_clone) {
-                                progress = 0.999; // 原件停在終點等待下料
+                        if (isFinished) {
+                            if (card.is_clone) {
+                                // 滿線克隆卡片直接消失
+                                let cardEl = document.getElementById('card_' + card.id);
+                                if (cardEl) cardEl.remove();
+                                return; // 等同迴圈內的 continue，跳過後續渲染
                             } else {
-                                progress = 1.0; // 分身直接消失
+                                // 原始母卡停在實際終點點位等待下料
+                                finalRatio = trackEnd; 
                             }
                         }
 
-                        if (progress < 1.0) {
-                            let pt = track.getPointAtLength(progress * pathLength);
-                            let cardEl = document.getElementById('card_' + card.id);
+                        // 渲染坐標位置
+                        let pt = track.getPointAtLength(finalRatio * pathLength);
+                        let cardEl = document.getElementById('card_' + card.id);
+                        
+                        if (!cardEl) {
+                            cardEl = document.createElement('div');
+                            cardEl.id = 'card_' + card.id;
+                            cardEl.className = 'mini-card ' + shapeClass;
+                            cardEl.style.backgroundColor = card.colorCode || '#34495e';
                             
-                            if (!cardEl) {
-                                cardEl = document.createElement('div');
-                                cardEl.id = 'card_' + card.id;
-                                cardEl.className = 'mini-card ' + shapeClass;
-                                cardEl.style.backgroundColor = card.colorCode || '#34495e';
-                                
-                                cardEl.onclick = (e) => {
-                                    e.stopPropagation();
-                                    if (cardEl.classList.contains('expanded')) {
-                                        cardEl.classList.remove('expanded');
-                                        document.getElementById('overlay').style.display = 'none';
-                                    } else {
-                                        closeAllCards();
-                                        cardEl.classList.add('expanded');
-                                        document.getElementById('overlay').style.display = 'block';
-                                    }
-                                };
-                                
-                                let shortText = card.part_name || card.part_no || 'Card';
-                                if (shortText.length > 5 && !shortText.includes('<img')) {
-                                    shortText = shortText.substring(0, 5) + '...';
+                            cardEl.onclick = (e) => {
+                                e.stopPropagation();
+                                if (cardEl.classList.contains('expanded')) {
+                                    cardEl.classList.remove('expanded');
+                                    document.getElementById('overlay').style.display = 'none';
+                                } else {
+                                    closeAllCards();
+                                    cardEl.classList.add('expanded');
+                                    document.getElementById('overlay').style.display = 'block';
                                 }
-                                
-                                cardEl.innerHTML = `
-                                    <div class="short-id">${renderField(shortText)}</div>
-                                    <div class="details">
-                                        <div class="close-btn" onclick="closeAllCards(); event.stopPropagation();">×</div>
-                                        <h3 style="margin-top:0;">${renderField(card.part_no)}</h3>
-                                        <p><b>品名:</b> ${renderField(card.part_name)}</p>
-                                        <p><b>機/櫃:</b> ${renderField(card.model_no) || '-'}</p>
-                                        <p><b>顏色:</b> ${card.color}</p>
-                                        <p><b>數量:</b> ${card.qty}</p>
-                                        <p><b>掛:</b> ${card.hang} &nbsp;<b>空:</b> ${card.empty} &nbsp;<b>間隔:</b> ${card.interval} &nbsp;<b>接勾:</b> ${card.hook}</p>
-                                        <button onclick="socket.emit('auto_move_to_unload', '${card.id}'); closeAllCards(); event.stopPropagation();" style="width:100%; padding:10px; background:#e74c3c; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; margin-top:10px;">
-                                            🚚 移至下料區
-                                        </button>
-                                    </div>
-                                `;
-                                cardContainer.appendChild(cardEl);
+                            };
+                            
+                            let shortText = card.part_name || card.part_no || 'Card';
+                            if (shortText.length > 5 && !shortText.includes('<img')) {
+                                shortText = shortText.substring(0, 5) + '...';
                             }
                             
-                            if (!cardEl.classList.contains('expanded')) {
-                                cardEl.style.left = (pt.x / 1000 * 100) + '%';
-                                cardEl.style.top = (pt.y / 1333 * 100) + '%';
-                            }
-                        } else if (card.is_clone) {
-                            let cardEl = document.getElementById('card_' + card.id);
-                            if (cardEl) cardEl.remove();
+                            cardEl.innerHTML = `
+                                <div class="short-id">${renderField(shortText)}</div>
+                                <div class="details">
+                                    <div class="close-btn" onclick="closeAllCards(); event.stopPropagation();">×</div>
+                                    <h3 style="margin-top:0;">${renderField(card.part_no)}</h3>
+                                    <p><b>品名:</b> ${renderField(card.part_name)}</p>
+                                    <p><b>機/櫃:</b> ${renderField(card.model_no) || '-'}</p>
+                                    <p><b>顏色:</b> ${card.color}</p>
+                                    <p><b>數量:</b> ${card.qty}</p>
+                                    <p><b>掛:</b> ${card.hang} &nbsp;<b>空:</b> ${card.empty} &nbsp;<b>間隔:</b> ${card.interval} &nbsp;<b>接勾:</b> ${card.hook}</p>
+                                    <button onclick="socket.emit('auto_move_to_unload', '${card.id}'); closeAllCards(); event.stopPropagation();" style="width:100%; padding:10px; background:#e74c3c; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; margin-top:10px;">
+                                        🚚 移至下料區
+                                    </button>
+                                </div>
+                            `;
+                            cardContainer.appendChild(cardEl);
+                        }
+                        
+                        if (!cardEl.classList.contains('expanded')) {
+                            cardEl.style.left = (pt.x / 1000 * 100) + '%';
+                            cardEl.style.top = (pt.y / 1333 * 100) + '%';
                         }
                     }
                 });
@@ -520,7 +570,11 @@
             const h = document.getElementById('setCardH').value;
             const font = document.getElementById('setCardFont').value;
             const shape = document.getElementById('setCardShape').value;
+            
             const pathD = document.getElementById('setTrackPath').value.trim();
+            const tStart = document.getElementById('setTrackStart').value;
+            const tEnd = document.getElementById('setTrackEnd').value;
+            const tDir = document.getElementById('setTrackDirection').value;
 
             localStorage.setItem('cardMinW', w);
             localStorage.setItem('cardH', h);
@@ -536,9 +590,14 @@
                 }
             });
 
-            if (pathD) {
-                socket.emit('update_track_path', pathD);
-            }
+            // 軌道類設定為伺服器全局連動
+            socket.emit('update_track_path', {
+                path_d: pathD,
+                track_start: tStart,
+                track_end: tEnd,
+                track_direction: tDir
+            });
+            
             toggleSettings(); 
         }
 
@@ -553,8 +612,18 @@
                 if (!el.classList.contains('expanded')) el.className = 'mini-card shape-rounded';
             });
 
+            document.getElementById('setTrackStart').value = 0.0;
+            document.getElementById('setTrackEnd').value = 1.0;
+            document.getElementById('setTrackDirection').value = '1';
             document.getElementById('setTrackPath').value = defaultPathD;
             initVisualEditor(defaultPathD);
+            
+            socket.emit('update_track_path', {
+                path_d: defaultPathD,
+                track_start: 0.0,
+                track_end: 1.0,
+                track_direction: '1'
+            });
         }
 
         function closeAllCards() {
@@ -584,6 +653,11 @@
 
             const trackPathStr = state.track_path || defaultPathD;
             document.getElementById('track').setAttribute('d', trackPathStr);
+
+            // 更新軌道參數的UI以防多客戶端不同步
+            if (state.track_start !== undefined) document.getElementById('setTrackStart').value = state.track_start;
+            if (state.track_end !== undefined) document.getElementById('setTrackEnd').value = state.track_end;
+            if (state.track_direction !== undefined) document.getElementById('setTrackDirection').value = state.track_direction;
 
             if (state.active_card_id && state.cards[state.active_card_id]) {
                 const activeCard = state.cards[state.active_card_id];
