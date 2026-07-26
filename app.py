@@ -157,7 +157,7 @@ def create_templates():
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 768px; 
                     aspect-ratio: 768 / 1024;
-                    background: url('/14436.png') no-repeat center center;
+                    background: url('/14436_2.png') no-repeat center center;
                     background-size: cover;
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
                     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
@@ -295,7 +295,7 @@ def create_templates():
 
                 function parsePathToCoords(dStr) {{
                     const coords = [];
-                    const regex = /[ML]\s*([0-9.]+)\s+([0-9.]+)/g;
+                    const regex = /[ML]\\s*([0-9.]+)\\s+([0-9.]+)/g;
                     let match;
                     while ((match = regex.exec(dStr)) !== null) {{
                         coords.push({{ x: parseFloat(match[1]), y: parseFloat(match[2]) }});
