@@ -1,6 +1,6 @@
-import os
 import time
 import threading
+import os
 
 # 自動判斷環境：如果已安裝 eventlet 則優先採用，否則退回 threading
 try:
@@ -34,7 +34,10 @@ sys_state = {
     'line_speed': 1100,
     'cards': {},
     'active_card_id': None,
-    'track_path': ''
+    'track_path': '',
+    'track_start': 0.0,       # 設置起點 (百分比或長度比例 0.0 ~ 1.0)
+    'track_end': 1.0,         # 設置終點 (百分比或長度比例 0.0 ~ 1.0)
+    'track_direction': '1'    # 輸送方向: '1' 為順向, '-1' 為逆向
 }
 
 active_card_lock = threading.Lock()
@@ -69,9 +72,17 @@ def load_state_from_supabase():
             }
         sys_state['cards'] = cards
         
-        path_res = supabase.table('powder_settings').select('value').eq('key', 'track_path_d').execute()
-        if path_res.data:
-            sys_state['track_path'] = path_res.data[0]['value']
+        path_res = supabase.table('powder_settings').select('key, value').execute()
+        for row in path_res.data:
+            if row['key'] == 'track_path_d':
+                sys_state['track_path'] = row['value']
+            elif row['key'] == 'track_start':
+                sys_state['track_start'] = float(row['value'])
+            elif row['key'] == 'track_end':
+                sys_state['track_end'] = float(row['value'])
+            elif row['key'] == 'track_direction':
+                sys_state['track_direction'] = row['value']
+                
         print("✅ 成功從 Supabase 載入初始狀態")
     except Exception as e:
         print(f"⚠️ 載入 Supabase 資料失敗 (網路異常或權限問題): {e}")
@@ -120,13 +131,28 @@ def handle_speed(val):
     broadcast_state()
 
 @socketio.on('update_track_path')
-def handle_update_track(path_d):
-    sys_state['track_path'] = path_d
+def handle_update_track(data):
+    # 支援接收字典（包含路徑、起點、終點、方向）或純字串路徑
+    if isinstance(data, dict):
+        if 'path_d' in data:
+            sys_state['track_path'] = data['path_d']
+        if 'track_start' in data:
+            sys_state['track_start'] = float(data['track_start'])
+        if 'track_end' in data:
+            sys_state['track_end'] = float(data['track_end'])
+        if 'track_direction' in data:
+            sys_state['track_direction'] = str(data['track_direction'])
+    else:
+        sys_state['track_path'] = str(data)
+
     try:
         if supabase: 
-            supabase.table('powder_settings').upsert({'key': 'track_path_d', 'value': path_d}).execute()
+            supabase.table('powder_settings').upsert({'key': 'track_path_d', 'value': sys_state['track_path']}).execute()
+            supabase.table('powder_settings').upsert({'key': 'track_start', 'value': str(sys_state['track_start'])}).execute()
+            supabase.table('powder_settings').upsert({'key': 'track_end', 'value': str(sys_state['track_end'])}).execute()
+            supabase.table('powder_settings').upsert({'key': 'track_direction', 'value': str(sys_state['track_direction'])}).execute()
     except Exception as e:
-        print("同步軌道至 Supabase 失敗:", e)
+        print("同步軌道設定至 Supabase 失敗:", e)
     broadcast_state()
 
 @socketio.on('add_card')
