@@ -280,4 +280,127 @@
                 const moveHandler = (clientX, clientY) => {
                     if (!isDragging) return;
                     const rect = container.getBoundingClientRect();
-                    let nx
+                    let nx = (clientX - rect.left) / rect.width * 1000;
+                    let ny = (clientY - rect.top) / rect.height * 1333;
+                    nx = Math.max(0, Math.min(1000, nx));
+                    ny = Math.max(0, Math.min(1333, ny));
+                    
+                    currentPathCoords[index] = {x: Math.round(nx), y: Math.round(ny)};
+                    handle.style.left = (nx / 1000 * 100) + '%';
+                    handle.style.top = (ny / 1333 * 100) + '%';
+                    
+                    document.getElementById('previewPath').setAttribute('d', coordsToPathD(currentPathCoords));
+                    document.getElementById('setTrackPath').value = coordsToPathD(currentPathCoords);
+                };
+
+                // 註冊拖曳事件
+                window.addEventListener('mousemove', e => moveHandler(e.clientX, e.clientY));
+                window.addEventListener('touchmove', e => {
+                    if(e.touches.length > 0) moveHandler(e.touches[0].clientX, e.touches[0].clientY);
+                }, {passive: false});
+
+                window.addEventListener('mouseup', () => { isDragging = false; });
+                window.addEventListener('touchend', () => { isDragging = false; });
+                
+                container.appendChild(handle);
+            });
+            
+            document.getElementById('previewPath').setAttribute('d', dStr);
+            document.getElementById('setTrackPath').value = dStr;
+        }
+
+        // --- 補齊缺少的按鈕與互動功能 ---
+
+        // 1. 打開/關閉設置彈窗
+        function toggleSettings() {
+            const modal = document.getElementById('settingsModal');
+            if (modal.style.display === 'flex') {
+                modal.style.display = 'none';
+            } else {
+                modal.style.display = 'flex';
+                loadSettings();
+                // 讀取當前軌道數據至編輯器
+                const currentD = document.getElementById('track').getAttribute('d') || defaultPathD;
+                document.getElementById('setTrackPath').value = currentD;
+                initVisualEditor(currentD);
+            }
+        }
+
+        // 2. 儲存設置
+        function saveSettings() {
+            const w = document.getElementById('setCardMinW').value;
+            const h = document.getElementById('setCardH').value;
+            const font = document.getElementById('setCardFont').value;
+            const pathD = document.getElementById('setTrackPath').value.trim();
+
+            localStorage.setItem('cardMinW', w);
+            localStorage.setItem('cardH', h);
+            localStorage.setItem('cardFont', font);
+            
+            loadSettings(); // 套用 CSS 變數
+            
+            if (pathD) {
+                socket.emit('update_track_path', pathD); // 同步軌道至後端
+            }
+            toggleSettings(); // 關閉彈窗
+        }
+
+        // 3. 重設為預設值
+        function resetSettings() {
+            localStorage.removeItem('cardMinW');
+            localStorage.removeItem('cardH');
+            localStorage.removeItem('cardFont');
+            loadSettings();
+            document.getElementById('setTrackPath').value = defaultPathD;
+            initVisualEditor(defaultPathD);
+        }
+
+        // 4. 點擊空白處關閉展開的卡片
+        function closeAllCards() {
+            document.querySelectorAll('.mini-card.expanded').forEach(card => {
+                card.classList.remove('expanded');
+            });
+            const overlay = document.getElementById('overlay');
+            if(overlay) overlay.style.display = 'none';
+        }
+
+        // 5. 調整流水線速度
+        function changeSpeed(val) {
+            socket.emit('change_speed', val);
+        }
+
+        // --- 接收後端 Socket 狀態更新 ---
+        let sys_state_cache = {};
+        socket.on('update_state', (state) => {
+            sys_state_cache = state;
+            
+            // 更新轉速與時間
+            const speedEl = document.getElementById('current-speed');
+            if(speedEl) speedEl.innerText = state.line_speed;
+            
+            const speedIndex = Math.max(1.0, state.line_speed / 100.0);
+            const totalMins = Math.round(1320.0 / speedIndex);
+            const timeEl = document.getElementById('total-time');
+            if(timeEl) timeEl.innerText = totalMins;
+
+            // 更新軌道路徑
+            const trackPathStr = state.track_path || defaultPathD;
+            document.getElementById('track').setAttribute('d', trackPathStr);
+
+            // 更新滿線狀態橫幅
+            if (state.active_card_id && state.cards[state.active_card_id]) {
+                const activeCard = state.cards[state.active_card_id];
+                document.getElementById('active-card-name').innerText = activeCard.part_name || activeCard.part_no || activeCard.id;
+            } else {
+                document.getElementById('active-card-name').innerText = t('none_loading');
+            }
+        });
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            applyLang();
+            loadSettings();
+        });
+    </script>
+</body>
+</html>
