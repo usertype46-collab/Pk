@@ -7,7 +7,8 @@ from supabase import create_client, Client
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")
+# 使用 eventlet 來增強 SocketIO 在雲端環境的穩定性
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # --- Supabase 初始化 ---
 SUPABASE_URL = "https://cnkxsxhgdtuxknrzufhv.supabase.co"
@@ -323,7 +324,7 @@ def create_templates():
                     document.getElementById('setCardMinW').value = savedW;
                     document.getElementById('setCardH').value = savedH;
                     document.getElementById('setCardFont').value = savedFont;
-                }
+                }}
 
                 function initVisualEditor(dStr) {{
                     currentPathCoords = parsePathToCoords(dStr);
@@ -333,7 +334,6 @@ def create_templates():
                     currentPathCoords.forEach((pt, index) => {{
                         const handle = document.createElement('div');
                         handle.className = 'node-handle';
-                        // 換算成 350px 高度容器的百分比座標
                         handle.style.left = (pt.x / 1000 * 100) + '%';
                         handle.style.top = (pt.y / 1333 * 100) + '%';
 
@@ -342,12 +342,17 @@ def create_templates():
                             isDragging = true;
                             e.stopPropagation();
                         }};
+                        
+                        handle.ontouchstart = (e) => {{
+                            isDragging = true;
+                            e.stopPropagation();
+                        }};
 
-                        window.onmousemove = (e) => {{
+                        const moveHandler = (clientX, clientY) => {{
                             if (!isDragging) return;
                             const rect = container.getBoundingClientRect();
-                            let nx = ((e.clientX - rect.left) / rect.width) * 1000;
-                            let ny = ((e.clientY - rect.top) / rect.height) * 1333;
+                            let nx = ((clientX - rect.left) / rect.width) * 1000;
+                            let ny = ((clientY - rect.top) / rect.height) * 1333;
                             nx = Math.max(0, Math.min(1000, nx));
                             ny = Math.max(0, Math.min(1333, ny));
 
@@ -360,7 +365,11 @@ def create_templates():
                             document.getElementById('previewPath').setAttribute('d', newD);
                         }};
 
-                        window.onmouseup = () => {{ isDragging = false; }};
+                        window.addEventListener('mousemove', (e) => moveHandler(e.clientX, e.clientY));
+                        window.addEventListener('touchmove', (e) => moveHandler(e.touches[0].clientX, e.touches[0].clientY));
+
+                        window.addEventListener('mouseup', () => {{ isDragging = false; }});
+                        window.addEventListener('touchend', () => {{ isDragging = false; }});
                         container.appendChild(handle);
                     }});
                     document.getElementById('previewPath').setAttribute('d', dStr);
@@ -1129,6 +1138,7 @@ def finish_card(card_id):
             pass
         broadcast_state()
 
+# 模擬引擎 (Python 後端 Thread 動態插入取代前端 Web Worker 概念，確保全局同步)
 def continuous_line_inserter():
     global clone_counter, current_active_card_template
     while True:
@@ -1177,5 +1187,6 @@ inserter_thread.start()
 
 if __name__ == '__main__':
     create_templates()
+    # 自動抓取 Railway 分配的 PORT
     port = int(os.environ.get('PORT', 5000))
     socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
