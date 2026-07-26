@@ -1,7 +1,3 @@
-# 必須放在所有 import 之前！將標準函式庫替換為 eventlet 的非阻塞版本
-import eventlet
-eventlet.monkey_patch()
-
 import os
 import time
 import threading
@@ -11,8 +7,8 @@ from supabase import create_client, Client
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-# 使用 eventlet 來增強 SocketIO 在雲端環境的穩定性
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+# 移除 async_mode='eventlet'，讓其自動降級使用原生 Threading，避免與 Supabase 衝突
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # --- Supabase 初始化 ---
 SUPABASE_URL = "https://cnkxsxhgdtuxknrzufhv.supabase.co"
@@ -1142,7 +1138,7 @@ def finish_card(card_id):
             pass
         broadcast_state()
 
-# 模擬引擎 (Python 後端 Thread 動態插入取代前端 Web Worker 概念，確保全局同步)
+# 模擬引擎 (使用預設原生 Thread，保證全局同步)
 def continuous_line_inserter():
     global clone_counter, current_active_card_template
     while True:
