@@ -1,5 +1,6 @@
 import threading
 import os
+import time  # 修正：新增缺少的 time 模組
 
 # 自動判斷環境：如果已安裝 eventlet 則優先採用，否則退回 threading
 try:
