@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +30,6 @@
             to { stroke-dashoffset: 0; }
         }
 
-        /* --- 卡片基本樣式與形狀庫 --- */
         .mini-card { 
             position: absolute; width: auto; min-width: var(--card-min-w, 50px); height: var(--card-h, 26px); 
             border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.5); transform: translate(-50%, -50%); cursor: pointer; 
@@ -40,7 +38,6 @@
             transition: all 0.3s; z-index: 10; padding: 0 5px; white-space: nowrap; pointer-events: auto;
         }
         
-        /* 形狀變體 */
         .mini-card.shape-rect { border-radius: 0; }
         .mini-card.shape-rounded { border-radius: 6px; }
         .mini-card.shape-pill { border-radius: 50px; }
@@ -52,7 +49,6 @@
         
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9990; }
         
-        /* 展開狀態下強制覆蓋形狀，保證資訊可讀性 */
         .mini-card.expanded {
             position: fixed !important; top: 50% !important; left: 50% !important;
             transform: translate(-50%, -50%) !important;
@@ -117,7 +113,6 @@
             
             <hr style="margin:20px 0; border:1px solid #ecf0f1;">
 
-            <!-- 新增軌道起點、終點與方向設定 -->
             <label data-i18n="track_start_lbl">軌道起點 (0.0 ~ 1.0):</label>
             <input type="number" id="setTrackStart" step="0.01" min="0" max="1" value="0.0">
             
@@ -175,12 +170,10 @@
         <svg viewBox="0 0 1000 1333" preserveAspectRatio="none">
             <path id="track" d="" fill="none" stroke="#e74c3c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" class="chain-track"/>
         </svg>
-        <!-- 新增卡片渲染容器 -->
         <div id="card-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></div>
     </div>
 
     <script>
-        // --- 翻譯邏輯 (I18N) ---
         const i18n = {
             'zh': {
                 'sim_title': '🏭 粉體塗裝流水線模擬器', 'speed': '流水線轉速: ', 'time_lbl': '跑完全程所需時間: ', 'mins': ' 分鐘',
@@ -264,32 +257,15 @@
             requestAnimationFrame(animateCards);
         });
 
-        // --- 模擬器主邏輯 ---
         const socket = io();
         const track = document.getElementById('track');
         const overlay = document.getElementById('overlay');
         const cardContainer = document.getElementById('card-container');
         let currentSpeed = 1100;
         
+        // 採用提供的最新原始節點檔案設置為預設節點
         const defaultPathD = `
-            M 461 1180
-            L 461 280
-            L 91 280
-            L 91 98
-            L 931 98
-            L 931 185
-            L 580 186
-            L 580 271
-            L 930 271
-            L 930 352
-            L 580 352
-            L 580 432
-            L 930 432
-            L 930 510
-            L 580 510
-            L 580 470
-            L 930 1180
-            L 461 1180 Z
+            M 468 1180 L 465 370 L 99 370 L 99 76 L 940 76 L 940 175 L 580 175 L 580 255 L 946 253 L 947 341 L 580 339 L 580 436 L 909 437 L 908 558 L 657 557 L 658 403 L 948 404 L 948 1184 Z
         `.trim();
 
         let currentPathCoords = [];
@@ -421,7 +397,6 @@
             document.getElementById('setTrackPath').value = dStr;
         }
 
-        // --- 核心更新迴圈 (加入軌道起訖點與方向計算) ---
         function animateCards() {
             if (!track || track.getTotalLength() === 0) {
                 requestAnimationFrame(animateCards);
@@ -435,7 +410,6 @@
             const currentCardIds = new Set();
             const shapeClass = 'shape-' + (localStorage.getItem('cardShape') || 'rounded');
 
-            // 抓取伺服器同步的最新設置，賦予預設值以防出錯
             let trackStart = parseFloat(sys_state_cache.track_start);
             if (isNaN(trackStart)) trackStart = 0.0;
             
@@ -444,7 +418,6 @@
             
             let trackDir = sys_state_cache.track_direction || '1'; 
 
-            // 計算有效行進距離比例 (考慮跨越 0.0/1.0 邊界的循環邏輯)
             let span = 1.0;
             if (trackDir == '1') {
                 span = trackEnd >= trackStart ? (trackEnd - trackStart) : (1.0 - trackStart + trackEnd);
@@ -463,10 +436,9 @@
                         let isFinished = false;
                         if (baseProgress >= span) {
                             isFinished = true;
-                            baseProgress = span; // 到達終點即停止運算，箝制於終點
+                            baseProgress = span; 
                         }
                         
-                        // 將相對運行進度映射回實際 Path 的 0.0 ~ 1.0 坐標系
                         let finalRatio = 0;
                         if (trackDir == '1') {
                             finalRatio = (trackStart + baseProgress) % 1.0;
@@ -475,20 +447,16 @@
                             if (finalRatio < 0) finalRatio += 1.0; 
                         }
 
-                        // 抵達終點的卡片處理
                         if (isFinished) {
                             if (card.is_clone) {
-                                // 滿線克隆卡片直接消失
                                 let cardEl = document.getElementById('card_' + card.id);
                                 if (cardEl) cardEl.remove();
-                                return; // 等同迴圈內的 continue，跳過後續渲染
+                                return; 
                             } else {
-                                // 原始母卡停在實際終點點位等待下料
                                 finalRatio = trackEnd; 
                             }
                         }
 
-                        // 渲染坐標位置
                         let pt = track.getPointAtLength(finalRatio * pathLength);
                         let cardEl = document.getElementById('card_' + card.id);
                         
@@ -541,7 +509,6 @@
                 });
             }
 
-            // 清理已下料或被刪除的卡片 DOM
             document.querySelectorAll('#card-container .mini-card').forEach(el => {
                 let id = el.id.replace('card_', '');
                 if (!currentCardIds.has(id)) {
@@ -583,14 +550,12 @@
             
             loadSettings(); 
             
-            // 強制更新已存在的卡片形狀
             document.querySelectorAll('#card-container .mini-card').forEach(el => {
                 if (!el.classList.contains('expanded')) {
                     el.className = 'mini-card shape-' + shape;
                 }
             });
 
-            // 軌道類設定為伺服器全局連動
             socket.emit('update_track_path', {
                 path_d: pathD,
                 track_start: tStart,
@@ -654,7 +619,6 @@
             const trackPathStr = state.track_path || defaultPathD;
             document.getElementById('track').setAttribute('d', trackPathStr);
 
-            // 更新軌道參數的UI以防多客戶端不同步
             if (state.track_start !== undefined) document.getElementById('setTrackStart').value = state.track_start;
             if (state.track_end !== undefined) document.getElementById('setTrackEnd').value = state.track_end;
             if (state.track_direction !== undefined) document.getElementById('setTrackDirection').value = state.track_direction;
