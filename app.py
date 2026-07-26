@@ -7,13 +7,18 @@ from supabase import create_client, Client
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-# 移除 async_mode='eventlet'，讓其自動降級使用原生 Threading，避免與 Supabase 衝突
+# 使用原生 Threading 模式，避免 eventlet 的 monkey_patch 破壞 Supabase 的 asyncio 底層
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # --- Supabase 初始化 ---
 SUPABASE_URL = "https://cnkxsxhgdtuxknrzufhv.supabase.co"
 SUPABASE_KEY = "sb_publishable_QEoX_f9G_Gf9kaaDZpaH-g_ageY5WFK"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+try:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+except Exception as e:
+    print(f"Supabase 初始化失敗: {e}")
+    supabase = None
 
 sys_state = {
     'line_speed': 1100,
@@ -28,6 +33,10 @@ clone_counter = 0
 
 def load_state_from_supabase():
     global sys_state
+    if not supabase:
+        print("Supabase 未初始化，略過載入狀態")
+        return
+        
     try:
         res = supabase.table('powder_cards').select('*').execute()
         cards = {}
@@ -53,10 +62,12 @@ def load_state_from_supabase():
         path_res = supabase.table('powder_settings').select('value').eq('key', 'track_path_d').execute()
         if path_res.data:
             sys_state['track_path'] = path_res.data[0]['value']
+        print("✅ 成功從 Supabase 載入初始狀態")
     except Exception as e:
-        print("載入 Supabase 資料失敗:", e)
+        print(f"⚠️ 載入 Supabase 資料失敗 (網路異常或權限問題): {e}")
 
-load_state_from_supabase()
+# 在背景執行載入，避免網路延遲導致平台(如 Railway)判定伺服器啟動超時而被強制 Stop Container
+threading.Thread(target=load_state_from_supabase, daemon=True).start()
 
 I18N_SCRIPT = """
 <style>
@@ -157,7 +168,7 @@ def create_templates():
                 .factory-map {{ 
                     position: relative; width: 100%; max-width: 768px; 
                     aspect-ratio: 768 / 1024;
-                    background: url('/14436_2.png') no-repeat center center;
+                    background: url('/14436.png') no-repeat center center;
                     background-size: cover;
                     border-radius: 10px; border: 2px solid #ccc; margin: 0 auto;
                     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
@@ -1030,7 +1041,7 @@ def handle_speed(val):
 def handle_update_track(path_d):
     sys_state['track_path'] = path_d
     try:
-        supabase.table('powder_settings').upsert({'key': 'track_path_d', 'value': path_d}).execute()
+        if supabase: supabase.table('powder_settings').upsert({'key': 'track_path_d', 'value': path_d}).execute()
     except Exception as e:
         print("同步軌道至 Supabase 失敗:", e)
     broadcast_state()
@@ -1039,17 +1050,18 @@ def handle_update_track(path_d):
 def add_card(data):
     sys_state['cards'][data['id']] = data
     try:
-        supabase.table('powder_cards').upsert({
-            'id': data['id'],
-            'color': data['color'],
-            'color_code': data['colorCode'],
-            'part_no': data['part_no'],
-            'part_name': data['part_name'],
-            'model_no': data['model_no'],
-            'qty': int(data['qty'] or 0),
-            'status': data['status'],
-            'hang': 1, 'empty': 0, 'interval': 0, 'hook': 0
-        }).execute()
+        if supabase:
+            supabase.table('powder_cards').upsert({
+                'id': data['id'],
+                'color': data['color'],
+                'color_code': data['colorCode'],
+                'part_no': data['part_no'],
+                'part_name': data['part_name'],
+                'model_no': data['model_no'],
+                'qty': int(data['qty'] or 0),
+                'status': data['status'],
+                'hang': 1, 'empty': 0, 'interval': 0, 'hook': 0
+            }).execute()
     except Exception as e:
         print("新增卡片至 Supabase 失敗:", e)
     broadcast_state()
@@ -1059,7 +1071,7 @@ def delete_card(card_id):
     if card_id in sys_state['cards']:
         del sys_state['cards'][card_id]
         try:
-            supabase.table('powder_cards').delete().eq('id', card_id).execute()
+            if supabase: supabase.table('powder_cards').delete().eq('id', card_id).execute()
         except Exception as e:
             print("刪除 Supabase 資料失敗:", e)
         broadcast_state()
@@ -1070,7 +1082,7 @@ def change_status(data):
     if card_id in sys_state['cards']:
         sys_state['cards'][card_id]['status'] = data['status']
         try:
-            supabase.table('powder_cards').update({'status': data['status']}).eq('id', card_id).execute()
+            if supabase: supabase.table('powder_cards').update({'status': data['status']}).eq('id', card_id).execute()
         except Exception as e:
             print("更新狀態至 Supabase 失敗:", e)
         broadcast_state()
@@ -1102,11 +1114,12 @@ def send_to_line(data):
             current_active_card_template = card.copy()
             
         try:
-            supabase.table('powder_cards').update({
-                'status': 'on_line',
-                'hang': hang, 'empty': empty, 'interval': interval, 'hook': hook,
-                'line_start_time': card['line_start_time']
-            }).eq('id', card_id).execute()
+            if supabase:
+                supabase.table('powder_cards').update({
+                    'status': 'on_line',
+                    'hang': hang, 'empty': empty, 'interval': interval, 'hook': hook,
+                    'line_start_time': card['line_start_time']
+                }).eq('id', card_id).execute()
         except Exception as e:
             print("上線資料同步 Supabase 失敗:", e)
 
@@ -1117,7 +1130,7 @@ def auto_unload(card_id):
     if card_id in sys_state['cards'] and sys_state['cards'][card_id]['status'] == 'on_line':
         sys_state['cards'][card_id]['status'] = 'unloading'
         try:
-            supabase.table('powder_cards').update({'status': 'unloading'}).eq('id', card_id).execute()
+            if supabase: supabase.table('powder_cards').update({'status': 'unloading'}).eq('id', card_id).execute()
         except Exception:
             pass
         broadcast_state()
@@ -1130,10 +1143,11 @@ def finish_card(card_id):
         ftime = time.strftime("%Y-%m-%d %H:%M:%S", tw_time)
         sys_state['cards'][card_id]['finish_time'] = ftime
         try:
-            supabase.table('powder_cards').update({
-                'status': 'completed',
-                'finish_time': ftime
-            }).eq('id', card_id).execute()
+            if supabase: 
+                supabase.table('powder_cards').update({
+                    'status': 'completed',
+                    'finish_time': ftime
+                }).eq('id', card_id).execute()
         except Exception:
             pass
         broadcast_state()
@@ -1187,6 +1201,5 @@ inserter_thread.start()
 
 if __name__ == '__main__':
     create_templates()
-    # 自動抓取 Railway 分配的 PORT
     port = int(os.environ.get('PORT', 5000))
     socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
