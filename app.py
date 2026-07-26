@@ -1,14 +1,24 @@
 import os
 import time
 import threading
+
+# 自動判斷環境：如果已安裝 eventlet 則優先採用，否則退回 threading
+try:
+    import eventlet
+    eventlet.monkey_patch()
+    ASYNC_MODE = 'eventlet'
+except ImportError:
+    ASYNC_MODE = 'threading'
+
 from flask import Flask, render_template, send_from_directory
 from flask_socketio import SocketIO, emit
 from supabase import create_client, Client
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-# 明確告知 SocketIO 使用 threading，防止環境檢查造成 Crash
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+
+# 採用動態取得的 async_mode，兼顧開發與雲端部署
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode=ASYNC_MODE)
 
 # --- Supabase 初始化 ---
 SUPABASE_URL = "https://cnkxsxhgdtuxknrzufhv.supabase.co"
