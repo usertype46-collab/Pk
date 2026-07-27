@@ -31,6 +31,7 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     hasKey: !!nvidiaApiKey,
+    apiKey: nvidiaApiKey, // 供前端自動抓取 API Key
     model: "nvidia/nemotron-3-ultra-550b-a55b"
   });
 });
