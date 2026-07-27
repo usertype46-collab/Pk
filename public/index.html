@@ -137,45 +137,45 @@
                         </div>
                     </div>
 
-                    <div class="border-t border-gray-600 pt-4"><h3 class="text-blue-300 mb-2">槍粉量數據 (0-99)</h3></div>
+                    <div class="border-t border-gray-600 pt-4"><h3 class="text-blue-300 mb-2">槍粉量數據 (支援文字/數字)</h3></div>
                     <div class="grid grid-cols-4 md:grid-cols-8 gap-2">
-                        <input type="number" id="gun_1" placeholder="槍1" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
-                        <input type="number" id="gun_2" placeholder="槍2" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
-                        <input type="number" id="gun_3" placeholder="槍3" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
-                        <input type="number" id="gun_4" placeholder="槍4" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
-                        <input type="number" id="gun_5" placeholder="槍5" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
-                        <input type="number" id="gun_6" placeholder="槍6" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
-                        <input type="number" id="gun_7" placeholder="槍7" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
-                        <input type="number" id="gun_8" placeholder="槍8" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
+                        <input type="text" id="gun_1" placeholder="槍1" class="bg-gray-800 p-2 rounded w-full text-center text-white">
+                        <input type="text" id="gun_2" placeholder="槍2" class="bg-gray-800 p-2 rounded w-full text-center text-white">
+                        <input type="text" id="gun_3" placeholder="槍3" class="bg-gray-800 p-2 rounded w-full text-center text-white">
+                        <input type="text" id="gun_4" placeholder="槍4" class="bg-gray-800 p-2 rounded w-full text-center text-white">
+                        <input type="text" id="gun_5" placeholder="槍5" class="bg-gray-800 p-2 rounded w-full text-center text-white">
+                        <input type="text" id="gun_6" placeholder="槍6" class="bg-gray-800 p-2 rounded w-full text-center text-white">
+                        <input type="text" id="gun_7" placeholder="槍7" class="bg-gray-800 p-2 rounded w-full text-center text-white">
+                        <input type="text" id="gun_8" placeholder="槍8" class="bg-gray-800 p-2 rounded w-full text-center text-white">
                     </div>
 
                     <div class="border-t border-gray-600 pt-4"><h3 class="text-yellow-300 mb-2">往復機運行參數</h3></div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
-                            <input type="number" id="speed_left" value="600" placeholder="左上下速度(百)" max="999" class="w-full bg-gray-800 p-2 rounded">
-                            <input type="number" id="up_turn_left" placeholder="左上換向點(千)" max="9999" class="w-full bg-gray-800 p-2 rounded">
-                            <input type="number" id="down_turn_left" placeholder="左下換向點(千)" max="9999" class="w-full bg-gray-800 p-2 rounded">
-                            <input type="number" id="dist_left" value="380" placeholder="左工件距離(百)" max="999" class="w-full bg-gray-800 p-2 rounded">
+                            <input type="text" id="speed_left" value="600" placeholder="左上下速度(百)" class="w-full bg-gray-800 p-2 rounded text-white">
+                            <input type="text" id="up_turn_left" placeholder="左上換向點(千)" class="w-full bg-gray-800 p-2 rounded text-white">
+                            <input type="text" id="down_turn_left" placeholder="左下換向點(千)" class="w-full bg-gray-800 p-2 rounded text-white">
+                            <input type="text" id="dist_left" value="380" placeholder="左工件距離(百)" class="w-full bg-gray-800 p-2 rounded text-white">
                         </div>
                         <div class="space-y-2">
-                            <input type="number" id="speed_right" value="600" placeholder="右上下速度(百)" max="999" class="w-full bg-gray-800 p-2 rounded">
-                            <input type="number" id="up_turn_right" placeholder="右上換向點(千)" max="9999" class="w-full bg-gray-800 p-2 rounded">
-                            <input type="number" id="down_turn_right" placeholder="右下換向點(千)" max="9999" class="w-full bg-gray-800 p-2 rounded">
-                            <input type="number" id="dist_right" value="420" placeholder="右工件距離(百)" max="999" class="w-full bg-gray-800 p-2 rounded">
+                            <input type="text" id="speed_right" value="600" placeholder="右上下速度(百)" class="w-full bg-gray-800 p-2 rounded text-white">
+                            <input type="text" id="up_turn_right" placeholder="右上換向點(千)" class="w-full bg-gray-800 p-2 rounded text-white">
+                            <input type="text" id="down_turn_right" placeholder="右下換向點(千)" class="w-full bg-gray-800 p-2 rounded text-white">
+                            <input type="text" id="dist_right" value="420" placeholder="右工件距離(百)" class="w-full bg-gray-800 p-2 rounded text-white">
                         </div>
                     </div>
 
                     <div class="border-t border-gray-600 pt-4"><h3 class="text-red-300 mb-2">電壓與電流</h3></div>
                     <div class="grid grid-cols-2 gap-4">
-                        <input type="number" id="voltage" value="70" placeholder="電壓" max="99" class="w-full bg-gray-800 p-2 rounded">
-                        <input type="number" id="current" value="15" placeholder="電流" max="99" class="w-full bg-gray-800 p-2 rounded">
+                        <input type="text" id="voltage" value="70" placeholder="電壓" class="w-full bg-gray-800 p-2 rounded text-white">
+                        <input type="text" id="current" value="15" placeholder="電流" class="w-full bg-gray-800 p-2 rounded text-white">
                     </div>
 
                     <div class="border-t border-gray-600 pt-4"><h3 class="text-gray-300 mb-2">備註</h3></div>
                     <div class="grid grid-cols-1 gap-2">
-                        <input type="text" id="remark_1" placeholder="備註一" class="w-full bg-gray-800 p-2 rounded">
-                        <input type="text" id="remark_2" placeholder="備註二" class="w-full bg-gray-800 p-2 rounded">
-                        <input type="text" id="remark_3" placeholder="備註三" class="w-full bg-gray-800 p-2 rounded">
+                        <input type="text" id="remark_1" placeholder="備註一" class="w-full bg-gray-800 p-2 rounded text-white">
+                        <input type="text" id="remark_2" placeholder="備註二" class="w-full bg-gray-800 p-2 rounded text-white">
+                        <input type="text" id="remark_3" placeholder="備註三" class="w-full bg-gray-800 p-2 rounded text-white">
                     </div>
 
                     <div class="flex gap-4 mt-6">
@@ -447,24 +447,24 @@ completion = client.chat.completions.create(
             
             const payload = {
                 item_name: document.getElementById('item_name').value,
-                gun_1: document.getElementById('gun_1').value || 0,
-                gun_2: document.getElementById('gun_2').value || 0,
-                gun_3: document.getElementById('gun_3').value || 0,
-                gun_4: document.getElementById('gun_4').value || 0,
-                gun_5: document.getElementById('gun_5').value || 0,
-                gun_6: document.getElementById('gun_6').value || 0,
-                gun_7: document.getElementById('gun_7').value || 0,
-                gun_8: document.getElementById('gun_8').value || 0,
-                speed_left: document.getElementById('speed_left').value || 0,
-                speed_right: document.getElementById('speed_right').value || 0,
-                up_turn_left: document.getElementById('up_turn_left').value || 0,
-                up_turn_right: document.getElementById('up_turn_right').value || 0,
-                down_turn_left: document.getElementById('down_turn_left').value || 0,
-                down_turn_right: document.getElementById('down_turn_right').value || 0,
-                dist_left: document.getElementById('dist_left').value || 0,
-                dist_right: document.getElementById('dist_right').value || 0,
-                voltage: document.getElementById('voltage').value || 0,
-                current: document.getElementById('current').value || 0,
+                gun_1: document.getElementById('gun_1').value || '0',
+                gun_2: document.getElementById('gun_2').value || '0',
+                gun_3: document.getElementById('gun_3').value || '0',
+                gun_4: document.getElementById('gun_4').value || '0',
+                gun_5: document.getElementById('gun_5').value || '0',
+                gun_6: document.getElementById('gun_6').value || '0',
+                gun_7: document.getElementById('gun_7').value || '0',
+                gun_8: document.getElementById('gun_8').value || '0',
+                speed_left: document.getElementById('speed_left').value || '0',
+                speed_right: document.getElementById('speed_right').value || '0',
+                up_turn_left: document.getElementById('up_turn_left').value || '0',
+                up_turn_right: document.getElementById('up_turn_right').value || '0',
+                down_turn_left: document.getElementById('down_turn_left').value || '0',
+                down_turn_right: document.getElementById('down_turn_right').value || '0',
+                dist_left: document.getElementById('dist_left').value || '0',
+                dist_right: document.getElementById('dist_right').value || '0',
+                voltage: document.getElementById('voltage').value || '0',
+                current: document.getElementById('current').value || '0',
                 remark_1: document.getElementById('remark_1').value,
                 remark_2: document.getElementById('remark_2').value,
                 remark_3: document.getElementById('remark_3').value,
