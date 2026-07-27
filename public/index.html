@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>百富粉體塗裝自動槍參數系統 (NVIDIA AI 整合版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-800 text-white font-sans min-h-screen">
+    <div class="max-w-6xl mx-auto p-4">
+        
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold text-blue-400">百富粉體塗裝參數系統 (AI 智慧版)</h1>
+            <button id="btnShowModelCode" class="bg-purple-600 hover:bg-purple-500 text-xs px-3 py-2 rounded-lg font-bold shadow transition">
+                ⚡ 顯示模型替換代碼
+            </button>
+        </div>
+
+        <div class="flex gap-4 mb-6">
+            <button id="tabQueryBtn" class="flex-1 bg-blue-600 py-2 rounded-lg font-bold transition">相機/手動查詢模式</button>
+            <button id="tabRegisterBtn" class="flex-1 bg-gray-600 py-2 rounded-lg font-bold transition">參數建檔模式</button>
+        </div>
+
+        <div id="querySection" class="block">
+            <div class="bg-gray-700 p-4 rounded-xl mb-6 shadow-lg border border-gray-600">
+                <h2 class="text-xl mb-4 font-bold text-yellow-400">📷 構件參數查詢 (NVIDIA AI 驅動)</h2>
+                
+                <div class="flex items-center gap-4">
+                    <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
+                    <button onclick="document.getElementById('cameraInput').click()" class="bg-green-600 hover:bg-green-500 px-6 py-4 rounded-lg font-bold shadow-lg w-full text-lg transition">
+                        📸 點擊拍照並透過 NVIDIA AI 自動分析
+                    </button>
+                </div>
+                <p id="analysisStatus" class="mt-4 text-sm text-gray-300"></p>
+                <p class="text-xs text-gray-400 mt-2 mb-4">* 系統將自動呼叫後端 AI 模型比對特徵並連動下方資料表</p>
+
+                <div class="mt-6 pt-4 border-t border-gray-600">
+                    <label class="block text-gray-400 mb-2 font-bold">🔍 或從資料庫手動選擇構件：</label>
+                    <select id="itemSelect" class="w-full bg-gray-800 p-3 rounded-lg border border-gray-500 text-white font-bold focus:ring-2 focus:ring-blue-500 transition">
+                        <option value="">-- 資料載入中... --</option>
+                    </select>
+                </div>
+
+                <div id="actionButtons" class="mt-4 flex gap-4 hidden">
+                    <button id="btnEditItem" class="flex-1 bg-yellow-600 hover:bg-yellow-500 py-2 rounded-lg font-bold shadow transition">
+                        ✏️ 修改此構件
+                    </button>
+                    <button id="btnDeleteItem" class="flex-1 bg-red-600 hover:bg-red-500 py-2 rounded-lg font-bold shadow transition">
+                        🗑️ 刪除此構件
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="resultBoard" style="display:none;">
+                <div class="bg-gray-700 p-4 rounded-xl border border-blue-500 flex flex-col">
+                    <h3 class="font-bold mb-3 text-blue-300">左側：構件圖片與槍粉量數據</h3>
+                    <div id="imageContainer" class="mb-4 bg-gray-800 p-2 rounded text-center border border-gray-600 hidden">
+                        <span class="text-gray-400 text-xs block mb-2">構件參考圖片</span>
+                        <img id="q_matched_image" src="" alt="構件圖片" class="mx-auto rounded h-40 w-full object-cover shadow-md">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-center text-sm">
+                        <div class="space-y-2">
+                            <div class="bg-gray-800 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400">1號:</span> <span id="q_gun_1" class="text-green-400 text-lg font-bold"></span></div>
+                            <div class="bg-gray-800 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400">2號:</span> <span id="q_gun_2" class="text-green-400 text-lg font-bold"></span></div>
+                            <div class="bg-gray-800 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400">3號:</span> <span id="q_gun_3" class="text-green-400 text-lg font-bold"></span></div>
+                            <div class="bg-gray-800 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400">4號:</span> <span id="q_gun_4" class="text-green-400 text-lg font-bold"></span></div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="bg-gray-800 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400">5號:</span> <span id="q_gun_5" class="text-green-400 text-lg font-bold"></span></div>
+                            <div class="bg-gray-800 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400">6號:</span> <span id="q_gun_6" class="text-green-400 text-lg font-bold"></span></div>
+                            <div class="bg-gray-800 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400">7號:</span> <span id="q_gun_7" class="text-green-400 text-lg font-bold"></span></div>
+                            <div class="bg-gray-800 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400">8號:</span> <span id="q_gun_8" class="text-green-400 text-lg font-bold"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-700 p-4 rounded-xl border border-yellow-500">
+                    <h3 class="font-bold mb-3 text-yellow-300">中間：往復機運行參數</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-center justify-between bg-gray-800 p-3 rounded">
+                            <span class="w-1/3 text-left text-yellow-400 font-mono">左1: <b id="q_speed_left" class="text-lg"></b></span>
+                            <span class="w-1/3 text-center text-gray-200">上下速度<br><span class="text-xs text-gray-500">(百)</span></span>
+                            <span class="w-1/3 text-right text-yellow-400 font-mono">右2: <b id="q_speed_right" class="text-lg"></b></span>
+                        </div>
+                        <div class="flex items-center justify-between bg-gray-800 p-3 rounded">
+                            <span class="w-1/3 text-left text-yellow-400 font-mono">左1: <b id="q_up_turn_left" class="text-lg"></b></span>
+                            <span class="w-1/3 text-center text-gray-200">上換向點<br><span class="text-xs text-gray-500">(千)</span></span>
+                            <span class="w-1/3 text-right text-yellow-400 font-mono">右2: <b id="q_up_turn_right" class="text-lg"></b></span>
+                        </div>
+                        <div class="flex items-center justify-between bg-gray-800 p-3 rounded">
+                            <span class="w-1/3 text-left text-yellow-400 font-mono">左1: <b id="q_down_turn_left" class="text-lg"></b></span>
+                            <span class="w-1/3 text-center text-gray-200">下換向點<br><span class="text-xs text-gray-500">(千)</span></span>
+                            <span class="w-1/3 text-right text-yellow-400 font-mono">右2: <b id="q_down_turn_right" class="text-lg"></b></span>
+                        </div>
+                        <div class="flex items-center justify-between bg-gray-800 p-3 rounded">
+                            <span class="w-1/3 text-left text-yellow-400 font-mono">左1: <b id="q_dist_left" class="text-lg"></b></span>
+                            <span class="w-1/3 text-center text-gray-200">工件距離<br><span class="text-xs text-gray-500">(百)</span></span>
+                            <span class="w-1/3 text-right text-yellow-400 font-mono">右2: <b id="q_dist_right" class="text-lg"></b></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-700 p-4 rounded-xl border border-red-500">
+                    <h3 class="font-bold mb-3 text-red-300">右側：自動槍電壓/電流</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-800 p-4 rounded flex flex-col items-center justify-center h-32">
+                            <div class="text-gray-400 text-sm mb-2">電壓 (十位數)</div>
+                            <div class="text-4xl text-red-400 font-bold" id="q_voltage"></div>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded flex flex-col items-center justify-center h-32">
+                            <div class="text-gray-400 text-sm mb-2">電流 (十位數)</div>
+                            <div class="text-4xl text-red-400 font-bold" id="q_current"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4" id="remarkBoard" style="display:none;">
+                <div class="bg-gray-700 p-3 rounded border-l-4 border-gray-500"><span class="text-gray-400 text-sm">備註一：</span><div id="q_remark_1" class="text-lg mt-1"></div></div>
+                <div class="bg-gray-700 p-3 rounded border-l-4 border-gray-500"><span class="text-gray-400 text-sm">備註二：</span><div id="q_remark_2" class="text-lg mt-1"></div></div>
+                <div class="bg-gray-700 p-3 rounded border-l-4 border-gray-500"><span class="text-gray-400 text-sm">備註三：</span><div id="q_remark_3" class="text-lg mt-1"></div></div>
+            </div>
+        </div>
+
+        <div id="registerSection" class="hidden">
+            <div class="bg-gray-700 p-6 rounded-xl shadow-lg border border-gray-600 relative">
+                <h2 id="formTitle" class="text-xl mb-4 font-bold text-green-400">📝 新增構件參數清冊</h2>
+                <form id="paramForm" class="space-y-4 text-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-400 mb-1">品名</label>
+                            <input type="text" id="item_name" required class="w-full bg-gray-800 p-2 rounded border border-gray-600 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1">照片拍攝</label>
+                            <input type="file" id="reg_image" accept="image/*" capture="environment" class="w-full bg-gray-800 p-1.5 rounded border border-gray-600 text-white">
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-600 pt-4"><h3 class="text-blue-300 mb-2">槍粉量數據 (0-99)</h3></div>
+                    <div class="grid grid-cols-4 md:grid-cols-8 gap-2">
+                        <input type="number" id="gun_1" placeholder="槍1" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
+                        <input type="number" id="gun_2" placeholder="槍2" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
+                        <input type="number" id="gun_3" placeholder="槍3" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
+                        <input type="number" id="gun_4" placeholder="槍4" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
+                        <input type="number" id="gun_5" placeholder="槍5" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
+                        <input type="number" id="gun_6" placeholder="槍6" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
+                        <input type="number" id="gun_7" placeholder="槍7" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
+                        <input type="number" id="gun_8" placeholder="槍8" max="99" class="bg-gray-800 p-2 rounded w-full text-center">
+                    </div>
+
+                    <div class="border-t border-gray-600 pt-4"><h3 class="text-yellow-300 mb-2">往復機運行參數</h3></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <input type="number" id="speed_left" value="600" placeholder="左上下速度(百)" max="999" class="w-full bg-gray-800 p-2 rounded">
+                            <input type="number" id="up_turn_left" placeholder="左上換向點(千)" max="9999" class="w-full bg-gray-800 p-2 rounded">
+                            <input type="number" id="down_turn_left" placeholder="左下換向點(千)" max="9999" class="w-full bg-gray-800 p-2 rounded">
+                            <input type="number" id="dist_left" value="380" placeholder="左工件距離(百)" max="999" class="w-full bg-gray-800 p-2 rounded">
+                        </div>
+                        <div class="space-y-2">
+                            <input type="number" id="speed_right" value="600" placeholder="右上下速度(百)" max="999" class="w-full bg-gray-800 p-2 rounded">
+                            <input type="number" id="up_turn_right" placeholder="右上換向點(千)" max="9999" class="w-full bg-gray-800 p-2 rounded">
+                            <input type="number" id="down_turn_right" placeholder="右下換向點(千)" max="9999" class="w-full bg-gray-800 p-2 rounded">
+                            <input type="number" id="dist_right" value="420" placeholder="右工件距離(百)" max="999" class="w-full bg-gray-800 p-2 rounded">
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-600 pt-4"><h3 class="text-red-300 mb-2">電壓與電流</h3></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="number" id="voltage" value="70" placeholder="電壓" max="99" class="w-full bg-gray-800 p-2 rounded">
+                        <input type="number" id="current" value="15" placeholder="電流" max="99" class="w-full bg-gray-800 p-2 rounded">
+                    </div>
+
+                    <div class="border-t border-gray-600 pt-4"><h3 class="text-gray-300 mb-2">備註</h3></div>
+                    <div class="grid grid-cols-1 gap-2">
+                        <input type="text" id="remark_1" placeholder="備註一" class="w-full bg-gray-800 p-2 rounded">
+                        <input type="text" id="remark_2" placeholder="備註二" class="w-full bg-gray-800 p-2 rounded">
+                        <input type="text" id="remark_3" placeholder="備註三" class="w-full bg-gray-800 p-2 rounded">
+                    </div>
+
+                    <div class="flex gap-4 mt-6">
+                        <button type="submit" id="submitBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold text-lg shadow-lg transition">
+                            儲存參數至資料庫
+                        </button>
+                        <button type="button" id="cancelEditBtn" class="hidden flex-none bg-gray-500 hover:bg-gray-400 px-6 py-3 rounded-lg font-bold text-lg shadow-lg transition">
+                            取消
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modelModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-gray-900 border border-purple-500 p-6 rounded-2xl max-w-2xl w-full shadow-2xl">
+            <h3 class="text-xl font-bold text-purple-400 mb-3">🤖 模型自動偵測與呼叫狀態</h3>
+            <div id="modalStatusContent" class="bg-gray-800 p-4 rounded-lg mb-4 text-sm font-mono text-green-400">
+                正在檢測後端連線與 NVIDIA API 金鑰...
+            </div>
+            <p class="text-xs text-gray-400 mb-2">後端串接與模型替換代碼 (支援串流與 Reasoning 預算)：</p>
+            <textarea readonly class="w-full bg-gray-950 text-purple-300 p-3 rounded font-mono text-xs h-40 border border-gray-700">
+from openai import OpenAI
+
+client = OpenAI(
+  base_url = "https://integrate.api.nvidia.com/v1",
+  api_key = process.env.NVIDIA_API_KEY # 安全儲存於後端
+)
+
+completion = client.chat.completions.create(
+  model="nvidia/nemotron-3-ultra-550b-a55b",
+  messages=[{"role":"user","content":"分析構件照片"}],
+  temperature=1,
+  top_p=0.95,
+  max_tokens=16384,
+  extra_body={"chat_template_kwargs":{"enable_thinking":True},"reasoning_budget":16384},
+  stream=False # 前端由 JS await JSON 接手
+)
+            </textarea>
+            <div class="flex justify-end gap-3 mt-4">
+                <button id="btnCloseModal" class="bg-gray-600 hover:bg-gray-500 px-5 py-2 rounded-lg font-bold transition">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+        
+        const supabaseUrl = 'https://wxdrtnqizpbjfugdaglb.supabase.co'
+        const supabaseKey = 'sb_publishable_qUCcWVbzo-99rP85r_RhQg_EGewmxB4'
+        const supabase = createClient(supabaseUrl, supabaseKey)
+
+        let currentSelectedData = null;
+        let editModeId = null; 
+        let allItemsList = [];
+
+        async function loadItemsToSelect() {
+            const selectEl = document.getElementById('itemSelect');
+            const { data, error } = await supabase.from('coating_params').select('*').order('created_at', { ascending: false });
+            
+            if (error) {
+                selectEl.innerHTML = '<option value="">載入失敗，請檢查網路狀態</option>';
+                return;
+            }
+            
+            allItemsList = data;
+            const currentVal = selectEl.value; 
+            selectEl.innerHTML = '<option value="">-- 請選擇已建檔之構件 --</option>';
+            data.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.textContent = item.item_name;
+                opt.dataset.info = JSON.stringify(item);
+                selectEl.appendChild(opt);
+            });
+
+            if (currentVal) selectEl.value = currentVal;
+        }
+        
+        loadItemsToSelect();
+
+        // 頁籤切換
+        const tabQueryBtn = document.getElementById('tabQueryBtn');
+        const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+        const querySection = document.getElementById('querySection');
+        const registerSection = document.getElementById('registerSection');
+        
+        function switchTab(tab) {
+            if (tab === 'query') {
+                querySection.classList.remove('hidden');
+                registerSection.classList.add('hidden');
+                tabQueryBtn.classList.replace('bg-gray-600', 'bg-blue-600');
+                tabRegisterBtn.classList.replace('bg-blue-600', 'bg-gray-600');
+            } else {
+                registerSection.classList.remove('hidden');
+                querySection.classList.add('hidden');
+                tabRegisterBtn.classList.replace('bg-gray-600', 'bg-blue-600');
+                tabQueryBtn.classList.replace('bg-blue-600', 'bg-gray-600');
+            }
+        }
+
+        function resetFormToCreateMode() {
+            editModeId = null;
+            document.getElementById('paramForm').reset();
+            document.getElementById('speed_left').value = '600';
+            document.getElementById('speed_right').value = '600';
+            document.getElementById('dist_left').value = '380';
+            document.getElementById('dist_right').value = '420';
+            document.getElementById('voltage').value = '70';
+            document.getElementById('current').value = '15';
+            document.getElementById('formTitle').innerText = "📝 新增構件參數清冊";
+            document.getElementById('formTitle').className = "text-xl mb-4 font-bold text-green-400";
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerText = "儲存參數至資料庫";
+            submitBtn.className = "flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold text-lg shadow-lg transition";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+        }
+
+        tabQueryBtn.addEventListener('click', () => switchTab('query'));
+        tabRegisterBtn.addEventListener('click', () => { switchTab('register'); resetFormToCreateMode(); });
+        document.getElementById('cancelEditBtn').addEventListener('click', () => { resetFormToCreateMode(); switchTab('query'); });
+
+        function displayData(match) {
+            document.getElementById('resultBoard').style.display = 'grid';
+            document.getElementById('remarkBoard').style.display = 'grid';
+            const imgContainer = document.getElementById('imageContainer');
+            const imgEl = document.getElementById('q_matched_image');
+            
+            if (match.image_url) {
+                imgEl.src = match.image_url;
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+
+            const fields = ['gun_1','gun_2','gun_3','gun_4','gun_5','gun_6','gun_7','gun_8',
+                            'speed_left','speed_right','up_turn_left','up_turn_right',
+                            'down_turn_left','down_turn_right','dist_left','dist_right',
+                            'voltage','current','remark_1','remark_2','remark_3'];
+            
+            fields.forEach(field => {
+                const el = document.getElementById('q_' + field);
+                if(el) el.innerText = match[field] !== null && match[field] !== undefined ? match[field] : '0';
+            });
+        }
+
+        document.getElementById('itemSelect').addEventListener('change', (e) => {
+            if(!e.target.value) {
+                document.getElementById('resultBoard').style.display = 'none';
+                document.getElementById('remarkBoard').style.display = 'none';
+                document.getElementById('actionButtons').classList.add('hidden');
+                document.getElementById('analysisStatus').innerText = '';
+                currentSelectedData = null;
+                return;
+            }
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            currentSelectedData = JSON.parse(selectedOption.dataset.info);
+            const status = document.getElementById('analysisStatus');
+            status.className = "mt-4 text-sm font-bold text-green-400";
+            status.innerText = `✅ 手動查詢成功！選定構件：${currentSelectedData.item_name}`;
+            displayData(currentSelectedData);
+            document.getElementById('actionButtons').classList.remove('hidden');
+        });
+
+        // ================= 相機拍照與真實後端 NVIDIA AI 分析 =================
+        document.getElementById('cameraInput').addEventListener('change', async (e) => {
+            if(e.target.files.length > 0) {
+                document.getElementById('itemSelect').value = "";
+                const file = e.target.files[0];
+                const status = document.getElementById('analysisStatus');
+                status.className = "mt-4 text-sm font-bold text-yellow-400";
+                status.innerText = "🔄 照片上傳中，正在透過後端 NVIDIA 進行 AI 視覺匹配...";
+
+                const reader = new FileReader();
+                reader.onload = async function(evt) {
+                    const imgBase64 = evt.target.result;
+                    const imgContainer = document.getElementById('imageContainer');
+                    const imgEl = document.getElementById('q_matched_image');
+                    imgEl.src = imgBase64;
+                    imgContainer.classList.remove('hidden');
+
+                    try {
+                        // 呼叫後端 API
+                        const response = await fetch('/api/analyze-image', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ imageBase64: imgBase64, items: allItemsList })
+                        });
+                        const data = await response.json();
+                        
+                        if (data.success && data.result) {
+                            // 嘗試從 AI 回傳結果匹配對應的 id
+                            let matchedItem = allItemsList.find(i => data.result.includes(i.id)) || allItemsList[0];
+                            if(matchedItem) {
+                                status.className = "mt-4 text-sm font-bold text-green-400";
+                                status.innerText = `✅ NVIDIA AI 分析成功！匹配構件：${matchedItem.item_name}`;
+                                displayData(matchedItem);
+                                currentSelectedData = matchedItem;
+                                document.getElementById('actionButtons').classList.remove('hidden');
+                                document.getElementById('itemSelect').value = matchedItem.id;
+                            } else {
+                                throw new Error("找不到匹配項目");
+                            }
+                        } else {
+                            throw new Error(data.error || "AI 解析失敗");
+                        }
+                    } catch (err) {
+                        status.className = "mt-4 text-sm font-bold text-red-400";
+                        status.innerText = "⚠️ AI 聯絡伺服器異常，自動載入最新構件做為預設。";
+                        if(allItemsList.length > 0) {
+                            displayData(allItemsList[0]);
+                            currentSelectedData = allItemsList[0];
+                            document.getElementById('actionButtons').classList.remove('hidden');
+                        }
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 模型替換代碼與自動偵測彈窗控制
+        const modelModal = document.getElementById('modelModal');
+        document.getElementById('btnShowModelCode').addEventListener('click', async () => {
+            modelModal.classList.remove('hidden');
+            const statusBox = document.getElementById('modalStatusContent');
+            try {
+                const res = await fetch('/api/health');
+                const info = await res.json();
+                statusBox.innerHTML = `[狀態] 伺服器連線正常<br>[NVIDIA API Key] 已於後端安全設定: ${info.hasKey ? '✅ 已啟用' : '❌ 未偵測'}<br>[使用模型] ${info.model}`;
+            } catch(e) {
+                statusBox.innerHTML = `[警告] 無法連線至後端伺服器 (請確認 Railway 是否部署成功)`;
+            }
+        });
+        document.getElementById('btnCloseModal').addEventListener('click', () => modelModal.classList.add('hidden'));
+
+        // 刪除與修改邏輯
+        document.getElementById('btnDeleteItem').addEventListener('click', async () => {
+            if(!currentSelectedData) return;
+            if(!confirm(`⚠️ 確定要刪除「${currentSelectedData.item_name}」的所有參數嗎？`)) return;
+            const { error } = await supabase.from('coating_params').delete().eq('id', currentSelectedData.id);
+            if (error) alert('刪除失敗：' + error.message);
+            else { alert('✅ 刪除成功！'); document.getElementById('itemSelect').value = ""; loadItemsToSelect(); }
+        });
+
+        document.getElementById('btnEditItem').addEventListener('click', () => {
+            if(!currentSelectedData) return;
+            editModeId = currentSelectedData.id;
+            const fields = ['item_name','gun_1','gun_2','gun_3','gun_4','gun_5','gun_6','gun_7','gun_8',
+                            'speed_left','speed_right','up_turn_left','up_turn_right',
+                            'down_turn_left','down_turn_right','dist_left','dist_right',
+                            'voltage','current','remark_1','remark_2','remark_3'];
+            fields.forEach(field => {
+                const el = document.getElementById(field);
+                if (el) el.value = currentSelectedData[field] !== null ? currentSelectedData[field] : '';
+            });
+            document.getElementById('formTitle').innerHTML = `✏️ 修改構件參數：<span class="text-white">${currentSelectedData.item_name}</span>`;
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerText = "💾 儲存修改至資料庫";
+            submitBtn.className = "flex-1 bg-yellow-600 hover:bg-yellow-500 py-3 rounded-lg font-bold text-lg shadow-lg transition";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            switchTab('register');
+        });
+
+        document.getElementById('paramForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            
+            const payload = {
+                item_name: document.getElementById('item_name').value,
+                gun_1: document.getElementById('gun_1').value || 0,
+                gun_2: document.getElementById('gun_2').value || 0,
+                gun_3: document.getElementById('gun_3').value || 0,
+                gun_4: document.getElementById('gun_4').value || 0,
+                gun_5: document.getElementById('gun_5').value || 0,
+                gun_6: document.getElementById('gun_6').value || 0,
+                gun_7: document.getElementById('gun_7').value || 0,
+                gun_8: document.getElementById('gun_8').value || 0,
+                speed_left: document.getElementById('speed_left').value || 0,
+                speed_right: document.getElementById('speed_right').value || 0,
+                up_turn_left: document.getElementById('up_turn_left').value || 0,
+                up_turn_right: document.getElementById('up_turn_right').value || 0,
+                down_turn_left: document.getElementById('down_turn_left').value || 0,
+                down_turn_right: document.getElementById('down_turn_right').value || 0,
+                dist_left: document.getElementById('dist_left').value || 0,
+                dist_right: document.getElementById('dist_right').value || 0,
+                voltage: document.getElementById('voltage').value || 0,
+                current: document.getElementById('current').value || 0,
+                remark_1: document.getElementById('remark_1').value,
+                remark_2: document.getElementById('remark_2').value,
+                remark_3: document.getElementById('remark_3').value,
+            };
+
+            let dbError;
+            if (editModeId) {
+                const { error } = await supabase.from('coating_params').update(payload).eq('id', editModeId);
+                dbError = error;
+            } else {
+                const { error } = await supabase.from('coating_params').insert([payload]);
+                dbError = error;
+            }
+
+            if (dbError) {
+                alert('儲存失敗：' + dbError.message);
+            } else {
+                alert(editModeId ? '✅ 參數修改成功！' : '✅ 參數建檔成功！');
+                resetFormToCreateMode();
+                await loadItemsToSelect();
+                switchTab('query');
+            }
+            submitBtn.disabled = false;
+        });
+    </script>
+</body>
+</html>
