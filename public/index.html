@@ -432,6 +432,10 @@ completion = client.chat.completions.create(
                 const el = document.getElementById(field);
                 if (el) el.value = currentSelectedData[field] !== null ? currentSelectedData[field] : '';
             });
+            
+            // 清除 input 歷史避免混淆，保留修改前的影像
+            document.getElementById('reg_image').value = '';
+
             document.getElementById('formTitle').innerHTML = `✏️ 修改構件參數：<span class="text-white">${currentSelectedData.item_name}</span>`;
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.innerText = "💾 儲存修改至資料庫";
@@ -440,54 +444,88 @@ completion = client.chat.completions.create(
             switchTab('register');
         });
 
+        // ================= 新增/修改構件資料儲存處理 (包含圖片處理) =================
         document.getElementById('paramForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
+            const originalBtnText = submitBtn.innerText;
             submitBtn.disabled = true;
+            submitBtn.innerText = "⏳ 處理中，請稍候...";
             
-            const payload = {
-                item_name: document.getElementById('item_name').value,
-                gun_1: document.getElementById('gun_1').value || '0',
-                gun_2: document.getElementById('gun_2').value || '0',
-                gun_3: document.getElementById('gun_3').value || '0',
-                gun_4: document.getElementById('gun_4').value || '0',
-                gun_5: document.getElementById('gun_5').value || '0',
-                gun_6: document.getElementById('gun_6').value || '0',
-                gun_7: document.getElementById('gun_7').value || '0',
-                gun_8: document.getElementById('gun_8').value || '0',
-                speed_left: document.getElementById('speed_left').value || '0',
-                speed_right: document.getElementById('speed_right').value || '0',
-                up_turn_left: document.getElementById('up_turn_left').value || '0',
-                up_turn_right: document.getElementById('up_turn_right').value || '0',
-                down_turn_left: document.getElementById('down_turn_left').value || '0',
-                down_turn_right: document.getElementById('down_turn_right').value || '0',
-                dist_left: document.getElementById('dist_left').value || '0',
-                dist_right: document.getElementById('dist_right').value || '0',
-                voltage: document.getElementById('voltage').value || '0',
-                current: document.getElementById('current').value || '0',
-                remark_1: document.getElementById('remark_1').value,
-                remark_2: document.getElementById('remark_2').value,
-                remark_3: document.getElementById('remark_3').value,
-            };
+            try {
+                // 1. 處理圖片轉為 Base64
+                const fileInput = document.getElementById('reg_image');
+                let imageUrlStr = null;
 
-            let dbError;
-            if (editModeId) {
-                const { error } = await supabase.from('coating_params').update(payload).eq('id', editModeId);
-                dbError = error;
-            } else {
-                const { error } = await supabase.from('coating_params').insert([payload]);
-                dbError = error;
-            }
+                // 若為修改模式，先預設帶入舊的圖片連結
+                if (editModeId && currentSelectedData && currentSelectedData.image_url) {
+                    imageUrlStr = currentSelectedData.image_url;
+                }
 
-            if (dbError) {
-                alert('儲存失敗：' + dbError.message);
-            } else {
-                alert(editModeId ? '✅ 參數修改成功！' : '✅ 參數建檔成功！');
-                resetFormToCreateMode();
-                await loadItemsToSelect();
-                switchTab('query');
+                // 如果使用者有選擇新圖片，則進行 Base64 轉換
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    imageUrlStr = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => resolve(evt.target.result);
+                        reader.onerror = (err) => reject(err);
+                        reader.readAsDataURL(file);
+                    });
+                }
+
+                // 2. 建立資料 Payload
+                const payload = {
+                    item_name: document.getElementById('item_name').value,
+                    image_url: imageUrlStr, // ★ 加入圖片資料同步至 Supabase
+                    gun_1: document.getElementById('gun_1').value || '0',
+                    gun_2: document.getElementById('gun_2').value || '0',
+                    gun_3: document.getElementById('gun_3').value || '0',
+                    gun_4: document.getElementById('gun_4').value || '0',
+                    gun_5: document.getElementById('gun_5').value || '0',
+                    gun_6: document.getElementById('gun_6').value || '0',
+                    gun_7: document.getElementById('gun_7').value || '0',
+                    gun_8: document.getElementById('gun_8').value || '0',
+                    speed_left: document.getElementById('speed_left').value || '0',
+                    speed_right: document.getElementById('speed_right').value || '0',
+                    up_turn_left: document.getElementById('up_turn_left').value || '0',
+                    up_turn_right: document.getElementById('up_turn_right').value || '0',
+                    down_turn_left: document.getElementById('down_turn_left').value || '0',
+                    down_turn_right: document.getElementById('down_turn_right').value || '0',
+                    dist_left: document.getElementById('dist_left').value || '0',
+                    dist_right: document.getElementById('dist_right').value || '0',
+                    voltage: document.getElementById('voltage').value || '0',
+                    current: document.getElementById('current').value || '0',
+                    remark_1: document.getElementById('remark_1').value,
+                    remark_2: document.getElementById('remark_2').value,
+                    remark_3: document.getElementById('remark_3').value,
+                };
+
+                let dbError;
+                // 3. 判斷是新增還是修改
+                if (editModeId) {
+                    const { error } = await supabase.from('coating_params').update(payload).eq('id', editModeId);
+                    dbError = error;
+                } else {
+                    const { error } = await supabase.from('coating_params').insert([payload]);
+                    dbError = error;
+                }
+
+                if (dbError) {
+                    alert('儲存失敗：' + dbError.message);
+                } else {
+                    alert(editModeId ? '✅ 參數修改成功！' : '✅ 參數建檔成功！');
+                    resetFormToCreateMode();
+                    await loadItemsToSelect();
+                    switchTab('query');
+                }
+            } catch (err) {
+                console.error("儲存過程發生錯誤:", err);
+                alert("儲存錯誤，請檢查網路連線或照片檔案過大。");
+            } finally {
+                // 還原按鈕狀態
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalBtnText;
             }
-            submitBtn.disabled = false;
         });
     </script>
 </body>
