@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>百富粉體塗裝自動槍參數系統 (NVIDIA AI 整合版)</title>
+    <title>百富粉體塗裝自動槍參數系統 (NVIDIA AI 智慧版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 </head>
-<body class="bg-gray-800 text-white font-sans min-h-screen">
+<body class="bg-gray-800 text-white font-sans min-h-screen pb-12">
     <div class="max-w-6xl mx-auto p-4">
         
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-blue-400">百富粉體塗裝參數系統 (AI 智慧版)</h1>
             <button id="btnShowModelCode" class="bg-purple-600 hover:bg-purple-500 text-xs px-3 py-2 rounded-lg font-bold shadow transition">
-                ⚡ 顯示模型替換代碼
+                ⚡ 顯示模型狀態
             </button>
         </div>
 
@@ -28,11 +30,10 @@
                 <div class="flex items-center gap-4">
                     <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
                     <button onclick="document.getElementById('cameraInput').click()" class="bg-green-600 hover:bg-green-500 px-6 py-4 rounded-lg font-bold shadow-lg w-full text-lg transition">
-                        📸 點擊拍照並透過 NVIDIA AI 自動分析
+                        📸 點擊拍照 / 選擇照片裁切分析
                     </button>
                 </div>
                 <p id="analysisStatus" class="mt-4 text-sm text-gray-300"></p>
-                <p class="text-xs text-gray-400 mt-2 mb-4">* 系統將自動呼叫後端 AI 模型比對特徵並連動下方資料表</p>
 
                 <div class="mt-6 pt-4 border-t border-gray-600">
                     <label class="block text-gray-400 mb-2 font-bold">🔍 或從資料庫手動選擇構件：</label>
@@ -56,7 +57,7 @@
                     <h3 class="font-bold mb-3 text-blue-300">左側：構件圖片與槍粉量數據</h3>
                     <div id="imageContainer" class="mb-4 bg-gray-800 p-2 rounded text-center border border-gray-600 hidden">
                         <span class="text-gray-400 text-xs block mb-2">構件參考圖片</span>
-                        <img id="q_matched_image" src="" alt="構件圖片" class="mx-auto rounded h-40 w-full object-cover shadow-md">
+                        <img id="q_matched_image" src="" alt="構件圖片" class="mx-auto rounded h-44 w-full object-contain shadow-md bg-black">
                     </div>
                     <div class="grid grid-cols-2 gap-2 text-center text-sm">
                         <div class="space-y-2">
@@ -132,9 +133,14 @@
                             <input type="text" id="item_name" required class="w-full bg-gray-800 p-2 rounded border border-gray-600 text-white">
                         </div>
                         <div>
-                            <label class="block text-gray-400 mb-1">照片拍攝</label>
+                            <label class="block text-gray-400 mb-1">照片拍攝 / 選擇圖片</label>
                             <input type="file" id="reg_image" accept="image/*" capture="environment" class="w-full bg-gray-800 p-1.5 rounded border border-gray-600 text-white">
                         </div>
+                    </div>
+
+                    <div id="regPreviewBox" class="hidden mt-2 bg-gray-800 p-2 rounded text-center">
+                        <span class="text-xs text-gray-400 block mb-1">已裁切圖片預覽：</span>
+                        <img id="regPreviewImg" class="h-32 mx-auto rounded object-contain border border-gray-600">
                     </div>
 
                     <div class="border-t border-gray-600 pt-4"><h3 class="text-blue-300 mb-2">槍粉量數據 (支援文字/數字)</h3></div>
@@ -191,31 +197,31 @@
         </div>
     </div>
 
+    <!-- 圖片動態裁切 Modal -->
+    <div id="cropModal" class="fixed inset-0 bg-black/80 flex flex-col items-center justify-center hidden z-50 p-4">
+        <div class="bg-gray-900 border border-yellow-500 p-4 rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col items-center shadow-2xl">
+            <h3 class="text-lg font-bold text-yellow-400 mb-2">✂️ 調整圖片範圍與角度</h3>
+            <div class="w-full max-h-[55vh] overflow-hidden bg-black flex items-center justify-center mb-4 rounded border border-gray-700">
+                <img id="cropImage" class="max-w-full max-h-[50vh] block">
+            </div>
+            <div class="flex flex-wrap gap-2 mb-4 justify-center">
+                <button type="button" id="btnRotateLeft" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm font-bold">↺ 左旋轉</button>
+                <button type="button" id="btnRotateRight" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm font-bold">↻ 右旋轉</button>
+                <button type="button" id="btnResetCrop" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded text-sm font-bold">重置</button>
+            </div>
+            <div class="flex gap-4 w-full">
+                <button type="button" id="btnConfirmCrop" class="flex-1 bg-green-600 hover:bg-green-500 py-2.5 rounded-lg font-bold text-white shadow">✅ 確認裁切並使用</button>
+                <button type="button" id="btnCancelCrop" class="flex-1 bg-gray-600 hover:bg-gray-500 py-2.5 rounded-lg font-bold text-white">✕ 取消</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modelModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-purple-500 p-6 rounded-2xl max-w-2xl w-full shadow-2xl">
             <h3 class="text-xl font-bold text-purple-400 mb-3">🤖 模型自動偵測與呼叫狀態</h3>
             <div id="modalStatusContent" class="bg-gray-800 p-4 rounded-lg mb-4 text-sm font-mono text-green-400">
-                正在檢測後端連線與 NVIDIA API 金鑰...
+                檢測後端狀態中...
             </div>
-            <p class="text-xs text-gray-400 mb-2">後端串接與模型替換代碼 (支援串流與 Reasoning 預算)：</p>
-            <textarea readonly class="w-full bg-gray-950 text-purple-300 p-3 rounded font-mono text-xs h-40 border border-gray-700">
-from openai import OpenAI
-
-client = OpenAI(
-  base_url = "https://integrate.api.nvidia.com/v1",
-  api_key = process.env.NVIDIA_API_KEY # 安全儲存於後端
-)
-
-completion = client.chat.completions.create(
-  model="nvidia/nemotron-3-ultra-550b-a55b",
-  messages=[{"role":"user","content":"分析構件照片"}],
-  temperature=1,
-  top_p=0.95,
-  max_tokens=16384,
-  extra_body={"chat_template_kwargs":{"enable_thinking":True},"reasoning_budget":16384},
-  stream=False # 前端由 JS await JSON 接手
-)
-            </textarea>
             <div class="flex justify-end gap-3 mt-4">
                 <button id="btnCloseModal" class="bg-gray-600 hover:bg-gray-500 px-5 py-2 rounded-lg font-bold transition">關閉</button>
             </div>
@@ -232,33 +238,42 @@ completion = client.chat.completions.create(
         let currentSelectedData = null;
         let editModeId = null; 
         let allItemsList = [];
+        let cropper = null;
+        let cropTargetMode = null; 
+        let processedRegisterImageBase64 = null; 
 
-        async function loadItemsToSelect() {
+        // 載入與自動重試機制
+        async function loadItemsToSelect(retries = 2) {
             const selectEl = document.getElementById('itemSelect');
-            const { data, error } = await supabase.from('coating_params').select('*').order('created_at', { ascending: false });
-            
-            if (error) {
-                selectEl.innerHTML = '<option value="">載入失敗，請檢查網路狀態</option>';
-                return;
-            }
-            
-            allItemsList = data;
-            const currentVal = selectEl.value; 
-            selectEl.innerHTML = '<option value="">-- 請選擇已建檔之構件 --</option>';
-            data.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item.id;
-                opt.textContent = item.item_name;
-                opt.dataset.info = JSON.stringify(item);
-                selectEl.appendChild(opt);
-            });
+            try {
+                const { data, error } = await supabase.from('coating_params').select('*').order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                allItemsList = data || [];
+                const currentVal = selectEl.value; 
+                selectEl.innerHTML = '<option value="">-- 請選擇已建檔之構件 --</option>';
+                allItemsList.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = item.item_name;
+                    opt.dataset.info = JSON.stringify(item);
+                    selectEl.appendChild(opt);
+                });
 
-            if (currentVal) selectEl.value = currentVal;
+                if (currentVal) selectEl.value = currentVal;
+            } catch (err) {
+                if (retries > 0) {
+                    console.log(`連線忙碌中，進行自動重試 (${retries})...`);
+                    setTimeout(() => loadItemsToSelect(retries - 1), 1500);
+                } else {
+                    selectEl.innerHTML = '<option value="">載入失敗，請確認 SQL 已在 Supabase 執行成功</option>';
+                }
+            }
         }
         
         loadItemsToSelect();
 
-        // 頁籤切換
         const tabQueryBtn = document.getElementById('tabQueryBtn');
         const tabRegisterBtn = document.getElementById('tabRegisterBtn');
         const querySection = document.getElementById('querySection');
@@ -280,7 +295,9 @@ completion = client.chat.completions.create(
 
         function resetFormToCreateMode() {
             editModeId = null;
+            processedRegisterImageBase64 = null;
             document.getElementById('paramForm').reset();
+            document.getElementById('regPreviewBox').classList.add('hidden');
             document.getElementById('speed_left').value = '600';
             document.getElementById('speed_right').value = '600';
             document.getElementById('dist_left').value = '380';
@@ -319,7 +336,7 @@ completion = client.chat.completions.create(
             
             fields.forEach(field => {
                 const el = document.getElementById('q_' + field);
-                if(el) el.innerText = match[field] !== null && match[field] !== undefined ? match[field] : '0';
+                if(el) el.innerText = (match[field] !== null && match[field] !== undefined) ? match[field] : '0';
             });
         }
 
@@ -341,63 +358,128 @@ completion = client.chat.completions.create(
             document.getElementById('actionButtons').classList.remove('hidden');
         });
 
-        // ================= 相機拍照與真實後端 NVIDIA AI 分析 =================
-        document.getElementById('cameraInput').addEventListener('change', async (e) => {
-            if(e.target.files.length > 0) {
-                document.getElementById('itemSelect').value = "";
+        // 裁切視窗邏輯
+        function startCropping(imageSrc, targetMode) {
+            cropTargetMode = targetMode;
+            const cropImg = document.getElementById('cropImage');
+            cropImg.src = imageSrc;
+            document.getElementById('cropModal').classList.remove('hidden');
+
+            if (cropper) {
+                cropper.destroy();
+            }
+
+            cropper = new Cropper(cropImg, {
+                viewMode: 1,
+                dragMode: 'move',
+                autoCropArea: 0.9,
+                restore: false,
+                guides: true,
+                center: true,
+                highlight: false,
+                cropBoxMovable: true,
+                cropBoxResizable: true
+            });
+        }
+
+        document.getElementById('btnRotateLeft').addEventListener('click', () => cropper && cropper.rotate(-90));
+        document.getElementById('btnRotateRight').addEventListener('click', () => cropper && cropper.rotate(90));
+        document.getElementById('btnResetCrop').addEventListener('click', () => cropper && cropper.reset());
+        document.getElementById('btnCancelCrop').addEventListener('click', () => {
+            document.getElementById('cropModal').classList.add('hidden');
+            if (cropper) cropper.destroy();
+        });
+
+        document.getElementById('btnConfirmCrop').addEventListener('click', () => {
+            if (!cropper) return;
+            const canvas = cropper.getCroppedCanvas({
+                maxWidth: 1024,
+                maxHeight: 1024,
+                fillColor: '#ffffff'
+            });
+            const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+            document.getElementById('cropModal').classList.add('hidden');
+            cropper.destroy();
+
+            if (cropTargetMode === 'query') {
+                runAiQueryWithBase64(croppedBase64);
+            } else if (cropTargetMode === 'register') {
+                processedRegisterImageBase64 = croppedBase64;
+                const prevBox = document.getElementById('regPreviewBox');
+                const prevImg = document.getElementById('regPreviewImg');
+                prevImg.src = croppedBase64;
+                prevBox.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('cameraInput').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
                 const file = e.target.files[0];
-                const status = document.getElementById('analysisStatus');
-                status.className = "mt-4 text-sm font-bold text-yellow-400";
-                status.innerText = "🔄 照片上傳中，正在透過後端 NVIDIA 進行 AI 視覺匹配...";
-
                 const reader = new FileReader();
-                reader.onload = async function(evt) {
-                    const imgBase64 = evt.target.result;
-                    const imgContainer = document.getElementById('imageContainer');
-                    const imgEl = document.getElementById('q_matched_image');
-                    imgEl.src = imgBase64;
-                    imgContainer.classList.remove('hidden');
-
-                    try {
-                        // 呼叫後端 API
-                        const response = await fetch('/api/analyze-image', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ imageBase64: imgBase64, items: allItemsList })
-                        });
-                        const data = await response.json();
-                        
-                        if (data.success && data.result) {
-                            // 嘗試從 AI 回傳結果匹配對應的 id
-                            let matchedItem = allItemsList.find(i => data.result.includes(i.id)) || allItemsList[0];
-                            if(matchedItem) {
-                                status.className = "mt-4 text-sm font-bold text-green-400";
-                                status.innerText = `✅ NVIDIA AI 分析成功！匹配構件：${matchedItem.item_name}`;
-                                displayData(matchedItem);
-                                currentSelectedData = matchedItem;
-                                document.getElementById('actionButtons').classList.remove('hidden');
-                                document.getElementById('itemSelect').value = matchedItem.id;
-                            } else {
-                                throw new Error("找不到匹配項目");
-                            }
-                        } else {
-                            throw new Error(data.error || "AI 解析失敗");
-                        }
-                    } catch (err) {
-                        status.className = "mt-4 text-sm font-bold text-red-400";
-                        status.innerText = "⚠️ AI 聯絡伺服器異常，自動載入最新構件做為預設。";
-                        if(allItemsList.length > 0) {
-                            displayData(allItemsList[0]);
-                            currentSelectedData = allItemsList[0];
-                            document.getElementById('actionButtons').classList.remove('hidden');
-                        }
-                    }
+                reader.onload = function(evt) {
+                    startCropping(evt.target.result, 'query');
                 };
                 reader.readAsDataURL(file);
             }
         });
 
-        // 模型替換代碼與自動偵測彈窗控制
+        document.getElementById('reg_image').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    startCropping(evt.target.result, 'register');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function runAiQueryWithBase64(imgBase64) {
+            document.getElementById('itemSelect').value = "";
+            const status = document.getElementById('analysisStatus');
+            status.className = "mt-4 text-sm font-bold text-yellow-400";
+            status.innerText = "🔄 照片已裁切，正在呼叫後端 NVIDIA 進行 AI 視覺匹配...";
+
+            const imgContainer = document.getElementById('imageContainer');
+            const imgEl = document.getElementById('q_matched_image');
+            imgEl.src = imgBase64;
+            imgContainer.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/analyze-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageBase64: imgBase64, items: allItemsList })
+                });
+                const data = await response.json();
+                
+                if (data.success && data.result) {
+                    let matchedItem = allItemsList.find(i => data.result.includes(i.id)) || allItemsList[0];
+                    if (matchedItem) {
+                        status.className = "mt-4 text-sm font-bold text-green-400";
+                        status.innerText = `✅ NVIDIA AI 分析成功！匹配構件：${matchedItem.item_name}`;
+                        displayData(matchedItem);
+                        currentSelectedData = matchedItem;
+                        document.getElementById('actionButtons').classList.remove('hidden');
+                        document.getElementById('itemSelect').value = matchedItem.id;
+                    } else {
+                        throw new Error("找不到匹配項目");
+                    }
+                } else {
+                    throw new Error(data.error || "AI 解析失敗");
+                }
+            } catch (err) {
+                status.className = "mt-4 text-sm font-bold text-red-400";
+                status.innerText = "⚠️ AI 分析伺服器回應異常，自動為您顯示最新構件。";
+                if (allItemsList.length > 0) {
+                    displayData(allItemsList[0]);
+                    currentSelectedData = allItemsList[0];
+                    document.getElementById('actionButtons').classList.remove('hidden');
+                }
+            }
+        }
+
         const modelModal = document.getElementById('modelModal');
         document.getElementById('btnShowModelCode').addEventListener('click', async () => {
             modelModal.classList.remove('hidden');
@@ -405,20 +487,26 @@ completion = client.chat.completions.create(
             try {
                 const res = await fetch('/api/health');
                 const info = await res.json();
-                statusBox.innerHTML = `[狀態] 伺服器連線正常<br>[NVIDIA API Key] 已於後端安全設定: ${info.hasKey ? '✅ 已啟用' : '❌ 未偵測'}<br>[使用模型] ${info.model}`;
+                statusBox.innerHTML = `[狀態] 伺服器連線正常<br>[NVIDIA API Key] 已綁定: ${info.hasKey ? '✅ 已啟用' : '❌ 未偵測'}<br>[模型名稱] ${info.model}`;
             } catch(e) {
-                statusBox.innerHTML = `[警告] 無法連線至後端伺服器 (請確認 Railway 是否部署成功)`;
+                statusBox.innerHTML = `[警告] 無法連線至後端 Node.js 伺服器`;
             }
         });
         document.getElementById('btnCloseModal').addEventListener('click', () => modelModal.classList.add('hidden'));
 
-        // 刪除與修改邏輯
         document.getElementById('btnDeleteItem').addEventListener('click', async () => {
             if(!currentSelectedData) return;
-            if(!confirm(`⚠️ 確定要刪除「${currentSelectedData.item_name}」的所有參數嗎？`)) return;
+            if(!confirm(`⚠️ 確定要刪除「${currentSelectedData.item_name}」的全部參數嗎？`)) return;
             const { error } = await supabase.from('coating_params').delete().eq('id', currentSelectedData.id);
             if (error) alert('刪除失敗：' + error.message);
-            else { alert('✅ 刪除成功！'); document.getElementById('itemSelect').value = ""; loadItemsToSelect(); }
+            else { 
+                alert('✅ 刪除成功！'); 
+                document.getElementById('itemSelect').value = ""; 
+                await loadItemsToSelect(); 
+                document.getElementById('resultBoard').style.display = 'none';
+                document.getElementById('remarkBoard').style.display = 'none';
+                document.getElementById('actionButtons').classList.add('hidden');
+            }
         });
 
         document.getElementById('btnEditItem').addEventListener('click', () => {
@@ -433,8 +521,15 @@ completion = client.chat.completions.create(
                 if (el) el.value = currentSelectedData[field] !== null ? currentSelectedData[field] : '';
             });
             
-            // 清除 input 歷史避免混淆，保留修改前的影像
             document.getElementById('reg_image').value = '';
+            processedRegisterImageBase64 = currentSelectedData.image_url || null;
+
+            if (processedRegisterImageBase64) {
+                document.getElementById('regPreviewImg').src = processedRegisterImageBase64;
+                document.getElementById('regPreviewBox').classList.remove('hidden');
+            } else {
+                document.getElementById('regPreviewBox').classList.add('hidden');
+            }
 
             document.getElementById('formTitle').innerHTML = `✏️ 修改構件參數：<span class="text-white">${currentSelectedData.item_name}</span>`;
             const submitBtn = document.getElementById('submitBtn');
@@ -444,39 +539,17 @@ completion = client.chat.completions.create(
             switchTab('register');
         });
 
-        // ================= 新增/修改構件資料儲存處理 (包含圖片處理) =================
         document.getElementById('paramForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
             const originalBtnText = submitBtn.innerText;
             submitBtn.disabled = true;
-            submitBtn.innerText = "⏳ 處理中，請稍候...";
+            submitBtn.innerText = "⏳ 正在同步至 Supabase 資料庫...";
             
             try {
-                // 1. 處理圖片轉為 Base64
-                const fileInput = document.getElementById('reg_image');
-                let imageUrlStr = null;
-
-                // 若為修改模式，先預設帶入舊的圖片連結
-                if (editModeId && currentSelectedData && currentSelectedData.image_url) {
-                    imageUrlStr = currentSelectedData.image_url;
-                }
-
-                // 如果使用者有選擇新圖片，則進行 Base64 轉換
-                if (fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    imageUrlStr = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = (evt) => resolve(evt.target.result);
-                        reader.onerror = (err) => reject(err);
-                        reader.readAsDataURL(file);
-                    });
-                }
-
-                // 2. 建立資料 Payload
                 const payload = {
                     item_name: document.getElementById('item_name').value,
-                    image_url: imageUrlStr, // ★ 加入圖片資料同步至 Supabase
+                    image_url: processedRegisterImageBase64,
                     gun_1: document.getElementById('gun_1').value || '0',
                     gun_2: document.getElementById('gun_2').value || '0',
                     gun_3: document.getElementById('gun_3').value || '0',
@@ -501,7 +574,6 @@ completion = client.chat.completions.create(
                 };
 
                 let dbError;
-                // 3. 判斷是新增還是修改
                 if (editModeId) {
                     const { error } = await supabase.from('coating_params').update(payload).eq('id', editModeId);
                     dbError = error;
@@ -519,10 +591,9 @@ completion = client.chat.completions.create(
                     switchTab('query');
                 }
             } catch (err) {
-                console.error("儲存過程發生錯誤:", err);
-                alert("儲存錯誤，請檢查網路連線或照片檔案過大。");
+                console.error("儲存失敗:", err);
+                alert("儲存錯誤：" + err.message);
             } finally {
-                // 還原按鈕狀態
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalBtnText;
             }
