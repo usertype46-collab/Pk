@@ -13,8 +13,8 @@
         
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-blue-400">百富粉體塗裝參數系統 (AI 智慧版)</h1>
-            <button id="btnShowModelCode" class="bg-purple-600 hover:bg-purple-500 text-xs px-3 py-2 rounded-lg font-bold shadow transition">
-                ⚡ 模型更換自動偵測代碼
+            <button id="btnShowModelCode" class="bg-purple-600 hover:bg-purple-500 text-xs px-3 py-2 rounded-lg font-bold shadow transition flex items-center gap-1">
+                ⚡ 更換 AI 模型
             </button>
         </div>
 
@@ -197,7 +197,6 @@
         </div>
     </div>
 
-    <!-- 圖片動態裁切 Modal -->
     <div id="cropModal" class="fixed inset-0 bg-black/80 flex flex-col items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-yellow-500 p-4 rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col items-center shadow-2xl">
             <h3 class="text-lg font-bold text-yellow-400 mb-2">✂️ 調整圖片範圍與角度</h3>
@@ -218,12 +217,36 @@
 
     <div id="modelModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-purple-500 p-6 rounded-2xl max-w-2xl w-full shadow-2xl">
-            <h3 class="text-xl font-bold text-purple-400 mb-3">🤖 模型與 API 金鑰狀態</h3>
-            <div id="modalStatusContent" class="bg-gray-800 p-4 rounded-lg mb-4 text-sm font-mono text-green-400 w-full overflow-hidden">
-                讀取中...
+            <h3 class="text-xl font-bold text-purple-400 mb-2">🤖 更換 NVIDIA AI 模型 (貼上代碼自動偵測)</h3>
+            <p class="text-xs text-gray-400 mb-4">請在下方貼上從 NVIDIA NIM 複製的範例代碼 (Python / JS / cURL) 或直接貼上模型名稱，系統將自動解析與自動啟用。</p>
+            
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-300 mb-1">📋 貼上 NVIDIA API 代碼或模型名稱：</label>
+                <textarea id="modelCodeInput" rows="5" class="w-full bg-gray-800 p-3 rounded-lg border border-gray-600 text-green-400 text-xs font-mono focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500" placeholder="例如貼上 Python / JS 代碼片段，或直接輸入：
+nvidia/nemotron-3-ultra-550b-a55b
+meta/llama-3.2-11b-vision-instruct"></textarea>
             </div>
+
+            <div id="detectionResultBox" class="bg-gray-800 p-4 rounded-lg mb-4 border border-gray-700 space-y-2 text-xs">
+                <div class="flex justify-between items-center border-b border-gray-700 pb-2">
+                    <span class="text-gray-400">目前後端運行模型：</span>
+                    <span id="currentActiveModelText" class="font-mono font-bold text-yellow-400">讀取中...</span>
+                </div>
+                <div class="flex justify-between items-center pt-1">
+                    <span class="text-gray-400">自動偵測提取模型：</span>
+                    <span id="detectedModelName" class="font-mono font-bold text-green-400">尚未輸入內容</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">模型功能特徵辨識：</span>
+                    <span id="detectedModelCaps" class="font-bold text-blue-400">未知</span>
+                </div>
+            </div>
+
             <div class="flex justify-end gap-3 mt-4">
-                <button id="btnCloseModal" class="bg-gray-600 hover:bg-gray-500 px-5 py-2 rounded-lg font-bold transition">關閉</button>
+                <button id="btnSaveModel" class="bg-purple-600 hover:bg-purple-500 px-5 py-2.5 rounded-lg font-bold text-white transition shadow flex items-center gap-1">
+                    💾 儲存並啟用新模型
+                </button>
+                <button id="btnCloseModal" class="bg-gray-600 hover:bg-gray-500 px-5 py-2.5 rounded-lg font-bold text-white transition">關閉</button>
             </div>
         </div>
     </div>
@@ -458,7 +481,7 @@
                     let matchedItem = allItemsList.find(i => data.result.includes(i.id)) || allItemsList[0];
                     if (matchedItem) {
                         status.className = "mt-4 text-sm font-bold text-green-400";
-                        status.innerText = `✅ NVIDIA AI 分析成功！匹配構件：${matchedItem.item_name}`;
+                        status.innerText = `✅ NVIDIA AI 分析成功！匹配構件：${matchedItem.item_name} (使用模型：${data.usedModel})`;
                         displayData(matchedItem);
                         currentSelectedData = matchedItem;
                         document.getElementById('actionButtons').classList.remove('hidden');
@@ -480,25 +503,129 @@
             }
         }
 
+        // --- 自動偵測模型名稱與功能特徵的邏輯 ---
+        function parseModelAndCapabilities(inputStr) {
+            if (!inputStr || !inputStr.trim()) {
+                return { modelName: '', caps: [] };
+            }
+
+            let text = inputStr.trim();
+            let modelName = '';
+
+            // 使用 Regular Expression 從 Python / JS / cURL / JSON / URL 中提取 model 參數
+            const patterns = [
+                /model\s*[:=]\s*["']([^"']+)["']/i,
+                /"model"\s*:\s*["']([^"']+)["']/i,
+                /'model'\s*:\s*["']([^"']+)["']/i,
+                /(nvidia\/[a-zA-Z0-9._-]+)/i,
+                /(meta\/[a-zA-Z0-9._-]+)/i,
+                /(google\/[a-zA-Z0-9._-]+)/i,
+                /(mistralai\/[a-zA-Z0-9._-]+)/i,
+                /([a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+)/i
+            ];
+
+            for (let pat of patterns) {
+                const match = text.match(pat);
+                if (match && match[1]) {
+                    modelName = match[1];
+                    break;
+                }
+            }
+
+            if (!modelName) {
+                if (!text.includes('\n') && !text.includes(' ')) {
+                    modelName = text;
+                } else if (!text.includes('\n') && text.length < 80) {
+                    modelName = text;
+                }
+            }
+
+            // 辨識模型特徵功能
+            const caps = [];
+            const lower = (modelName || text).toLowerCase();
+
+            if (lower.includes('vision') || lower.includes('neva') || lower.includes('fuyu') || lower.includes('kosmos') || lower.includes('paligemma') || lower.includes('llava') || lower.includes('pixtral') || lower.includes('nemotron')) {
+                caps.push('📸 多模態/圖片辨識');
+            } else {
+                caps.push('💬 純文字/語言模型');
+            }
+
+            if (lower.includes('nemotron') || lower.includes('r1') || lower.includes('think') || lower.includes('reasoning')) {
+                caps.push('🧠 深度思考/推理鏈 (Thinking)');
+            }
+
+            if (lower.includes('ultra') || lower.includes('70b') || lower.includes('405b') || lower.includes('550b')) {
+                caps.push('⚡ 高參數旗艦模型');
+            }
+
+            return { modelName, caps };
+        }
+
+        // --- 更換模型彈出 modal 控制邏輯 ---
         const modelModal = document.getElementById('modelModal');
-        document.getElementById('btnShowModelCode').addEventListener('click', async () => {
+        const btnShowModelCode = document.getElementById('btnShowModelCode');
+        const modelCodeInput = document.getElementById('modelCodeInput');
+        const detectedModelName = document.getElementById('detectedModelName');
+        const detectedModelCaps = document.getElementById('detectedModelCaps');
+        const currentActiveModelText = document.getElementById('currentActiveModelText');
+
+        btnShowModelCode.addEventListener('click', async () => {
             modelModal.classList.remove('hidden');
-            const statusBox = document.getElementById('modalStatusContent');
-            statusBox.innerHTML = '檢測後端狀態與抓取金鑰中...';
             try {
-                const res = await fetch('/api/health');
+                const res = await fetch('/api/model');
                 const info = await res.json();
-                
-                const codeSnippet = `// 模型更換自動偵測代碼\nconst client = new OpenAI({\n  baseURL: "https://integrate.api.nvidia.com/v1",\n  apiKey: "${info.apiKey || '無法取得金鑰'}"\n});\n\nconst currentModel = "${info.model}";`;
-                
-                statusBox.innerHTML = `
-                    <div class="text-white mb-2 font-bold">✅ 已從後端抓取 API Key 與模型配置：</div>
-                    <textarea class="w-full h-36 bg-black text-green-400 p-3 rounded border border-gray-600 font-mono text-xs outline-none" readonly>${codeSnippet}</textarea>
-                `;
+                if (info.success) {
+                    currentActiveModelText.innerText = info.model;
+                } else {
+                    currentActiveModelText.innerText = '無法讀取狀態';
+                }
             } catch(e) {
-                statusBox.innerHTML = `[警告] 無法連線至後端 Node.js 伺服器`;
+                currentActiveModelText.innerText = '連線伺服器失敗';
             }
         });
+
+        modelCodeInput.addEventListener('input', () => {
+            const val = modelCodeInput.value;
+            const { modelName, caps } = parseModelAndCapabilities(val);
+            if (modelName) {
+                detectedModelName.innerText = modelName;
+                detectedModelCaps.innerText = caps.join(' + ');
+            } else {
+                detectedModelName.innerText = '未偵測到有效名稱';
+                detectedModelCaps.innerText = '未知';
+            }
+        });
+
+        document.getElementById('btnSaveModel').addEventListener('click', async () => {
+            const val = modelCodeInput.value;
+            const { modelName } = parseModelAndCapabilities(val);
+            const targetModel = modelName || val.trim();
+
+            if (!targetModel) {
+                alert('⚠️ 請輸入或貼上有效的 NVIDIA AI 模型代碼/名稱！');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: targetModel })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`✅ AI 模型已成功更換為：\n${data.model}`);
+                    currentActiveModelText.innerText = data.model;
+                    modelCodeInput.value = '';
+                    modelModal.classList.add('hidden');
+                } else {
+                    alert('❌ 更換失敗：' + data.error);
+                }
+            } catch (err) {
+                alert('❌ 呼叫後端 API 發生錯誤：' + err.message);
+            }
+        });
+
         document.getElementById('btnCloseModal').addEventListener('click', () => modelModal.classList.add('hidden'));
 
         document.getElementById('btnDeleteItem').addEventListener('click', async () => {
