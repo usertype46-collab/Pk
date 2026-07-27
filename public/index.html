@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body class="bg-gray-900 text-white font-sans min-h-screen pb-12">
     <div class="max-w-6xl mx-auto p-4">
@@ -40,8 +41,9 @@
                         📸 點擊拍照 / 選擇照片裁切分析 (AI)
                     </button>
                     
-                    <button id="btnOpenVisualSearch" class="bg-blue-700 hover:bg-blue-600 px-6 py-4 rounded-lg font-bold shadow-lg w-full text-lg transition" data-tw="🖼️ 拍照識別符合圖片 (無 AI 手動比對)" data-id="🖼️ Mesin Pencari Gambar (Visual Tanpa AI)">
-                        🖼️ 拍照識別符合圖片 (無 AI 手動比對)
+                    <input type="file" accept="image/*" capture="environment" id="tesseractInput" class="hidden">
+                    <button onclick="document.getElementById('tesseractInput').click()" class="bg-blue-700 hover:bg-blue-600 px-6 py-4 rounded-lg font-bold shadow-lg w-full text-lg transition" data-tw="🖼️ 拍照Tesseract識別符合圖片 (無 AI 手動比對)" data-id="🖼️ Pengenalan Tesseract (Tanpa AI)">
+                        🖼️ 拍照Tesseract識別符合圖片 (無 AI 手動比對)
                     </button>
                 </div>
                 <p id="analysisStatus" class="mt-4 text-sm text-gray-300"></p>
@@ -208,11 +210,10 @@
         </div>
     </div>
 
-    <!-- 視覺圖片搜尋 Modal (無 AI) -->
     <div id="visualSearchModal" class="fixed inset-0 bg-black/90 flex flex-col items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-blue-600 p-4 rounded-xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-blue-400" data-tw="👀 圖片搜尋引擎 (無 AI 視覺比對)" data-id="👀 Mesin Pencari Gambar (Visual Tanpa AI)">👀 圖片搜尋引擎 (無 AI 視覺比對)</h3>
+                <h3 class="text-lg font-bold text-blue-400" data-tw="👀 Tesseract OCR 辨識搜尋結果" data-id="👀 Hasil Pengenalan OCR Tesseract">👀 Tesseract OCR 辨識搜尋結果</h3>
                 <button id="btnCloseVisualSearch" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-white font-bold transition">✕</button>
             </div>
             <div class="mb-4">
@@ -222,12 +223,10 @@
                 👉 點選下方圖片即可載入該構件參數
             </div>
             <div id="visualSearchGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto max-h-[60vh] p-2 custom-scrollbar">
-                <!-- 由 JS 動態產生 -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- 裁切 Modal -->
     <div id="cropModal" class="fixed inset-0 bg-black/90 flex flex-col items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-yellow-600 p-4 rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col items-center shadow-2xl">
             <h3 class="text-lg font-bold text-yellow-500 mb-2" data-tw="✂️ 調整圖片範圍與角度" data-id="✂️ Sesuaikan Gambar">✂️ 調整圖片範圍與角度</h3>
@@ -246,7 +245,6 @@
         </div>
     </div>
 
-    <!-- 更換模型 Modal -->
     <div id="modelModal" class="fixed inset-0 bg-black/90 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-[#1e1e2d] border border-[#3b2b5d] p-6 rounded-2xl max-w-md w-full shadow-2xl">
             <h3 class="text-xl font-bold text-[#b49cf5] mb-4 flex items-center gap-2" data-tw="🤖 模型與 API 金鑰狀態" data-id="🤖 Status Model & API Key">🤖 模型與 API 金鑰狀態</h3>
@@ -479,13 +477,55 @@
             document.getElementById('actionButtons').classList.remove('hidden');
         });
         
-        // --- 視覺圖庫搜尋引擎 (無 AI) 邏輯 ---
+        // --- Tesseract OCR 辨識搜尋引擎邏輯 ---
         const visualSearchModal = document.getElementById('visualSearchModal');
         
-        document.getElementById('btnOpenVisualSearch').addEventListener('click', () => {
-            visualSearchModal.classList.remove('hidden');
-            document.getElementById('visualSearchFilter').value = '';
-            renderVisualSearchGrid();
+        document.getElementById('tesseractInput').addEventListener('change', async (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const status = document.getElementById('analysisStatus');
+                status.className = "mt-4 text-sm font-bold text-yellow-500";
+                status.innerText = t("🔄 正在進行 Tesseract OCR 文字辨識中，請稍候...", "🔄 Sedang melakukan OCR Tesseract, harap tunggu...");
+
+                try {
+                    // 使用 Tesseract 辨識圖片中的文字（支援中英文）
+                    const worker = await Tesseract.createWorker('chi_tra+eng');
+                    const ret = await worker.recognize(file);
+                    await worker.terminate();
+
+                    const recognizedText = ret.data.text || "";
+                    status.className = "mt-4 text-sm font-bold text-green-500";
+                    status.innerText = t(`✅ OCR 辨識完成！擷取文字：${recognizedText.trim().substring(0, 40)}...`, `✅ OCR Selesai!`);
+
+                    // 開啟 Modal 並依據辨識結果過濾
+                    visualSearchModal.classList.remove('hidden');
+                    
+                    // 嘗試從辨識出的文字提取關鍵字（去除空白與換行）
+                    const cleanText = recognizedText.replace(/\s+/g, '');
+                    // 如果辨識結果有部分吻合品名，自動填入過濾框
+                    let matchedKeyword = '';
+                    for (const item of allItemsList) {
+                        if (cleanText.includes(item.item_name) || item.item_name.includes(cleanText.substring(0, 3))) {
+                            matchedKeyword = item.item_name;
+                            break;
+                        }
+                    }
+
+                    document.getElementById('visualSearchFilter').value = matchedKeyword || cleanText.substring(0, 10);
+                    renderVisualSearchGrid(document.getElementById('visualSearchFilter').value);
+
+                } catch (err) {
+                    console.error("Tesseract 錯誤:", err);
+                    status.className = "mt-4 text-sm font-bold text-red-500";
+                    status.innerText = t("⚠️ Tesseract OCR 辨識失敗，已為您開啟完整清單。", "⚠️ Gagal OCR, menampilkan daftar lengkap.");
+                    visualSearchModal.classList.remove('hidden');
+                    document.getElementById('visualSearchFilter').value = '';
+                    renderVisualSearchGrid('');
+                }
+                
+                // 清空 input 確保重複選擇同一張照片也能觸發
+                e.target.value = '';
+            }
         });
         
         document.getElementById('btnCloseVisualSearch').addEventListener('click', () => {
