@@ -1,7 +1,7 @@
 {
   "name": "baifu-coating-system",
   "version": "1.0.0",
-  "description": "百富粉體塗裝自動槍參數系統 - 整合 NVIDIA API",
+  "description": "百富粉體塗裝自動槍參數系統 - 整合 NVIDIA API 與 Supabase",
   "main": "server.js",
   "type": "module",
   "scripts": {
