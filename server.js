@@ -38,7 +38,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 新增：提供前端修改 模型 與 API Key 的路由
+// 提供前端修改 模型 與 API Key 的路由
 app.post('/api/settings', (req, res) => {
   try {
     const { apiKey, model } = req.body;
@@ -80,14 +80,11 @@ app.post('/api/analyze-image', async (req, res) => {
           ]
         }
       ],
-      temperature: 1,
+      temperature: 0.1, // 降低隨機性，讓匹配更精準
       top_p: 0.95,
-      max_tokens: 16384,
-      extra_body: {
-        "chat_template_kwargs": { "enable_thinking": true },
-        "reasoning_budget": 16384
-      },
+      max_tokens: 1024, // 配合 Llama Vision 模型調整合理的 token 數量
       stream: false 
+      // 移除了 Llama Vision 模型不支援的 extra_body (thinking) 參數，避免報錯
     });
 
     const aiResponse = completion.choices[0]?.message?.content || "";
