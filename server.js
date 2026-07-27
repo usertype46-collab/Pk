@@ -84,7 +84,6 @@ app.post('/api/analyze-image', async (req, res) => {
       top_p: 0.95,
       max_tokens: 1024, // 配合 Llama Vision 模型調整合理的 token 數量
       stream: false 
-      // 移除了 Llama Vision 模型不支援的 extra_body (thinking) 參數，避免報錯
     });
 
     const aiResponse = completion.choices[0]?.message?.content || "";
