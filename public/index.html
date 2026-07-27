@@ -14,7 +14,7 @@
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-blue-400">百富粉體塗裝參數系統 (AI 智慧版)</h1>
             <button id="btnShowModelCode" class="bg-purple-600 hover:bg-purple-500 text-xs px-3 py-2 rounded-lg font-bold shadow transition">
-                ⚡ 顯示模型狀態
+                ⚡ 模型更換自動偵測代碼
             </button>
         </div>
 
@@ -218,9 +218,9 @@
 
     <div id="modelModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-purple-500 p-6 rounded-2xl max-w-2xl w-full shadow-2xl">
-            <h3 class="text-xl font-bold text-purple-400 mb-3">🤖 模型自動偵測與呼叫狀態</h3>
-            <div id="modalStatusContent" class="bg-gray-800 p-4 rounded-lg mb-4 text-sm font-mono text-green-400">
-                檢測後端狀態中...
+            <h3 class="text-xl font-bold text-purple-400 mb-3">🤖 模型與 API 金鑰狀態</h3>
+            <div id="modalStatusContent" class="bg-gray-800 p-4 rounded-lg mb-4 text-sm font-mono text-green-400 w-full overflow-hidden">
+                讀取中...
             </div>
             <div class="flex justify-end gap-3 mt-4">
                 <button id="btnCloseModal" class="bg-gray-600 hover:bg-gray-500 px-5 py-2 rounded-lg font-bold transition">關閉</button>
@@ -484,10 +484,17 @@
         document.getElementById('btnShowModelCode').addEventListener('click', async () => {
             modelModal.classList.remove('hidden');
             const statusBox = document.getElementById('modalStatusContent');
+            statusBox.innerHTML = '檢測後端狀態與抓取金鑰中...';
             try {
                 const res = await fetch('/api/health');
                 const info = await res.json();
-                statusBox.innerHTML = `[狀態] 伺服器連線正常<br>[NVIDIA API Key] 已綁定: ${info.hasKey ? '✅ 已啟用' : '❌ 未偵測'}<br>[模型名稱] ${info.model}`;
+                
+                const codeSnippet = `// 模型更換自動偵測代碼\nconst client = new OpenAI({\n  baseURL: "https://integrate.api.nvidia.com/v1",\n  apiKey: "${info.apiKey || '無法取得金鑰'}"\n});\n\nconst currentModel = "${info.model}";`;
+                
+                statusBox.innerHTML = `
+                    <div class="text-white mb-2 font-bold">✅ 已從後端抓取 API Key 與模型配置：</div>
+                    <textarea class="w-full h-36 bg-black text-green-400 p-3 rounded border border-gray-600 font-mono text-xs outline-none" readonly>${codeSnippet}</textarea>
+                `;
             } catch(e) {
                 statusBox.innerHTML = `[警告] 無法連線至後端 Node.js 伺服器`;
             }
