@@ -20,55 +20,54 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const nvidiaApiKey = process.env.NVIDIA_API_KEY || "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";
+// 將變數設為 let 以支援前端動態修改設定
+let currentApiKey = process.env.NVIDIA_API_KEY || "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";
+let currentModel = "nvidia/nemotron-3-ultra-550b-a55b";
 
-// 當前可動態更換的模型名稱 (預設模型)
-let activeModel = process.env.NVIDIA_MODEL || "nvidia/nemotron-3-ultra-550b-a55b";
-
-const client = new OpenAI({
+let client = new OpenAI({
   baseURL: "https://integrate.api.nvidia.com/v1",
-  apiKey: nvidiaApiKey
+  apiKey: currentApiKey
 });
 
-// 健康檢查與當前模型狀態接口
+// 健康狀態檢查與獲取當前模型資訊
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
-    hasKey: !!nvidiaApiKey,
-    model: activeModel
+    hasKey: !!currentApiKey,
+    model: currentModel
   });
 });
 
-// 取得當前使用的 AI 模型資訊
-app.get('/api/model', (req, res) => {
-  res.json({ 
-    success: true, 
-    model: activeModel, 
-    hasKey: !!nvidiaApiKey 
-  });
-});
-
-// 動態更新並儲存新的 AI 模型
-app.post('/api/model', (req, res) => {
-  const { model } = req.body;
-  if (!model || typeof model !== 'string') {
-    return res.status(400).json({ success: false, error: '請提供有效的模型名稱' });
+// 新增：提供前端修改 模型 與 API Key 的路由
+app.post('/api/settings', (req, res) => {
+  try {
+    const { apiKey, model } = req.body;
+    
+    if (model) {
+      currentModel = model;
+    }
+    
+    // 如果有傳入 apiKey 且不是遮罩字串，則更新後端 OpenAI 客戶端設定
+    if (apiKey && apiKey !== '********') {
+      currentApiKey = apiKey;
+      client = new OpenAI({
+        baseURL: "https://integrate.api.nvidia.com/v1",
+        apiKey: currentApiKey
+      });
+    }
+    
+    res.json({ success: true, model: currentModel, hasKey: !!currentApiKey });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
-  activeModel = model.trim();
-  console.log(`[系統訊息] NVIDIA AI 模型已更換為: ${activeModel}`);
-  res.json({ success: true, model: activeModel });
 });
 
 app.post('/api/analyze-image', async (req, res) => {
   try {
     const { imageBase64, items } = req.body;
 
-    // 判斷模型特徵，決定是否加入 nemotron / deepseek 思考鏈參數
-    const lowerModel = activeModel.toLowerCase();
-    const isReasoningModel = lowerModel.includes('nemotron') || lowerModel.includes('r1');
-    
-    const requestPayload = {
-      model: activeModel,
+    const completion = await client.chat.completions.create({
+      model: currentModel, // 動態套用當前所選的模型
       messages: [
         {
           role: "user",
@@ -81,37 +80,18 @@ app.post('/api/analyze-image', async (req, res) => {
           ]
         }
       ],
-      temperature: 0.2,
+      temperature: 1,
       top_p: 0.95,
-      max_tokens: 4096,
-      stream: false 
-    };
-
-    if (isReasoningModel) {
-      requestPayload.extra_body = {
+      max_tokens: 16384,
+      extra_body: {
         "chat_template_kwargs": { "enable_thinking": true },
         "reasoning_budget": 16384
-      };
-      requestPayload.max_tokens = 16384;
-    }
-
-    let completion;
-    try {
-      completion = await client.chat.completions.create(requestPayload);
-    } catch (apiErr) {
-      // 若因不支援思考參數引發 400 錯誤，退回標準模式重新呼叫
-      if (requestPayload.extra_body) {
-        console.warn("包含 extra_body 請求失敗，嘗試改以標準請求呼叫...", apiErr.message);
-        delete requestPayload.extra_body;
-        requestPayload.max_tokens = 4096;
-        completion = await client.chat.completions.create(requestPayload);
-      } else {
-        throw apiErr;
-      }
-    }
+      },
+      stream: false 
+    });
 
     const aiResponse = completion.choices[0]?.message?.content || "";
-    res.json({ success: true, result: aiResponse.trim(), usedModel: activeModel });
+    res.json({ success: true, result: aiResponse.trim() });
   } catch (error) {
     console.error("NVIDIA API 呼叫錯誤:", error);
     res.status(500).json({ success: false, error: error.message });
