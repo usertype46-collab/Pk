@@ -520,7 +520,7 @@ const client = new OpenAI({
             }
         }
 
-        // ================= 更換模型與 API Key 邏輯 (UI 已更新) =================
+        // ================= 更換模型與 API Key 邏輯 (修復未找到時不覆寫的 UI 體驗) =================
         const modelModal = document.getElementById('modelModal');
         
         document.getElementById('btnShowModelCode').addEventListener('click', async () => {
@@ -563,7 +563,13 @@ const client = new OpenAI({
             const keyMatch = code.match(keyRegex);
             
             if (modelMatch) document.getElementById('detectedModel').value = modelMatch[1];
-            if (keyMatch) document.getElementById('detectedApiKey').value = keyMatch[1];
+            
+            // 如果偵測到新金鑰則更新；若無，則清空輸入框以便使用者意識到「未找到」需要手動輸入
+            if (keyMatch) {
+                document.getElementById('detectedApiKey').value = keyMatch[1];
+            } else {
+                document.getElementById('detectedApiKey').value = '';
+            }
             
             if (modelMatch || keyMatch) {
                 alert(`✅ 偵測成功！\n模型名稱：${modelMatch ? modelMatch[1] : '未找到'}\nAPI Key：${keyMatch ? '已擷取' : '未找到'}`);
