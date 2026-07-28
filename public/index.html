@@ -493,46 +493,57 @@
         
         const visualSearchModal = document.getElementById('visualSearchModal');
         
-        document.getElementById('tesseractInput').addEventListener('change', async (e) => {
+        // 這裡將原本直接送入 OCR 的邏輯，改為「先裁切」
+        document.getElementById('tesseractInput').addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 const file = e.target.files[0];
-                const status = document.getElementById('analysisStatus');
-                status.className = "mt-4 text-sm font-bold text-yellow-500";
-                status.innerText = t("🔄 正在進行 Tesseract OCR 文字辨識中...", "🔄 Sedang OCR...");
-
-                try {
-                    const worker = await Tesseract.createWorker('chi_tra+eng');
-                    const ret = await worker.recognize(file);
-                    await worker.terminate();
-
-                    const recognizedText = ret.data.text || "";
-                    status.className = "mt-4 text-sm font-bold text-green-500";
-                    status.innerText = t(`✅ OCR 辨識完成！`, `✅ OCR Selesai!`);
-
-                    visualSearchModal.classList.remove('hidden');
-                    
-                    const cleanText = recognizedText.replace(/\s+/g, '');
-                    let matchedKeyword = '';
-                    for (const item of allItemsList) {
-                        if (cleanText.includes(item.item_name) || item.item_name.includes(cleanText.substring(0, 3))) {
-                            matchedKeyword = item.item_name;
-                            break;
-                        }
-                    }
-
-                    document.getElementById('visualSearchFilter').value = matchedKeyword || cleanText.substring(0, 10);
-                    renderVisualSearchGrid(document.getElementById('visualSearchFilter').value);
-
-                } catch (err) {
-                    status.className = "mt-4 text-sm font-bold text-red-500";
-                    status.innerText = t("⚠️ Tesseract OCR 辨識失敗", "⚠️ Gagal OCR");
-                    visualSearchModal.classList.remove('hidden');
-                    document.getElementById('visualSearchFilter').value = '';
-                    renderVisualSearchGrid('');
-                }
-                e.target.value = '';
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    // 新增 cropTargetMode 為 'tesseract'
+                    startCropping(evt.target.result, 'tesseract');
+                };
+                reader.readAsDataURL(file);
+                e.target.value = ''; // 清空 input 讓下次同檔名也能觸發
             }
         });
+
+        // 獨立出 Tesseract 執行的 Function，接收裁切後的 Base64
+        async function runTesseractWithBase64(imgBase64) {
+            const status = document.getElementById('analysisStatus');
+            status.className = "mt-4 text-sm font-bold text-yellow-500";
+            status.innerText = t("🔄 正在進行 Tesseract OCR 文字辨識中...", "🔄 Sedang OCR...");
+
+            try {
+                const worker = await Tesseract.createWorker('chi_tra+eng');
+                const ret = await worker.recognize(imgBase64);
+                await worker.terminate();
+
+                const recognizedText = ret.data.text || "";
+                status.className = "mt-4 text-sm font-bold text-green-500";
+                status.innerText = t(`✅ OCR 辨識完成！`, `✅ OCR Selesai!`);
+
+                visualSearchModal.classList.remove('hidden');
+                
+                const cleanText = recognizedText.replace(/\s+/g, '');
+                let matchedKeyword = '';
+                for (const item of allItemsList) {
+                    if (cleanText.includes(item.item_name) || item.item_name.includes(cleanText.substring(0, 3))) {
+                        matchedKeyword = item.item_name;
+                        break;
+                    }
+                }
+
+                document.getElementById('visualSearchFilter').value = matchedKeyword || cleanText.substring(0, 10);
+                renderVisualSearchGrid(document.getElementById('visualSearchFilter').value);
+
+            } catch (err) {
+                status.className = "mt-4 text-sm font-bold text-red-500";
+                status.innerText = t("⚠️ Tesseract OCR 辨識失敗", "⚠️ Gagal OCR");
+                visualSearchModal.classList.remove('hidden');
+                document.getElementById('visualSearchFilter').value = '';
+                renderVisualSearchGrid('');
+            }
+        }
         
         document.getElementById('btnCloseVisualSearch').addEventListener('click', () => {
             visualSearchModal.classList.add('hidden');
@@ -605,8 +616,10 @@
             if (cropper) cropper.destroy();
         });
 
+        // 裁切確認事件中分發邏輯
         document.getElementById('btnConfirmCrop').addEventListener('click', () => {
             if (!cropper) return;
+            // 控制匯出的大小，最高 1024x1024 讓 Tesseract 解讀更有效率不耗記憶體
             const canvas = cropper.getCroppedCanvas({
                 maxWidth: 1024,
                 maxHeight: 1024,
@@ -625,6 +638,9 @@
                 const prevImg = document.getElementById('regPreviewImg');
                 prevImg.src = croppedBase64;
                 prevBox.classList.remove('hidden');
+            } else if (cropTargetMode === 'tesseract') {
+                // 如果是手動 Tesseract 模式，將裁切好的照片送交辨識
+                runTesseractWithBase64(croppedBase64);
             }
         });
 
@@ -636,6 +652,7 @@
                     startCropping(evt.target.result, 'query');
                 };
                 reader.readAsDataURL(file);
+                e.target.value = '';
             }
         });
 
@@ -647,6 +664,7 @@
                     startCropping(evt.target.result, 'register');
                 };
                 reader.readAsDataURL(file);
+                e.target.value = '';
             }
         });
 
