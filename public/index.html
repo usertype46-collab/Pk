@@ -12,10 +12,18 @@
     <div class="max-w-6xl mx-auto p-4">
         
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-            <h1 class="text-2xl font-bold text-blue-500" data-tw="百富粉體塗裝參數系統<br><span class='text-lg text-gray-400'>(AI 智慧版)</span>" data-id="Sistem Parameter Pelapisan Serbuk Baifu<br><span class='text-lg text-gray-400'>(Versi Cerdas AI)</span>">百富粉體塗裝參數系統<br><span class="text-lg text-gray-400">(AI 智慧版)</span></h1>
+            <h1 class="text-2xl font-bold text-blue-500" 
+                data-tw="百富粉體塗裝參數系統<br><span class='text-lg text-gray-400'>(AI 智慧版)</span>" 
+                data-id="Sistem Parameter Pelapisan Serbuk Baifu<br><span class='text-lg text-gray-400'>(Versi Cerdas AI)</span>"
+                data-en="Baifu Powder Coating Parameter System<br><span class='text-lg text-gray-400'>(AI Smart Edition)</span>"
+                data-ar="نظام معلمات طلاء مسحوق بايفو<br><span class='text-lg text-gray-400'>(إصدار الذكاء الاصطناعي)</span>"
+                data-jv="Sistem Parameter Pelapisan Serbuk Baifu<br><span class='text-lg text-gray-400'>(Versi Pinter AI)</span>"
+                data-su="Sistem Parameter Pelapisan Serbuk Baifu<br><span class='text-lg text-gray-400'>(Versi Pinter AI)</span>"
+                data-min="Sistem Parameter Palapisan Sarbuk Baifu<br><span class='text-lg text-gray-400'>(Versi Cadiak AI)</span>">
+                百富粉體塗裝參數系統<br><span class="text-lg text-gray-400">(AI 智慧版)</span>
+            </h1>
             
             <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <!-- 語言切換選單 (包含印尼語九大類) -->
                 <div class="flex items-center gap-2 bg-gray-800 p-1.5 rounded-lg border border-gray-700">
                     <select id="langSelect" class="bg-gray-900 text-white text-sm px-2 py-1.5 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold cursor-pointer">
                         <option value="tw">🇹🇼 中文</option>
@@ -32,47 +40,113 @@
                     </select>
                     <button id="btnLangInfo" class="text-gray-400 hover:text-blue-400 transition" title="印尼語言分類說明">ℹ️</button>
                 </div>
-                <button id="btnShowModelCode" class="bg-purple-900/50 hover:bg-purple-800 text-purple-400 border border-purple-800 text-xs px-4 py-2 rounded-lg font-bold shadow transition flex-1 md:flex-none text-center" data-tw="⚡ 模型更換自動偵測" data-id="⚡ Ganti Model / API Otomatis">
+                <button id="btnShowModelCode" class="bg-purple-900/50 hover:bg-purple-800 text-purple-400 border border-purple-800 text-xs px-4 py-2 rounded-lg font-bold shadow transition flex-1 md:flex-none text-center" 
+                    data-tw="⚡ 模型更換自動偵測" 
+                    data-id="⚡ Ganti Model / API Otomatis"
+                    data-en="⚡ Auto Detect Model/API"
+                    data-ar="⚡ اكتشاف تلقائي للنموذج/API"
+                    data-jv="⚡ Deteksi Otomatis Model / API"
+                    data-su="⚡ Deteksi Otomatis Modél / API"
+                    data-min="⚡ Deteksi Otomatis Model / API">
                     ⚡ 模型更換自動偵測
                 </button>
             </div>
         </div>
 
         <div class="flex gap-4 mb-6">
-            <button id="tabQueryBtn" class="flex-1 bg-blue-900/80 border border-blue-800 py-3 rounded-lg font-bold transition" data-tw="相機/手動查詢模式" data-id="Mode Kueri Kamera/Manual">相機/手動查詢模式</button>
-            <button id="tabRegisterBtn" class="flex-1 bg-gray-800 border border-gray-700 py-3 rounded-lg font-bold transition" data-tw="參數建檔模式" data-id="Mode Registrasi Parameter">參數建檔模式</button>
+            <button id="tabQueryBtn" class="flex-1 bg-blue-900/80 border border-blue-800 py-3 rounded-lg font-bold transition" 
+                data-tw="相機/手動查詢模式" 
+                data-id="Mode Kueri Kamera/Manual"
+                data-en="Camera/Manual Query Mode"
+                data-ar="وضع الكاميرا/الاستعلام اليدوي"
+                data-jv="Mode Padosi Kamera/Manual"
+                data-su="Mode Pilari Kamera/Manual"
+                data-min="Mode Mancari Kamera/Manual">相機/手動查詢模式</button>
+            <button id="tabRegisterBtn" class="flex-1 bg-gray-800 border border-gray-700 py-3 rounded-lg font-bold transition" 
+                data-tw="參數建檔模式" 
+                data-id="Mode Registrasi Parameter"
+                data-en="Parameter Registration Mode"
+                data-ar="وضع تسجيل المعلمات"
+                data-jv="Mode Pendaftaran Parameter"
+                data-su="Mode Pendaptaran Parameter"
+                data-min="Mode Pendaftaran Parameter">參數建檔模式</button>
         </div>
 
         <div id="querySection" class="block">
             <div class="bg-gray-800 p-4 rounded-xl mb-6 shadow-lg border border-gray-700">
-                <h2 class="text-xl mb-4 font-bold text-yellow-500 flex items-center gap-2" data-tw="📷 構件參數查詢 <span class='text-sm font-normal text-gray-400'>(NVIDIA AI 驅動)</span>" data-id="📷 Kueri Parameter Komponen <span class='text-sm font-normal text-gray-400'>(Oleh NVIDIA AI)</span>">📷 構件參數查詢 <span class="text-sm font-normal text-gray-400">(NVIDIA AI 驅動)</span></h2>
+                <h2 class="text-xl mb-4 font-bold text-yellow-500 flex items-center gap-2" 
+                    data-tw="📷 構件參數查詢 <span class='text-sm font-normal text-gray-400'>(NVIDIA AI 驅動)</span>" 
+                    data-id="📷 Kueri Parameter Komponen <span class='text-sm font-normal text-gray-400'>(Oleh NVIDIA AI)</span>"
+                    data-en="📷 Component Parameter Query <span class='text-sm font-normal text-gray-400'>(Powered by NVIDIA AI)</span>"
+                    data-ar="📷 استعلام معلمات المكونات <span class='text-sm font-normal text-gray-400'>(بواسطة NVIDIA AI)</span>"
+                    data-jv="📷 Padosi Parameter Komponen <span class='text-sm font-normal text-gray-400'>(Dening NVIDIA AI)</span>"
+                    data-su="📷 Milarian Parameter Komponén <span class='text-sm font-normal text-gray-400'>(Ku NVIDIA AI)</span>"
+                    data-min="📷 Mancari Parameter Komponen <span class='text-sm font-normal text-gray-400'>(Oleh NVIDIA AI)</span>">
+                    📷 構件參數查詢 <span class="text-sm font-normal text-gray-400">(NVIDIA AI 驅動)</span>
+                </h2>
                 
                 <div class="flex flex-col md:flex-row items-center gap-4">
                     <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
-                    <button onclick="document.getElementById('cameraInput').click()" class="bg-green-700 hover:bg-green-600 px-6 py-4 rounded-lg font-bold shadow-lg w-full text-lg transition" data-tw="📸 點擊拍照 / 選擇照片裁切分析 (AI)" data-id="📸 Klik untuk Memotret / Pilih Foto (AI)">
+                    <button onclick="document.getElementById('cameraInput').click()" class="bg-green-700 hover:bg-green-600 px-6 py-4 rounded-lg font-bold shadow-lg w-full text-lg transition" 
+                        data-tw="📸 點擊拍照 / 選擇照片裁切分析 (AI)" 
+                        data-id="📸 Klik untuk Memotret / Pilih Foto (AI)"
+                        data-en="📸 Click to Capture / Select Photo (AI)"
+                        data-ar="📸 انقر لالتقاط / اختيار صورة (AI)"
+                        data-jv="📸 Klik kanggo Motret / Pilih Foto (AI)"
+                        data-su="📸 Klik pikeun Motrét / Pilih Poto (AI)"
+                        data-min="📸 Klik untuak Manggambar / Piliah Foto (AI)">
                         📸 點擊拍照 / 選擇照片裁切分析 (AI)
                     </button>
                     
                     <input type="file" accept="image/*" capture="environment" id="tesseractInput" class="hidden">
-                    <!-- 已將 Tesseract 修正為高精準視覺比對 -->
-                    <button onclick="document.getElementById('tesseractInput').click()" class="bg-blue-700 hover:bg-blue-600 px-6 py-4 rounded-lg font-bold shadow-lg w-full text-lg transition" data-tw="🖼️ 拍照視覺特徵精準比對 (無 AI 本地比對)" data-id="🖼️ Pengenalan Fitur Visual (Tanpa AI)">
+                    <button onclick="document.getElementById('tesseractInput').click()" class="bg-blue-700 hover:bg-blue-600 px-6 py-4 rounded-lg font-bold shadow-lg w-full text-lg transition" 
+                        data-tw="🖼️ 拍照視覺特徵精準比對 (無 AI 本地比對)" 
+                        data-id="🖼️ Pengenalan Fitur Visual (Tanpa AI)"
+                        data-en="🖼️ Visual Feature Recognition (No AI)"
+                        data-ar="🖼️ التعرف على الميزات المرئية (بدون ذكاء اصطناعي)"
+                        data-jv="🖼️ Pengenalan Fitur Visual (Tanpa AI)"
+                        data-su="🖼️ Pangakuan Fitur Visual (Tanpa AI)"
+                        data-min="🖼️ Pangenalan Fitur Visual (Tanpa AI)">
                         🖼️ 拍照視覺特徵精準比對 (無 AI 本地比對)
                     </button>
                 </div>
                 <p id="analysisStatus" class="mt-4 text-sm text-gray-300"></p>
 
                 <div class="mt-6 pt-4 border-t border-gray-700">
-                    <label class="block text-gray-400 mb-2 font-bold" data-tw="🔍 或從資料庫手動選擇構件：" data-id="🔍 Atau pilih komponen secara manual dari database:">🔍 或從資料庫手動選擇構件：</label>
+                    <label class="block text-gray-400 mb-2 font-bold" 
+                        data-tw="🔍 或從資料庫手動選擇構件：" 
+                        data-id="🔍 Atau pilih komponen secara manual dari database:"
+                        data-en="🔍 Or select component manually from database:"
+                        data-ar="🔍 أو حدد المكون يدويًا من قاعدة البيانات:"
+                        data-jv="🔍 Utawa pilih komponen manual saka database:"
+                        data-su="🔍 Atawa pilih komponén sacara manual tina database:"
+                        data-min="🔍 Atau piliah komponen sacaro manual dari database:">
+                        🔍 或從資料庫手動選擇構件：
+                    </label>
                     <select id="itemSelect" class="w-full bg-gray-900 p-3 rounded-lg border border-gray-700 text-white font-bold focus:ring-2 focus:ring-blue-500 transition">
                         <option value="">-- 資料載入中... / Memuat data... --</option>
                     </select>
                 </div>
 
                 <div id="actionButtons" class="mt-4 flex gap-4 hidden">
-                    <button id="btnEditItem" class="flex-1 bg-yellow-700 hover:bg-yellow-600 py-2 rounded-lg font-bold shadow transition" data-tw="✏️ 修改此構件" data-id="✏️ Ubah komponen ini">
+                    <button id="btnEditItem" class="flex-1 bg-yellow-700 hover:bg-yellow-600 py-2 rounded-lg font-bold shadow transition" 
+                        data-tw="✏️ 修改此構件" 
+                        data-id="✏️ Ubah komponen ini"
+                        data-en="✏️ Edit this component"
+                        data-ar="✏️ تعديل هذا المكون"
+                        data-jv="✏️ Owahi komponen iki"
+                        data-su="✏️ Robah komponén ieu"
+                        data-min="✏️ Ubah komponen ko">
                         ✏️ 修改此構件
                     </button>
-                    <button id="btnDeleteItem" class="flex-1 bg-red-700 hover:bg-red-600 py-2 rounded-lg font-bold shadow transition" data-tw="🗑️ 刪除此構件" data-id="🗑️ Hapus komponen ini">
+                    <button id="btnDeleteItem" class="flex-1 bg-red-700 hover:bg-red-600 py-2 rounded-lg font-bold shadow transition" 
+                        data-tw="🗑️ 刪除此構件" 
+                        data-id="🗑️ Hapus komponen ini"
+                        data-en="🗑️ Delete this component"
+                        data-ar="🗑️ حذف هذا المكون"
+                        data-jv="🗑️ Busek komponen iki"
+                        data-su="🗑️ Hapus komponén ieu"
+                        data-min="🗑️ Hapus komponen ko">
                         🗑️ 刪除此構件
                     </button>
                 </div>
@@ -80,62 +154,90 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="resultBoard" style="display:none;">
                 <div class="bg-gray-800 p-4 rounded-xl border border-blue-800 flex flex-col">
-                    <h3 class="font-bold mb-3 text-blue-400" data-tw="左側：構件圖片與槍粉量數據" data-id="Kiri: Gambar & Data Serbuk Pistol">左側：構件圖片與槍粉量數據</h3>
+                    <h3 class="font-bold mb-3 text-blue-400" 
+                        data-tw="左側：構件圖片與槍粉量數據" 
+                        data-id="Kiri: Gambar & Data Serbuk Pistol"
+                        data-en="Left: Image & Gun Powder Data"
+                        data-ar="اليسار: الصورة وبيانات مسحوق البندقية"
+                        data-jv="Kiwa: Gambar & Data Serbuk Pistol"
+                        data-su="Kénca: Gambar & Data Serbuk Pistol"
+                        data-min="Kida: Gambar & Data Sarbuk Pistol">左側：構件圖片與槍粉量數據</h3>
                     <div id="imageContainer" class="mb-4 bg-gray-900 p-2 rounded text-center border border-gray-700 hidden">
-                        <span class="text-gray-400 text-xs block mb-2" data-tw="構件參考圖片" data-id="Gambar Referensi Komponen">構件參考圖片</span>
+                        <span class="text-gray-400 text-xs block mb-2" 
+                            data-tw="構件參考圖片" 
+                            data-id="Gambar Referensi Komponen"
+                            data-en="Component Reference Image"
+                            data-ar="صورة مرجعية للمكون"
+                            data-jv="Gambar Referensi Komponen"
+                            data-su="Gambar Référénsi Komponén"
+                            data-min="Gambar Referensi Komponen">構件參考圖片</span>
                         <img id="q_matched_image" src="" alt="構件圖片" class="mx-auto rounded h-44 w-full object-contain shadow-md bg-black">
                     </div>
                     <div class="grid grid-cols-2 gap-2 text-center text-sm">
                         <div class="space-y-2">
-                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="1號:" data-id="No.1:">1號:</span> <span id="q_gun_1" class="text-green-500 text-lg font-bold"></span></div>
-                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="2號:" data-id="No.2:">2號:</span> <span id="q_gun_2" class="text-green-500 text-lg font-bold"></span></div>
-                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="3號:" data-id="No.3:">3號:</span> <span id="q_gun_3" class="text-green-500 text-lg font-bold"></span></div>
-                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="4號:" data-id="No.4:">4號:</span> <span id="q_gun_4" class="text-green-500 text-lg font-bold"></span></div>
+                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="1號:" data-id="No.1:" data-en="No.1:" data-ar="رقم 1:" data-jv="No.1:" data-su="No.1:" data-min="No.1:">1號:</span> <span id="q_gun_1" class="text-green-500 text-lg font-bold"></span></div>
+                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="2號:" data-id="No.2:" data-en="No.2:" data-ar="رقم 2:" data-jv="No.2:" data-su="No.2:" data-min="No.2:">2號:</span> <span id="q_gun_2" class="text-green-500 text-lg font-bold"></span></div>
+                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="3號:" data-id="No.3:" data-en="No.3:" data-ar="رقم 3:" data-jv="No.3:" data-su="No.3:" data-min="No.3:">3號:</span> <span id="q_gun_3" class="text-green-500 text-lg font-bold"></span></div>
+                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="4號:" data-id="No.4:" data-en="No.4:" data-ar="رقم 4:" data-jv="No.4:" data-su="No.4:" data-min="No.4:">4號:</span> <span id="q_gun_4" class="text-green-500 text-lg font-bold"></span></div>
                         </div>
                         <div class="space-y-2">
-                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="5號:" data-id="No.5:">5號:</span> <span id="q_gun_5" class="text-green-500 text-lg font-bold"></span></div>
-                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="6號:" data-id="No.6:">6號:</span> <span id="q_gun_6" class="text-green-500 text-lg font-bold"></span></div>
-                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="7號:" data-id="No.7:">7號:</span> <span id="q_gun_7" class="text-green-500 text-lg font-bold"></span></div>
-                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="8號:" data-id="No.8:">8號:</span> <span id="q_gun_8" class="text-green-500 text-lg font-bold"></span></div>
+                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="5號:" data-id="No.5:" data-en="No.5:" data-ar="رقم 5:" data-jv="No.5:" data-su="No.5:" data-min="No.5:">5號:</span> <span id="q_gun_5" class="text-green-500 text-lg font-bold"></span></div>
+                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="6號:" data-id="No.6:" data-en="No.6:" data-ar="رقم 6:" data-jv="No.6:" data-su="No.6:" data-min="No.6:">6號:</span> <span id="q_gun_6" class="text-green-500 text-lg font-bold"></span></div>
+                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="7號:" data-id="No.7:" data-en="No.7:" data-ar="رقم 7:" data-jv="No.7:" data-su="No.7:" data-min="No.7:">7號:</span> <span id="q_gun_7" class="text-green-500 text-lg font-bold"></span></div>
+                            <div class="bg-gray-900 p-2 rounded flex justify-between px-2 items-center"><span class="text-gray-400" data-tw="8號:" data-id="No.8:" data-en="No.8:" data-ar="رقم 8:" data-jv="No.8:" data-su="No.8:" data-min="No.8:">8號:</span> <span id="q_gun_8" class="text-green-500 text-lg font-bold"></span></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="bg-gray-800 p-4 rounded-xl border border-yellow-800">
-                    <h3 class="font-bold mb-3 text-yellow-500" data-tw="中間：往復機運行參數" data-id="Tengah: Parameter Mesin Reciprocating">中間：往復機運行參數</h3>
+                    <h3 class="font-bold mb-3 text-yellow-500" 
+                        data-tw="中間：往復機運行參數" 
+                        data-id="Tengah: Parameter Mesin Reciprocating"
+                        data-en="Center: Reciprocator Parameters"
+                        data-ar="المركز: معلمات آلة التردد"
+                        data-jv="Tengah: Parameter Mesin Reciprocating"
+                        data-su="Tengah: Parameter Mesin Reciprocating"
+                        data-min="Tangah: Parameter Masin Reciprocating">中間：往復機運行參數</h3>
                     <div class="space-y-3 text-sm">
                         <div class="flex items-center justify-between bg-gray-900 p-3 rounded">
-                            <span class="w-1/3 text-left text-yellow-500 font-mono"><span data-tw="左1:" data-id="Kiri 1:">左1:</span> <b id="q_speed_left" class="text-lg"></b></span>
-                            <span class="w-1/3 text-center text-gray-300" data-tw="上下速度<br><span class='text-xs text-gray-500'>(百)</span>" data-id="Kec. Atas/Bwh<br><span class='text-xs text-gray-500'>(Ratusan)</span>">上下速度<br><span class="text-xs text-gray-500">(百)</span></span>
-                            <span class="w-1/3 text-right text-yellow-500 font-mono"><span data-tw="右2:" data-id="Kanan 2:">右2:</span> <b id="q_speed_right" class="text-lg"></b></span>
+                            <span class="w-1/3 text-left text-yellow-500 font-mono"><span data-tw="左1:" data-id="Kiri 1:" data-en="Left 1:" data-ar="يسار 1:" data-jv="Kiwa 1:" data-su="Kénca 1:" data-min="Kida 1:">左1:</span> <b id="q_speed_left" class="text-lg"></b></span>
+                            <span class="w-1/3 text-center text-gray-300" data-tw="上下速度<br><span class='text-xs text-gray-500'>(百)</span>" data-id="Kec. Atas/Bwh<br><span class='text-xs text-gray-500'>(Ratusan)</span>" data-en="Up/Down Speed<br><span class='text-xs text-gray-500'>(Hundreds)</span>" data-ar="سرعة أعلى/أسفل<br><span class='text-xs text-gray-500'>(مئات)</span>" data-jv="Kec. Nduwur/Ngisor<br><span class='text-xs text-gray-500'>(Ratusan)</span>" data-su="Kec. Luhur/Handap<br><span class='text-xs text-gray-500'>(Ratusan)</span>" data-min="Kec. Ateh/Bawah<br><span class='text-xs text-gray-500'>(Ratusan)</span>">上下速度<br><span class="text-xs text-gray-500">(百)</span></span>
+                            <span class="w-1/3 text-right text-yellow-500 font-mono"><span data-tw="右2:" data-id="Kanan 2:" data-en="Right 2:" data-ar="يمين 2:" data-jv="Tengen 2:" data-su="Katuhu 2:" data-min="Kanan 2:">右2:</span> <b id="q_speed_right" class="text-lg"></b></span>
                         </div>
                         <div class="flex items-center justify-between bg-gray-900 p-3 rounded">
-                            <span class="w-1/3 text-left text-yellow-500 font-mono"><span data-tw="左1:" data-id="Kiri 1:">左1:</span> <b id="q_up_turn_left" class="text-lg"></b></span>
-                            <span class="w-1/3 text-center text-gray-300" data-tw="左上換向點<br><span class='text-xs text-gray-500'>(千)</span>" data-id="Titik Putar Atas Kiri<br><span class='text-xs text-gray-500'>(Ribuan)</span>">左上換向點<br><span class="text-xs text-gray-500">(千)</span></span>
-                            <span class="w-1/3 text-right text-yellow-500 font-mono"><span data-tw="右2:" data-id="Kanan 2:">右2:</span> <b id="q_up_turn_right" class="text-lg"></b></span>
+                            <span class="w-1/3 text-left text-yellow-500 font-mono"><span data-tw="左1:" data-id="Kiri 1:" data-en="Left 1:" data-ar="يسار 1:" data-jv="Kiwa 1:" data-su="Kénca 1:" data-min="Kida 1:">左1:</span> <b id="q_up_turn_left" class="text-lg"></b></span>
+                            <span class="w-1/3 text-center text-gray-300" data-tw="左上換向點<br><span class='text-xs text-gray-500'>(千)</span>" data-id="Titik Putar Atas Kiri<br><span class='text-xs text-gray-500'>(Ribuan)</span>" data-en="Top Left Turn Point<br><span class='text-xs text-gray-500'>(Thousands)</span>" data-ar="نقطة الدوران العلوية اليسرى<br><span class='text-xs text-gray-500'>(آلاف)</span>" data-jv="Titik Puter Nduwur Kiwa<br><span class='text-xs text-gray-500'>(Ewonan)</span>" data-su="Titik Puter Luhur Kénca<br><span class='text-xs text-gray-500'>(Rébuan)</span>" data-min="Titiak Puta Ateh Kida<br><span class='text-xs text-gray-500'>(Ribuan)</span>">左上換向點<br><span class="text-xs text-gray-500">(千)</span></span>
+                            <span class="w-1/3 text-right text-yellow-500 font-mono"><span data-tw="右2:" data-id="Kanan 2:" data-en="Right 2:" data-ar="يمين 2:" data-jv="Tengen 2:" data-su="Katuhu 2:" data-min="Kanan 2:">右2:</span> <b id="q_up_turn_right" class="text-lg"></b></span>
                         </div>
                         <div class="flex items-center justify-between bg-gray-900 p-3 rounded">
-                            <span class="w-1/3 text-left text-yellow-500 font-mono"><span data-tw="左1:" data-id="Kiri 1:">左1:</span> <b id="q_down_turn_left" class="text-lg"></b></span>
-                            <span class="w-1/3 text-center text-gray-300" data-tw="左下換向點<br><span class='text-xs text-gray-500'>(千)</span>" data-id="Titik Putar Bawah Kiri<br><span class='text-xs text-gray-500'>(Ribuan)</span>">左下換向點<br><span class="text-xs text-gray-500">(千)</span></span>
-                            <span class="w-1/3 text-right text-yellow-500 font-mono"><span data-tw="右2:" data-id="Kanan 2:">右2:</span> <b id="q_down_turn_right" class="text-lg"></b></span>
+                            <span class="w-1/3 text-left text-yellow-500 font-mono"><span data-tw="左1:" data-id="Kiri 1:" data-en="Left 1:" data-ar="يسار 1:" data-jv="Kiwa 1:" data-su="Kénca 1:" data-min="Kida 1:">左1:</span> <b id="q_down_turn_left" class="text-lg"></b></span>
+                            <span class="w-1/3 text-center text-gray-300" data-tw="左下換向點<br><span class='text-xs text-gray-500'>(千)</span>" data-id="Titik Putar Bawah Kiri<br><span class='text-xs text-gray-500'>(Ribuan)</span>" data-en="Bottom Left Turn Point<br><span class='text-xs text-gray-500'>(Thousands)</span>" data-ar="نقطة الدوران السفلية اليسرى<br><span class='text-xs text-gray-500'>(آلاف)</span>" data-jv="Titik Puter Ngisor Kiwa<br><span class='text-xs text-gray-500'>(Ewonan)</span>" data-su="Titik Puter Handap Kénca<br><span class='text-xs text-gray-500'>(Rébuan)</span>" data-min="Titiak Puta Bawah Kida<br><span class='text-xs text-gray-500'>(Ribuan)</span>">左下換向點<br><span class="text-xs text-gray-500">(千)</span></span>
+                            <span class="w-1/3 text-right text-yellow-500 font-mono"><span data-tw="右2:" data-id="Kanan 2:" data-en="Right 2:" data-ar="يمين 2:" data-jv="Tengen 2:" data-su="Katuhu 2:" data-min="Kanan 2:">右2:</span> <b id="q_down_turn_right" class="text-lg"></b></span>
                         </div>
                         <div class="flex items-center justify-between bg-gray-900 p-3 rounded">
-                            <span class="w-1/3 text-left text-yellow-500 font-mono"><span data-tw="左1:" data-id="Kiri 1:">左1:</span> <b id="q_dist_left" class="text-lg"></b></span>
-                            <span class="w-1/3 text-center text-gray-300" data-tw="工件距離<br><span class='text-xs text-gray-500'>(百)</span>" data-id="Jarak Benda Kerja<br><span class='text-xs text-gray-500'>(Ratusan)</span>">工件距離<br><span class="text-xs text-gray-500">(百)</span></span>
-                            <span class="w-1/3 text-right text-yellow-500 font-mono"><span data-tw="右2:" data-id="Kanan 2:">右2:</span> <b id="q_dist_right" class="text-lg"></b></span>
+                            <span class="w-1/3 text-left text-yellow-500 font-mono"><span data-tw="左1:" data-id="Kiri 1:" data-en="Left 1:" data-ar="يسار 1:" data-jv="Kiwa 1:" data-su="Kénca 1:" data-min="Kida 1:">左1:</span> <b id="q_dist_left" class="text-lg"></b></span>
+                            <span class="w-1/3 text-center text-gray-300" data-tw="工件距離<br><span class='text-xs text-gray-500'>(百)</span>" data-id="Jarak Benda Kerja<br><span class='text-xs text-gray-500'>(Ratusan)</span>" data-en="Workpiece Distance<br><span class='text-xs text-gray-500'>(Hundreds)</span>" data-ar="مسافة قطعة العمل<br><span class='text-xs text-gray-500'>(مئات)</span>" data-jv="Jarak Benda Kerja<br><span class='text-xs text-gray-500'>(Ratusan)</span>" data-su="Jarak Benda Kerja<br><span class='text-xs text-gray-500'>(Ratusan)</span>" data-min="Jarak Benda Karajo<br><span class='text-xs text-gray-500'>(Ratusan)</span>">工件距離<br><span class="text-xs text-gray-500">(百)</span></span>
+                            <span class="w-1/3 text-right text-yellow-500 font-mono"><span data-tw="右2:" data-id="Kanan 2:" data-en="Right 2:" data-ar="يمين 2:" data-jv="Tengen 2:" data-su="Katuhu 2:" data-min="Kanan 2:">右2:</span> <b id="q_dist_right" class="text-lg"></b></span>
                         </div>
                     </div>
                 </div>
 
                 <div class="bg-gray-800 p-4 rounded-xl border border-red-900">
-                    <h3 class="font-bold mb-3 text-red-500" data-tw="右側：自動槍電壓/電流" data-id="Kanan: Tegangan/Arus Pistol Otomatis">右側：自動槍電壓/電流</h3>
+                    <h3 class="font-bold mb-3 text-red-500" 
+                        data-tw="右側：自動槍電壓/電流" 
+                        data-id="Kanan: Tegangan/Arus Pistol Otomatis"
+                        data-en="Right: Auto Gun Voltage/Current"
+                        data-ar="اليمين: جهد/تيار البندقية التلقائي"
+                        data-jv="Tengen: Tegangan/Arus Pistol Otomatis"
+                        data-su="Katuhu: Tegangan/Arus Pistol Otomatis"
+                        data-min="Kanan: Tegangan/Arus Pistol Otomatis">右側：自動槍電壓/電流</h3>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-gray-900 p-4 rounded flex flex-col items-center justify-center h-32 border border-gray-700">
-                            <div class="text-gray-400 text-sm mb-2" data-tw="電壓 (十位數)" data-id="Tegangan (Puluhan)">電壓 (十位數)</div>
+                            <div class="text-gray-400 text-sm mb-2" data-tw="電壓 (十位數)" data-id="Tegangan (Puluhan)" data-en="Voltage (Tens)" data-ar="الجهد (عشرات)" data-jv="Tegangan (Puluhan)" data-su="Tegangan (Puluhan)" data-min="Tegangan (Puluhan)">電壓 (十位數)</div>
                             <div class="text-4xl text-red-500 font-bold" id="q_voltage"></div>
                         </div>
                         <div class="bg-gray-900 p-4 rounded flex flex-col items-center justify-center h-32 border border-gray-700">
-                            <div class="text-gray-400 text-sm mb-2" data-tw="電流 (十位數)" data-id="Arus (Puluhan)">電流 (十位數)</div>
+                            <div class="text-gray-400 text-sm mb-2" data-tw="電流 (十位數)" data-id="Arus (Puluhan)" data-en="Current (Tens)" data-ar="التيار (عشرات)" data-jv="Arus (Puluhan)" data-su="Arus (Puluhan)" data-min="Arus (Puluhan)">電流 (十位數)</div>
                             <div class="text-4xl text-red-500 font-bold" id="q_current"></div>
                         </div>
                     </div>
@@ -143,81 +245,102 @@
             </div>
 
             <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4" id="remarkBoard" style="display:none;">
-                <div class="bg-gray-800 p-3 rounded border-l-4 border-gray-500"><span class="text-gray-400 text-sm" data-tw="備註一：" data-id="Catatan 1:">備註一：</span><div id="q_remark_1" class="text-lg mt-1 text-gray-200"></div></div>
-                <div class="bg-gray-800 p-3 rounded border-l-4 border-gray-500"><span class="text-gray-400 text-sm" data-tw="備註二：" data-id="Catatan 2:">備註二：</span><div id="q_remark_2" class="text-lg mt-1 text-gray-200"></div></div>
-                <div class="bg-gray-800 p-3 rounded border-l-4 border-gray-500"><span class="text-gray-400 text-sm" data-tw="備註三：" data-id="Catatan 3:">備註三：</span><div id="q_remark_3" class="text-lg mt-1 text-gray-200"></div></div>
+                <div class="bg-gray-800 p-3 rounded border-l-4 border-gray-500"><span class="text-gray-400 text-sm" data-tw="備註一：" data-id="Catatan 1:" data-en="Note 1:" data-ar="ملاحظة 1:" data-jv="Catatan 1:" data-su="Catetan 1:" data-min="Catatan 1:">備註一：</span><div id="q_remark_1" class="text-lg mt-1 text-gray-200"></div></div>
+                <div class="bg-gray-800 p-3 rounded border-l-4 border-gray-500"><span class="text-gray-400 text-sm" data-tw="備註二：" data-id="Catatan 2:" data-en="Note 2:" data-ar="ملاحظة 2:" data-jv="Catatan 2:" data-su="Catetan 2:" data-min="Catatan 2:">備註二：</span><div id="q_remark_2" class="text-lg mt-1 text-gray-200"></div></div>
+                <div class="bg-gray-800 p-3 rounded border-l-4 border-gray-500"><span class="text-gray-400 text-sm" data-tw="備註三：" data-id="Catatan 3:" data-en="Note 3:" data-ar="ملاحظة 3:" data-jv="Catatan 3:" data-su="Catetan 3:" data-min="Catatan 3:">備註三：</span><div id="q_remark_3" class="text-lg mt-1 text-gray-200"></div></div>
             </div>
         </div>
 
         <div id="registerSection" class="hidden">
             <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 relative">
-                <h2 id="formTitle" class="text-xl mb-4 font-bold text-green-500" data-tw="📝 新增構件參數清冊" data-id="📝 Tambah Daftar Parameter Komponen">📝 新增構件參數清冊</h2>
+                <h2 id="formTitle" class="text-xl mb-4 font-bold text-green-500" 
+                    data-tw="📝 新增構件參數清冊" 
+                    data-id="📝 Tambah Daftar Parameter Komponen"
+                    data-en="📝 Add Component Parameter List"
+                    data-ar="📝 إضافة قائمة معلمات المكون"
+                    data-jv="📝 Tambah Daftar Parameter Komponen"
+                    data-su="📝 Tambah Daptar Parameter Komponén"
+                    data-min="📝 Tambah Daftar Parameter Komponen">📝 新增構件參數清冊</h2>
                 <form id="paramForm" class="space-y-4 text-sm">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-gray-400 mb-1" data-tw="品名" data-id="Nama Barang">品名</label>
+                            <label class="block text-gray-400 mb-1" data-tw="品名" data-id="Nama Barang" data-en="Item Name" data-ar="اسم العنصر" data-jv="Jeneng Barang" data-su="Ngaran Barang" data-min="Namo Barang">品名</label>
                             <input type="text" id="item_name" required class="w-full bg-gray-900 p-2 rounded border border-gray-700 text-white">
                         </div>
                         <div>
-                            <label class="block text-gray-400 mb-1" data-tw="照片拍攝 / 選擇圖片" data-id="Ambil / Pilih Gambar">照片拍攝 / 選擇圖片</label>
+                            <label class="block text-gray-400 mb-1" data-tw="照片拍攝 / 選擇圖片" data-id="Ambil / Pilih Gambar" data-en="Capture / Select Image" data-ar="التقاط / اختيار صورة" data-jv="Jupuk / Pilih Gambar" data-su="Candak / Pilih Gambar" data-min="Ambiak / Piliah Gambar">照片拍攝 / 選擇圖片</label>
                             <input type="file" id="reg_image" accept="image/*" capture="environment" class="w-full bg-gray-900 p-1.5 rounded border border-gray-700 text-white">
                         </div>
                     </div>
 
                     <div id="regPreviewBox" class="hidden mt-2 bg-gray-900 p-2 rounded text-center border border-gray-700">
-                        <span class="text-xs text-gray-400 block mb-1" data-tw="已裁切圖片預覽：" data-id="Pratinjau Gambar Terpotong:">已裁切圖片預覽：</span>
+                        <span class="text-xs text-gray-400 block mb-1" data-tw="已裁切圖片預覽：" data-id="Pratinjau Gambar Terpotong:" data-en="Cropped Image Preview:" data-ar="معاينة الصورة المقصوصة:" data-jv="Pratinjau Gambar Kepotong:" data-su="Sawangan Gambar Dipotong:" data-min="Pratinjau Gambar Tapotong:">已裁切圖片預覽：</span>
                         <img id="regPreviewImg" class="h-32 mx-auto rounded object-contain border border-gray-700">
                     </div>
 
-                    <div class="border-t border-gray-700 pt-4"><h3 class="text-blue-400 mb-2" data-tw="槍粉量數據 (支援文字/數字)" data-id="Data Serbuk Pistol (Mendukung Teks/Angka)">槍粉量數據 (支援文字/數字)</h3></div>
+                    <div class="border-t border-gray-700 pt-4"><h3 class="text-blue-400 mb-2" data-tw="槍粉量數據 (支援文字/數字)" data-id="Data Serbuk Pistol (Mendukung Teks/Angka)" data-en="Gun Powder Data (Text/Numbers Supported)" data-ar="بيانات مسحوق البندقية (يدعم النص/الأرقام)" data-jv="Data Serbuk Pistol (Ndhukung Teks/Angka)" data-su="Data Serbuk Pistol (Ngarojong Teks/Angka)" data-min="Data Sarbuk Pistol (Mandukuang Teks/Angko)">槍粉量數據 (支援文字/數字)</h3></div>
                     <div class="grid grid-cols-4 md:grid-cols-8 gap-2">
-                        <input type="text" id="gun_1" data-ph-tw="槍1" data-ph-id="Pistol 1" placeholder="槍1" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
-                        <input type="text" id="gun_2" data-ph-tw="槍2" data-ph-id="Pistol 2" placeholder="槍2" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
-                        <input type="text" id="gun_3" data-ph-tw="槍3" data-ph-id="Pistol 3" placeholder="槍3" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
-                        <input type="text" id="gun_4" data-ph-tw="槍4" data-ph-id="Pistol 4" placeholder="槍4" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
-                        <input type="text" id="gun_5" data-ph-tw="槍5" data-ph-id="Pistol 5" placeholder="槍5" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
-                        <input type="text" id="gun_6" data-ph-tw="槍6" data-ph-id="Pistol 6" placeholder="槍6" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
-                        <input type="text" id="gun_7" data-ph-tw="槍7" data-ph-id="Pistol 7" placeholder="槍7" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
-                        <input type="text" id="gun_8" data-ph-tw="槍8" data-ph-id="Pistol 8" placeholder="槍8" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
+                        <input type="text" id="gun_1" data-ph-tw="槍1" data-ph-id="Pistol 1" data-ph-en="Gun 1" data-ph-ar="بندقية 1" data-ph-jv="Pistol 1" data-ph-su="Pistol 1" data-ph-min="Pistol 1" placeholder="槍1" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
+                        <input type="text" id="gun_2" data-ph-tw="槍2" data-ph-id="Pistol 2" data-ph-en="Gun 2" data-ph-ar="بندقية 2" data-ph-jv="Pistol 2" data-ph-su="Pistol 2" data-ph-min="Pistol 2" placeholder="槍2" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
+                        <input type="text" id="gun_3" data-ph-tw="槍3" data-ph-id="Pistol 3" data-ph-en="Gun 3" data-ph-ar="بندقية 3" data-ph-jv="Pistol 3" data-ph-su="Pistol 3" data-ph-min="Pistol 3" placeholder="槍3" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
+                        <input type="text" id="gun_4" data-ph-tw="槍4" data-ph-id="Pistol 4" data-ph-en="Gun 4" data-ph-ar="بندقية 4" data-ph-jv="Pistol 4" data-ph-su="Pistol 4" data-ph-min="Pistol 4" placeholder="槍4" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
+                        <input type="text" id="gun_5" data-ph-tw="槍5" data-ph-id="Pistol 5" data-ph-en="Gun 5" data-ph-ar="بندقية 5" data-ph-jv="Pistol 5" data-ph-su="Pistol 5" data-ph-min="Pistol 5" placeholder="槍5" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
+                        <input type="text" id="gun_6" data-ph-tw="槍6" data-ph-id="Pistol 6" data-ph-en="Gun 6" data-ph-ar="بندقية 6" data-ph-jv="Pistol 6" data-ph-su="Pistol 6" data-ph-min="Pistol 6" placeholder="槍6" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
+                        <input type="text" id="gun_7" data-ph-tw="槍7" data-ph-id="Pistol 7" data-ph-en="Gun 7" data-ph-ar="بندقية 7" data-ph-jv="Pistol 7" data-ph-su="Pistol 7" data-ph-min="Pistol 7" placeholder="槍7" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
+                        <input type="text" id="gun_8" data-ph-tw="槍8" data-ph-id="Pistol 8" data-ph-en="Gun 8" data-ph-ar="بندقية 8" data-ph-jv="Pistol 8" data-ph-su="Pistol 8" data-ph-min="Pistol 8" placeholder="槍8" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
                     </div>
 
                     <div class="border-t border-gray-700 pt-4 flex justify-between items-center mb-2">
-                        <h3 class="text-yellow-500" data-tw="往復機運行參數" data-id="Parameter Mesin Reciprocating">往復機運行參數</h3>
-                        <button type="button" id="btnFillAuto" class="bg-yellow-700 hover:bg-yellow-600 text-white text-xs px-3 py-1.5 rounded font-bold shadow transition" data-tw="⚡ 填入「自動」" data-id="⚡ Isi 'Auto'">⚡ 填入「自動」</button>
+                        <h3 class="text-yellow-500" data-tw="往復機運行參數" data-id="Parameter Mesin Reciprocating" data-en="Reciprocator Parameters" data-ar="معلمات آلة التردد" data-jv="Parameter Mesin Reciprocating" data-su="Parameter Mesin Reciprocating" data-min="Parameter Masin Reciprocating">往復機運行參數</h3>
+                        <button type="button" id="btnFillAuto" class="bg-yellow-700 hover:bg-yellow-600 text-white text-xs px-3 py-1.5 rounded font-bold shadow transition" data-tw="⚡ 填入「自動」" data-id="⚡ Isi 'Auto'" data-en="⚡ Fill 'Auto'" data-ar="⚡ تعبئة 'تلقائي'" data-jv="⚡ Isi 'Auto'" data-su="⚡ Eusian 'Auto'" data-min="⚡ Isi 'Auto'">⚡ 填入「自動」</button>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
-                            <input type="text" id="speed_left" value="600" data-ph-tw="左上下速度(百)" data-ph-id="Kec. Atas/Bawah Kiri (Ratusan)" placeholder="左上下速度(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="up_turn_left" value="自動" data-ph-tw="左上換向點(千)" data-ph-id="Titik Putar Atas Kiri (Ribuan)" placeholder="左上換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="down_turn_left" value="自動" data-ph-tw="左下換向點(千)" data-ph-id="Titik Putar Bawah Kiri (Ribuan)" placeholder="左下換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="dist_left" value="380" data-ph-tw="左工件距離(百)" data-ph-id="Jarak Benda Kerja Kiri (Ratusan)" placeholder="左工件距離(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="speed_left" value="600" data-ph-tw="左上下速度(百)" data-ph-id="Kec. Atas/Bawah Kiri (Ratusan)" data-ph-en="Left Up/Down Speed (Hundreds)" data-ph-ar="سرعة أعلى/أسفل اليسار (مئات)" data-ph-jv="Kec. Nduwur/Ngisor Kiwa (Ratusan)" data-ph-su="Kec. Luhur/Handap Kénca (Ratusan)" data-ph-min="Kec. Ateh/Bawah Kida (Ratusan)" placeholder="左上下速度(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="up_turn_left" value="自動" data-ph-tw="左上換向點(千)" data-ph-id="Titik Putar Atas Kiri (Ribuan)" data-ph-en="Top Left Turn Point (Thousands)" data-ph-ar="نقطة الدوران العلوية اليسرى (آلاف)" data-ph-jv="Titik Puter Nduwur Kiwa (Ewonan)" data-ph-su="Titik Puter Luhur Kénca (Rébuan)" data-ph-min="Titiak Puta Ateh Kida (Ribuan)" placeholder="左上換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="down_turn_left" value="自動" data-ph-tw="左下換向點(千)" data-ph-id="Titik Putar Bawah Kiri (Ribuan)" data-ph-en="Bottom Left Turn Point (Thousands)" data-ph-ar="نقطة الدوران السفلية اليسرى (آلاف)" data-ph-jv="Titik Puter Ngisor Kiwa (Ewonan)" data-ph-su="Titik Puter Handap Kénca (Rébuan)" data-ph-min="Titiak Puta Bawah Kida (Ribuan)" placeholder="左下換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="dist_left" value="380" data-ph-tw="左工件距離(百)" data-ph-id="Jarak Benda Kerja Kiri (Ratusan)" data-ph-en="Left Workpiece Distance (Hundreds)" data-ph-ar="مسافة قطعة العمل اليسرى (مئات)" data-ph-jv="Jarak Benda Kerja Kiwa (Ratusan)" data-ph-su="Jarak Benda Kerja Kénca (Ratusan)" data-ph-min="Jarak Benda Karajo Kida (Ratusan)" placeholder="左工件距離(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
                         </div>
                         <div class="space-y-2">
-                            <input type="text" id="speed_right" value="600" data-ph-tw="右上下速度(百)" data-ph-id="Kec. Atas/Bawah Kanan (Ratusan)" placeholder="右上下速度(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="up_turn_right" value="自動" data-ph-tw="右上換向點(千)" data-ph-id="Titik Putar Atas Kanan (Ribuan)" placeholder="右上換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="down_turn_right" value="自動" data-ph-tw="右下換向點(千)" data-ph-id="Titik Putar Bawah Kanan (Ribuan)" placeholder="右下換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="dist_right" value="420" data-ph-tw="右工件距離(百)" data-ph-id="Jarak Benda Kerja Kanan (Ratusan)" placeholder="右工件距離(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="speed_right" value="600" data-ph-tw="右上下速度(百)" data-ph-id="Kec. Atas/Bawah Kanan (Ratusan)" data-ph-en="Right Up/Down Speed (Hundreds)" data-ph-ar="سرعة أعلى/أسفل اليمين (مئات)" data-ph-jv="Kec. Nduwur/Ngisor Tengen (Ratusan)" data-ph-su="Kec. Luhur/Handap Katuhu (Ratusan)" data-ph-min="Kec. Ateh/Bawah Kanan (Ratusan)" placeholder="右上下速度(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="up_turn_right" value="自動" data-ph-tw="右上換向點(千)" data-ph-id="Titik Putar Atas Kanan (Ribuan)" data-ph-en="Top Right Turn Point (Thousands)" data-ph-ar="نقطة الدوران العلوية اليمنى (آلاف)" data-ph-jv="Titik Puter Nduwur Tengen (Ewonan)" data-ph-su="Titik Puter Luhur Katuhu (Rébuan)" data-ph-min="Titiak Puta Ateh Kanan (Ribuan)" placeholder="右上換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="down_turn_right" value="自動" data-ph-tw="右下換向點(千)" data-ph-id="Titik Putar Bawah Kanan (Ribuan)" data-ph-en="Bottom Right Turn Point (Thousands)" data-ph-ar="نقطة الدوران السفلية اليمنى (آلاف)" data-ph-jv="Titik Puter Ngisor Tengen (Ewonan)" data-ph-su="Titik Puter Handap Katuhu (Rébuan)" data-ph-min="Titiak Puta Bawah Kanan (Ribuan)" placeholder="右下換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="dist_right" value="420" data-ph-tw="右工件距離(百)" data-ph-id="Jarak Benda Kerja Kanan (Ratusan)" data-ph-en="Right Workpiece Distance (Hundreds)" data-ph-ar="مسافة قطعة العمل اليمنى (مئات)" data-ph-jv="Jarak Benda Kerja Tengen (Ratusan)" data-ph-su="Jarak Benda Kerja Katuhu (Ratusan)" data-ph-min="Jarak Benda Karajo Kanan (Ratusan)" placeholder="右工件距離(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
                         </div>
                     </div>
 
-                    <div class="border-t border-gray-700 pt-4"><h3 class="text-red-500 mb-2" data-tw="電壓與電流" data-id="Tegangan & Arus">電壓與電流</h3></div>
+                    <div class="border-t border-gray-700 pt-4"><h3 class="text-red-500 mb-2" data-tw="電壓與電流" data-id="Tegangan & Arus" data-en="Voltage & Current" data-ar="الجهد والتيار" data-jv="Tegangan & Arus" data-su="Tegangan & Arus" data-min="Tegangan & Arus">電壓與電流</h3></div>
                     <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="voltage" value="70" data-ph-tw="電壓" data-ph-id="Tegangan" placeholder="電壓" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                        <input type="text" id="current" value="15" data-ph-tw="電流" data-ph-id="Arus" placeholder="電流" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                        <input type="text" id="voltage" value="70" data-ph-tw="電壓" data-ph-id="Tegangan" data-ph-en="Voltage" data-ph-ar="الجهد" data-ph-jv="Tegangan" data-ph-su="Tegangan" data-ph-min="Tegangan" placeholder="電壓" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                        <input type="text" id="current" value="15" data-ph-tw="電流" data-ph-id="Arus" data-ph-en="Current" data-ph-ar="التيار" data-ph-jv="Arus" data-ph-su="Arus" data-ph-min="Arus" placeholder="電流" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
                     </div>
 
-                    <div class="border-t border-gray-700 pt-4"><h3 class="text-gray-400 mb-2" data-tw="備註" data-id="Catatan">備註</h3></div>
+                    <div class="border-t border-gray-700 pt-4"><h3 class="text-gray-400 mb-2" data-tw="備註" data-id="Catatan" data-en="Notes" data-ar="ملاحظات" data-jv="Catatan" data-su="Catetan" data-min="Catatan">備註</h3></div>
                     <div class="grid grid-cols-1 gap-2">
-                        <input type="text" id="remark_1" data-ph-tw="備註一" data-ph-id="Catatan 1" placeholder="備註一" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                        <input type="text" id="remark_2" data-ph-tw="備註二" data-ph-id="Catatan 2" placeholder="備註二" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                        <input type="text" id="remark_3" data-ph-tw="備註三" data-ph-id="Catatan 3" placeholder="備註三" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                        <input type="text" id="remark_1" data-ph-tw="備註一" data-ph-id="Catatan 1" data-ph-en="Note 1" data-ph-ar="ملاحظة 1" data-ph-jv="Catatan 1" data-ph-su="Catetan 1" data-ph-min="Catatan 1" placeholder="備註一" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                        <input type="text" id="remark_2" data-ph-tw="備註二" data-ph-id="Catatan 2" data-ph-en="Note 2" data-ph-ar="ملاحظة 2" data-ph-jv="Catatan 2" data-ph-su="Catetan 2" data-ph-min="Catatan 2" placeholder="備註二" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                        <input type="text" id="remark_3" data-ph-tw="備註三" data-ph-id="Catatan 3" data-ph-en="Note 3" data-ph-ar="ملاحظة 3" data-ph-jv="Catatan 3" data-ph-su="Catetan 3" data-ph-min="Catatan 3" placeholder="備註三" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
                     </div>
 
                     <div class="flex gap-4 mt-6">
-                        <button type="submit" id="submitBtn" class="flex-1 bg-blue-700 hover:bg-blue-600 py-3 rounded-lg font-bold text-lg shadow-lg transition" data-tw="儲存參數至資料庫" data-id="Simpan Parameter ke Database">
+                        <button type="submit" id="submitBtn" class="flex-1 bg-blue-700 hover:bg-blue-600 py-3 rounded-lg font-bold text-lg shadow-lg transition" 
+                            data-tw="儲存參數至資料庫" 
+                            data-id="Simpan Parameter ke Database"
+                            data-en="Save Parameters to Database"
+                            data-ar="حفظ المعلمات في قاعدة البيانات"
+                            data-jv="Simpen Parameter menyang Database"
+                            data-su="Simpen Parameter ka Database"
+                            data-min="Simpan Parameter ka Database">
                             儲存參數至資料庫
                         </button>
-                        <button type="button" id="cancelEditBtn" class="hidden flex-none bg-gray-600 hover:bg-gray-500 px-6 py-3 rounded-lg font-bold text-lg shadow-lg transition" data-tw="取消" data-id="Batal">
+                        <button type="button" id="cancelEditBtn" class="hidden flex-none bg-gray-600 hover:bg-gray-500 px-6 py-3 rounded-lg font-bold text-lg shadow-lg transition" 
+                            data-tw="取消" 
+                            data-id="Batal"
+                            data-en="Cancel"
+                            data-ar="إلغاء"
+                            data-jv="Batal"
+                            data-su="Batal"
+                            data-min="Batal">
                             取消
                         </button>
                     </div>
@@ -229,17 +352,16 @@
     <!-- 語言分類說明彈窗 -->
     <div id="langInfoModal" class="fixed inset-0 bg-black/90 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-blue-600 p-6 rounded-xl max-w-md w-full shadow-2xl text-white relative">
-            <h3 class="text-xl font-bold text-blue-400 mb-4">🇮🇩 印尼語言分類說明</h3>
-            <p class="text-sm text-gray-300 mb-4 leading-relaxed">
+            <h3 class="text-xl font-bold text-blue-400 mb-4" data-tw="🇮🇩 印尼語言分類說明" data-id="🇮🇩 Info Kategori Bahasa" data-en="🇮🇩 Language Info" data-ar="🇮🇩 معلومات اللغة" data-jv="🇮🇩 Info Basa" data-su="🇮🇩 Info Basa" data-min="🇮🇩 Info Bahaso">🇮🇩 印尼語言分類說明</h3>
+            <p class="text-sm text-gray-300 mb-4 leading-relaxed" data-tw="系統支援之印尼語言可分為九大類，包含國家語言、地方母語、外來語等..." data-id="Sistem mendukung berbagai bahasa..." data-en="System supports various languages..." data-ar="يدعم النظام لغات مختلفة..." data-jv="Sistem ndhukung macem-macem basa..." data-su="Sistem ngarojong rupa-rupa basa..." data-min="Sistem mandukuang babagai bahaso...">
                 系統支援之印尼語言可分為九大類，主要包含：<br><br>
                 1. <b class="text-white">國家語言</b>：印尼語 (Bahasa Indonesia)<br>
                 2. <b class="text-white">地方母語</b>：如爪哇語 (Jawa)、巽他語 (Sunda)<br>
                 3. <b class="text-white">區域通用語</b>：如米南加保語 (Minangkabau)<br>
                 4. <b class="text-white">外來語</b>：英語、阿拉伯語、中文、荷蘭語等<br>
                 5. <b class="text-white">宗教語言</b>：如阿拉伯語在伊斯蘭禮拜中使用<br>
-                <span class="text-gray-500 text-xs mt-3 block">* 註：目前系統核心介面皆以預設之國家語言 (印尼語) 為基準。</span>
             </p>
-            <button id="btnCloseLangInfo" class="w-full bg-blue-700 hover:bg-blue-600 py-2.5 rounded-lg font-bold transition">了解 / Mengerti</button>
+            <button id="btnCloseLangInfo" class="w-full bg-blue-700 hover:bg-blue-600 py-2.5 rounded-lg font-bold transition" data-tw="了解" data-id="Mengerti" data-en="Understood" data-ar="مفهوم" data-jv="Ngerti" data-su="Ngartos" data-min="Mangarti">了解 / Mengerti</button>
         </div>
     </div>
 
@@ -247,13 +369,13 @@
     <div id="visualSearchModal" class="fixed inset-0 bg-black/90 flex flex-col items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-blue-600 p-4 rounded-xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-blue-400" data-tw="👀 高精準影像特徵比對結果" data-id="👀 Hasil Pengenalan Visual">👀 高精準影像特徵比對結果</h3>
+                <h3 class="text-lg font-bold text-blue-400" data-tw="👀 高精準影像特徵比對結果" data-id="👀 Hasil Pengenalan Visual" data-en="👀 High Precision Visual Match Results" data-ar="👀 نتائج المطابقة المرئية" data-jv="👀 Hasil Padosi Visual" data-su="👀 Hasil Pilarian Visual" data-min="👀 Hasil Pancarian Visual">👀 高精準影像特徵比對結果</h3>
                 <button id="btnCloseVisualSearch" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-white font-bold transition">✕</button>
             </div>
             <div class="mb-4">
-                <input type="text" id="visualSearchFilter" class="w-full bg-gray-800 p-3 rounded border border-gray-700 text-white font-bold" data-ph-tw="🔍 輸入關鍵字過濾名稱..." data-ph-id="🔍 Masukkan kata kunci untuk memfilter..." placeholder="🔍 輸入關鍵字過濾名稱...">
+                <input type="text" id="visualSearchFilter" class="w-full bg-gray-800 p-3 rounded border border-gray-700 text-white font-bold" data-ph-tw="🔍 輸入關鍵字過濾名稱..." data-ph-id="🔍 Masukkan kata kunci untuk memfilter..." data-ph-en="🔍 Enter keyword to filter..." data-ph-ar="🔍 أدخل الكلمة الرئيسية للتصفية..." data-ph-jv="🔍 Ketik kata kunci..." data-ph-su="🔍 Lebetkeun kecap konci..." data-ph-min="🔍 Masuakan kato kunci..." placeholder="🔍 輸入關鍵字過濾名稱...">
             </div>
-            <div class="bg-gray-800 p-2 text-center text-sm text-gray-400 mb-2 rounded border border-gray-700" data-tw="👉 系統已自動將最符合照片特徵(長寬比/輪廓/色彩)的構件排在前面，點選即可載入數據" data-id="👉 Hasil diurutkan berdasarkan kemiripan visual gambar">
+            <div class="bg-gray-800 p-2 text-center text-sm text-gray-400 mb-2 rounded border border-gray-700" data-tw="👉 系統已自動將最符合照片特徵的構件排在前面" data-id="👉 Hasil diurutkan berdasarkan kemiripan visual gambar" data-en="👉 Results sorted by highest visual similarity" data-ar="👉 النتائج مرتبة حسب التشابه المرئي" data-jv="👉 Hasil diurutake miturut kemiripan" data-su="👉 Hasil diurutkeun dumasar kana kamiripan" data-min="👉 Hasil diuruikkan badasarkan kamiripan">
                 👉 系統已自動將最符合照片特徵(長寬比/輪廓/色彩)的構件排在前面，點選即可載入數據
             </div>
             <div id="visualSearchGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto max-h-[60vh] p-2 custom-scrollbar"></div>
@@ -263,18 +385,18 @@
     <!-- 圖片裁切彈窗 -->
     <div id="cropModal" class="fixed inset-0 bg-black/90 flex flex-col items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-yellow-600 p-4 rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col items-center shadow-2xl">
-            <h3 class="text-lg font-bold text-yellow-500 mb-2" data-tw="✂️ 調整圖片範圍與角度" data-id="✂️ Sesuaikan Gambar">✂️ 調整圖片範圍與角度</h3>
+            <h3 class="text-lg font-bold text-yellow-500 mb-2" data-tw="✂️ 調整圖片範圍與角度" data-id="✂️ Sesuaikan Gambar" data-en="✂️ Adjust Image Area & Angle" data-ar="✂️ ضبط مساحة وزاوية الصورة" data-jv="✂️ Sesuaikan Gambar" data-su="✂️ Saluyukeun Gambar" data-min="✂️ Sasuwaian Gambar">✂️ 調整圖片範圍與角度</h3>
             <div class="w-full max-h-[55vh] overflow-hidden bg-black flex items-center justify-center mb-4 rounded border border-gray-800">
                 <img id="cropImage" class="max-w-full max-h-[50vh] block">
             </div>
             <div class="flex flex-wrap gap-2 mb-4 justify-center">
-                <button type="button" id="btnRotateLeft" class="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm font-bold border border-gray-700" data-tw="↺ 左旋轉" data-id="↺ Putar Kiri">↺ 左旋轉</button>
-                <button type="button" id="btnRotateRight" class="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm font-bold border border-gray-700" data-tw="↻ 右旋轉" data-id="↻ Putar Kanan">↻ 右旋轉</button>
-                <button type="button" id="btnResetCrop" class="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm font-bold border border-gray-700" data-tw="重置" data-id="Ulang">重置</button>
+                <button type="button" id="btnRotateLeft" class="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm font-bold border border-gray-700" data-tw="↺ 左旋轉" data-id="↺ Putar Kiri" data-en="↺ Rotate Left" data-ar="↺ تدوير لليسار" data-jv="↺ Puter Kiwa" data-su="↺ Puter Kénca" data-min="↺ Puta Kida">↺ 左旋轉</button>
+                <button type="button" id="btnRotateRight" class="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm font-bold border border-gray-700" data-tw="↻ 右旋轉" data-id="↻ Putar Kanan" data-en="↻ Rotate Right" data-ar="↻ تدوير لليمين" data-jv="↻ Puter Tengen" data-su="↻ Puter Katuhu" data-min="↻ Puta Kanan">↻ 右旋轉</button>
+                <button type="button" id="btnResetCrop" class="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm font-bold border border-gray-700" data-tw="重置" data-id="Ulang" data-en="Reset" data-ar="إعادة ضبط" data-jv="Ulangi" data-su="Ulang" data-min="Ulang">重置</button>
             </div>
             <div class="flex gap-4 w-full">
-                <button type="button" id="btnConfirmCrop" class="flex-1 bg-green-700 hover:bg-green-600 py-2.5 rounded-lg font-bold text-white shadow transition" data-tw="✅ 確認裁切並比對" data-id="✅ Konfirmasi dan Gunakan">✅ 確認裁切並比對</button>
-                <button type="button" id="btnCancelCrop" class="flex-1 bg-gray-700 hover:bg-gray-600 py-2.5 rounded-lg font-bold text-white transition" data-tw="✕ 取消" data-id="✕ Batal">✕ 取消</button>
+                <button type="button" id="btnConfirmCrop" class="flex-1 bg-green-700 hover:bg-green-600 py-2.5 rounded-lg font-bold text-white shadow transition" data-tw="✅ 確認裁切並比對" data-id="✅ Konfirmasi dan Gunakan" data-en="✅ Confirm and Use" data-ar="✅ تأكيد واستخدام" data-jv="✅ Konfirmasi" data-su="✅ Konfirmasi" data-min="✅ Konfirmasi">✅ 確認裁切並比對</button>
+                <button type="button" id="btnCancelCrop" class="flex-1 bg-gray-700 hover:bg-gray-600 py-2.5 rounded-lg font-bold text-white transition" data-tw="✕ 取消" data-id="✕ Batal" data-en="✕ Cancel" data-ar="✕ إلغاء" data-jv="✕ Batal" data-su="✕ Batal" data-min="✕ Batal">✕ 取消</button>
             </div>
         </div>
     </div>
@@ -282,10 +404,10 @@
     <!-- 模型與 Key 設定彈窗 -->
     <div id="modelModal" class="fixed inset-0 bg-black/90 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-[#1e1e2d] border border-[#3b2b5d] p-6 rounded-2xl max-w-md w-full shadow-2xl">
-            <h3 class="text-xl font-bold text-[#b49cf5] mb-4 flex items-center gap-2" data-tw="🤖 模型與 API 金鑰狀態" data-id="🤖 Status Model & API Key">🤖 模型與 API 金鑰狀態</h3>
+            <h3 class="text-xl font-bold text-[#b49cf5] mb-4 flex items-center gap-2" data-tw="🤖 模型與 API 金鑰狀態" data-id="🤖 Status Model & API Key" data-en="🤖 Model & API Key Status" data-ar="🤖 حالة النموذج و API Key" data-jv="🤖 Status Model & API Key" data-su="🤖 Status Modél & API Key" data-min="🤖 Status Model & API Key">🤖 模型與 API 金鑰狀態</h3>
             
             <div class="mb-5 bg-[#252536] p-4 rounded-xl border border-[#3b3b4f]">
-                <div class="flex items-center text-[#4ade80] font-bold mb-3 text-sm" data-tw="✓ 已從後端抓取狀態與配置：" data-id="✓ Konfigurasi status dari backend:">
+                <div class="flex items-center text-[#4ade80] font-bold mb-3 text-sm" data-tw="✓ 已從後端抓取狀態與配置：" data-id="✓ Konfigurasi status dari backend:" data-en="✓ Config loaded from backend:" data-ar="✓ تم تحميل التكوين من الخلفية:" data-jv="✓ Konfigurasi dimuat:" data-su="✓ Konfigurasi dimuat:" data-min="✓ Konfigurasi dimuek:">
                     <span class="bg-[#4ade80] text-black w-4 h-4 inline-flex items-center justify-center rounded-sm text-xs mr-2">✓</span> 
                     已從後端抓取狀態與配置：
                 </div>
@@ -297,25 +419,25 @@
             </div>
 
             <div class="mb-4">
-                <label class="block text-gray-400 mb-2 font-bold text-sm" data-tw="📥 貼上 NVIDIA API 範例代碼 (自動偵測解析)" data-id="📥 Tempelkan Kode NVIDIA API (Deteksi Otomatis)">📥 貼上 NVIDIA API 範例代碼 (自動偵測解析)</label>
-                <textarea id="pasteCodeArea" rows="3" class="w-full bg-[#181825] p-3 rounded-lg border border-[#3b3b4f] text-[#4ade80] font-mono text-xs focus:ring-2 focus:ring-purple-500 transition" data-ph-tw="請在此貼上代碼，系統將自動擷取模型名稱與 API Key..." data-ph-id="Silakan tempel kode di sini..." placeholder="請在此貼上代碼，系統將自動擷取模型名稱與 API Key..."></textarea>
-                <button type="button" id="btnDetectCode" class="mt-2 bg-[#31224d] hover:bg-[#432e6a] border border-[#523788] text-[#cbb6fc] px-4 py-2 rounded-lg font-bold transition w-full shadow" data-tw="🔍 自動偵測並解析代碼" data-id="🔍 Deteksi dan Analisis Kode">🔍 自動偵測並解析代碼</button>
+                <label class="block text-gray-400 mb-2 font-bold text-sm" data-tw="📥 貼上 NVIDIA API 範例代碼" data-id="📥 Tempelkan Kode NVIDIA API" data-en="📥 Paste NVIDIA API Code" data-ar="📥 الصق كود NVIDIA API" data-jv="📥 Tempel Kode NVIDIA API" data-su="📥 Tempel Kode NVIDIA API" data-min="📥 Tempel Kode NVIDIA API">📥 貼上 NVIDIA API 範例代碼 (自動偵測解析)</label>
+                <textarea id="pasteCodeArea" rows="3" class="w-full bg-[#181825] p-3 rounded-lg border border-[#3b3b4f] text-[#4ade80] font-mono text-xs focus:ring-2 focus:ring-purple-500 transition" data-ph-tw="請在此貼上代碼..." data-ph-id="Silakan tempel kode di sini..." data-ph-en="Paste code here..." data-ph-ar="الصق الكود هنا..." data-ph-jv="Tempel kode ing kene..." data-ph-su="Tempel kode di dieu..." data-ph-min="Tempel kode disiko..." placeholder="請在此貼上代碼，系統將自動擷取模型名稱與 API Key..."></textarea>
+                <button type="button" id="btnDetectCode" class="mt-2 bg-[#31224d] hover:bg-[#432e6a] border border-[#523788] text-[#cbb6fc] px-4 py-2 rounded-lg font-bold transition w-full shadow" data-tw="🔍 自動偵測並解析代碼" data-id="🔍 Deteksi dan Analisis Kode" data-en="🔍 Auto Detect Code" data-ar="🔍 اكتشاف تلقائي للكود" data-jv="🔍 Deteksi Kode Otomatis" data-su="🔍 Detéksi Kode Otomatis" data-min="🔍 Deteksi Kode Otomatis">🔍 自動偵測並解析代碼</button>
             </div>
 
             <div class="grid grid-cols-1 gap-3 mb-4 border-t border-[#3b3b4f] pt-4">
                 <div>
-                    <label class="block text-gray-400 mb-1 font-bold text-xs" data-tw="模型名稱" data-id="Nama Model">模型名稱</label>
+                    <label class="block text-gray-400 mb-1 font-bold text-xs" data-tw="模型名稱" data-id="Nama Model" data-en="Model Name" data-ar="اسم النموذج" data-jv="Jeneng Model" data-su="Ngaran Modél" data-min="Namo Model">模型名稱</label>
                     <input type="text" id="detectedModel" class="w-full bg-[#181825] p-2 rounded-lg border border-[#3b3b4f] text-white font-mono text-sm">
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1 font-bold text-xs" data-tw="API Key" data-id="API Key">API Key</label>
+                    <label class="block text-gray-400 mb-1 font-bold text-xs" data-tw="API Key" data-id="API Key" data-en="API Key" data-ar="مفتاح API" data-jv="API Key" data-su="API Key" data-min="API Key">API Key</label>
                     <input type="password" id="detectedApiKey" class="w-full bg-[#181825] p-2 rounded-lg border border-[#3b3b4f] text-white font-mono text-sm" placeholder="nvapi-...">
                 </div>
             </div>
 
             <div class="flex justify-end gap-3 mt-4">
-                <button id="btnSaveModel" class="bg-[#523788] hover:bg-[#6849a6] px-6 py-2 rounded-lg font-bold shadow text-white transition" data-tw="💾 儲存" data-id="💾 Simpan">💾 儲存</button>
-                <button id="btnCloseModal" class="bg-[#4b5563] hover:bg-[#6b7280] px-5 py-2 rounded-lg font-bold transition text-white" data-tw="關閉" data-id="Tutup">關閉</button>
+                <button id="btnSaveModel" class="bg-[#523788] hover:bg-[#6849a6] px-6 py-2 rounded-lg font-bold shadow text-white transition" data-tw="💾 儲存" data-id="💾 Simpan" data-en="💾 Save" data-ar="💾 حفظ" data-jv="💾 Simpen" data-su="💾 Simpen" data-min="💾 Simpan">💾 儲存</button>
+                <button id="btnCloseModal" class="bg-[#4b5563] hover:bg-[#6b7280] px-5 py-2 rounded-lg font-bold transition text-white" data-tw="關閉" data-id="Tutup" data-en="Close" data-ar="إغلاق" data-jv="Tutup" data-su="Tutup" data-min="Tutuik">關閉</button>
             </div>
         </div>
     </div>
@@ -344,30 +466,36 @@
         
         let currentLang = 'tw';
         
-        function t(twText, idText) {
-            return currentLang === 'tw' ? twText : idText;
+        // 修正版翻譯函數：支援字典寫法，讓各國語言可以完全對應
+        function t(dict) {
+            return dict[currentLang] || dict['id'] || dict['tw'];
         }
 
-        // 修改支援下拉式選單與各類印尼語言 Fallback 機制
+        // 修正版的設定語言函數：取消強制退回印尼文的邏輯，真正賦予獨立屬性
         function setLang(lang) {
             currentLang = lang;
-            
-            // 將爪哇語/巽他語/米南加保語 fallback 至印尼文(id)，阿拉伯文/英文 fallback 至英文(en)
-            const baseLang = ['jv', 'su', 'min'].includes(lang) ? 'id' : (lang === 'ar' ? 'en' : lang);
 
             document.querySelectorAll('[data-tw]').forEach(el => {
-                const targetText = el.getAttribute(`data-${baseLang}`) || el.getAttribute(`data-id`) || el.getAttribute('data-tw');
+                const targetText = el.getAttribute(`data-${lang}`) || el.getAttribute(`data-id`) || el.getAttribute('data-tw');
                 el.innerHTML = targetText;
             });
             
             document.querySelectorAll('[data-ph-tw]').forEach(el => {
-                const targetPh = el.getAttribute(`data-ph-${baseLang}`) || el.getAttribute(`data-ph-id`) || el.getAttribute('data-ph-tw');
+                const targetPh = el.getAttribute(`data-ph-${lang}`) || el.getAttribute(`data-ph-id`) || el.getAttribute('data-ph-tw');
                 el.placeholder = targetPh;
             });
 
             const selectEl = document.getElementById('itemSelect');
             if (selectEl.options.length > 0 && selectEl.options[0].value === "") {
-                selectEl.options[0].text = t('-- 請選擇已建檔之構件 --', '-- Pilih komponen terdaftar --');
+                selectEl.options[0].text = t({
+                    tw: '-- 請選擇已建檔之構件 --', 
+                    id: '-- Pilih komponen terdaftar --',
+                    en: '-- Select registered component --',
+                    ar: '-- اختر المكون المسجل --',
+                    jv: '-- Pilih komponen kadhaptar --',
+                    su: '-- Pilih komponén kadaptar --',
+                    min: '-- Piliah komponen tadaptar --'
+                });
             }
             
             if(!document.getElementById('visualSearchModal').classList.contains('hidden')){
@@ -377,7 +505,6 @@
 
         document.getElementById('langSelect').addEventListener('change', (e) => setLang(e.target.value));
         
-        // 印尼語言九大類說明視窗控制
         document.getElementById('btnLangInfo').addEventListener('click', () => {
             document.getElementById('langInfoModal').classList.remove('hidden');
         });
@@ -393,7 +520,15 @@
                 
                 allItemsList = data || [];
                 const currentVal = selectEl.value; 
-                selectEl.innerHTML = `<option value="">${t('-- 請選擇已建檔之構件 --', '-- Pilih komponen terdaftar --')}</option>`;
+                selectEl.innerHTML = `<option value="">${t({
+                    tw: '-- 請選擇已建檔之構件 --', 
+                    id: '-- Pilih komponen terdaftar --',
+                    en: '-- Select registered component --',
+                    ar: '-- اختر المكون المسجل --',
+                    jv: '-- Pilih komponen kadhaptar --',
+                    su: '-- Pilih komponén kadaptar --',
+                    min: '-- Piliah komponen tadaptar --'
+                })}</option>`;
                 allItemsList.forEach(item => {
                     const opt = document.createElement('option');
                     opt.value = item.id;
@@ -407,7 +542,15 @@
                 if (retries > 0) {
                     setTimeout(() => loadItemsToSelect(retries - 1), 1500);
                 } else {
-                    selectEl.innerHTML = `<option value="">${t('載入失敗，請確認 Supabase 連線', 'Gagal memuat')}</option>`;
+                    selectEl.innerHTML = `<option value="">${t({
+                        tw: '載入失敗，請確認 Supabase 連線', 
+                        id: 'Gagal memuat',
+                        en: 'Failed to load',
+                        ar: 'فشل التحميل',
+                        jv: 'Gagal memuat',
+                        su: 'Gagal memuat',
+                        min: 'Gagal mamuek'
+                    })}</option>`;
                 }
             }
         }
@@ -447,10 +590,11 @@
             document.getElementById('dist_left').value = '380';
             document.getElementById('dist_right').value = '420';
             
-            document.getElementById('up_turn_left').value = t('自動', 'Auto');
-            document.getElementById('down_turn_left').value = t('自動', 'Auto');
-            document.getElementById('up_turn_right').value = t('自動', 'Auto');
-            document.getElementById('down_turn_right').value = t('自動', 'Auto');
+            const autoText = t({tw:'自動', id:'Auto', en:'Auto', ar:'تلقائي', jv:'Auto', su:'Auto', min:'Auto'});
+            document.getElementById('up_turn_left').value = autoText;
+            document.getElementById('down_turn_left').value = autoText;
+            document.getElementById('up_turn_right').value = autoText;
+            document.getElementById('down_turn_right').value = autoText;
 
             document.getElementById('voltage').value = '70';
             document.getElementById('current').value = '15';
@@ -460,7 +604,15 @@
             formTitle.className = "text-xl mb-4 font-bold text-green-500";
             
             const submitBtn = document.getElementById('submitBtn');
-            submitBtn.innerText = t("儲存參數至資料庫", "Simpan Parameter ke Database");
+            submitBtn.innerText = t({
+                tw: "儲存參數至資料庫", 
+                id: "Simpan Parameter ke Database",
+                en: "Save Parameters to Database",
+                ar: "حفظ المعلمات في قاعدة البيانات",
+                jv: "Simpen Parameter menyang Database",
+                su: "Simpen Parameter ka Database",
+                min: "Simpan Parameter ka Database"
+            });
             submitBtn.className = "flex-1 bg-blue-700 hover:bg-blue-600 py-3 rounded-lg font-bold text-lg shadow-lg transition";
             document.getElementById('cancelEditBtn').classList.add('hidden');
         }
@@ -487,12 +639,14 @@
                             'down_turn_left','down_turn_right','dist_left','dist_right',
                             'voltage','current','remark_1','remark_2','remark_3'];
             
+            const autoText = t({tw:'自動', id:'Auto', en:'Auto', ar:'تلقائي', jv:'Auto', su:'Auto', min:'Auto'});
+            
             fields.forEach(field => {
                 const el = document.getElementById('q_' + field);
                 if(el) {
                     let val = match[field];
                     if (val === -1 || val === '-1') {
-                        val = t('自動', 'Auto');
+                        val = autoText;
                         el.classList.add('text-green-400');
                     } else {
                         el.classList.remove('text-green-400');
@@ -515,16 +669,26 @@
             currentSelectedData = JSON.parse(selectedOption.dataset.info);
             const status = document.getElementById('analysisStatus');
             status.className = "mt-4 text-sm font-bold text-green-500";
-            status.innerText = t(`✅ 手動查詢成功！選定構件：${currentSelectedData.item_name}`, `✅ Kueri manual berhasil!`);
+            
+            status.innerText = t({
+                tw: `✅ 手動查詢成功！選定構件：${currentSelectedData.item_name}`, 
+                id: `✅ Kueri manual berhasil: ${currentSelectedData.item_name}`,
+                en: `✅ Manual query successful: ${currentSelectedData.item_name}`,
+                ar: `✅ نجاح الاستعلام اليدوي: ${currentSelectedData.item_name}`,
+                jv: `✅ Padosi manual sukses: ${currentSelectedData.item_name}`,
+                su: `✅ Pilari manual suksés: ${currentSelectedData.item_name}`,
+                min: `✅ Mancari manual sukses: ${currentSelectedData.item_name}`
+            });
             displayData(currentSelectedData);
             document.getElementById('actionButtons').classList.remove('hidden');
         });
 
         document.getElementById('btnFillAuto')?.addEventListener('click', () => {
             const machineFields = ['speed_left', 'speed_right', 'up_turn_left', 'up_turn_right', 'down_turn_left', 'down_turn_right', 'dist_left', 'dist_right'];
+            const autoText = t({tw:'自動', id:'Auto', en:'Auto', ar:'تلقائي', jv:'Auto', su:'Auto', min:'Auto'});
             machineFields.forEach(f => {
                 const el = document.getElementById(f);
-                if (el) el.value = t('自動', 'Auto');
+                if (el) el.value = autoText;
             });
         });
         
@@ -542,10 +706,6 @@
             }
         });
 
-        // ==========================================
-        // 核心精準修正：極致高解析度視覺圖像特徵比對 (dHash + RGB + 長寬比)
-        // (解決純粹依靠 OCR 或低解析度特徵造成的完全不符合問題)
-        // ==========================================
         function loadImage(src) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -564,7 +724,6 @@
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
 
-                // 1. 高精細結構感知 dHash (33x32 Grayscale) 取代舊的 17x16
                 canvas.width = 33;
                 canvas.height = 32;
                 ctx.drawImage(img, 0, 0, 33, 32);
@@ -582,7 +741,6 @@
                     }
                 }
 
-                // 2. 高精細色彩特徵向量 (16x16 Color Vector) 取代舊的 8x8
                 canvas.width = 16;
                 canvas.height = 16;
                 ctx.drawImage(img, 0, 0, 16, 16);
@@ -592,9 +750,7 @@
                     colorVector.push(colorData[i], colorData[i+1], colorData[i+2]);
                 }
 
-                // 3. 加入長寬比例特徵以確保「一模一樣」
                 const aspectRatio = img.width / img.height;
-
                 return { dHashBits, colorVector, aspectRatio };
             } catch (e) {
                 return null;
@@ -604,7 +760,6 @@
         function calculateSimilarity(fp1, fp2) {
             if (!fp1 || !fp2) return 0;
 
-            // 1. dHash 結構特徵比對
             let hashMatches = 0;
             const totalBits = fp1.dHashBits.length;
             for (let i = 0; i < totalBits; i++) {
@@ -612,7 +767,6 @@
             }
             const structScore = hashMatches / totalBits;
 
-            // 2. 色彩差異比對
             let colorDiffSum = 0;
             const totalColors = fp1.colorVector.length;
             for (let i = 0; i < totalColors; i++) {
@@ -620,23 +774,38 @@
             }
             const colorScore = 1 - (colorDiffSum / (totalColors * 255));
 
-            // 3. 長寬比差異比對 (防誤判不同形狀構件)
             const ratioDiff = Math.abs(fp1.aspectRatio - fp2.aspectRatio);
-            const ratioScore = Math.max(0, 1 - ratioDiff); // 差距過大直接歸零
+            const ratioScore = Math.max(0, 1 - ratioDiff); 
 
-            // 嚴格權重融合 (50% 輪廓細節 + 40% 色彩明暗 + 10% 圖片長寬比例)
             return Math.round((structScore * 0.50 + colorScore * 0.40 + ratioScore * 0.10) * 100);
         }
 
         async function runVisualMatchWithBase64(targetImgBase64) {
             const status = document.getElementById('analysisStatus');
             status.className = "mt-4 text-sm font-bold text-yellow-500";
-            status.innerText = t("🔄 正在分析高解析度圖像特徵與輪廓比對中...", "🔄 Menganalisis fitur gambar resolusi tinggi...");
+            
+            status.innerText = t({
+                tw: "🔄 正在分析高解析度圖像特徵與輪廓比對中...", 
+                id: "🔄 Menganalisis fitur gambar resolusi tinggi...",
+                en: "🔄 Analyzing high-res image features...",
+                ar: "🔄 جارٍ تحليل ميزات الصورة عالية الدقة...",
+                jv: "🔄 Menganalisis fitur gambar resolusi tinggi...",
+                su: "🔄 Menganalisis fitur gambar resolusi tinggi...",
+                min: "🔄 Menganalisis fitur gambar resolusi tinggi..."
+            });
 
             const targetFp = await getVisualFingerprint(targetImgBase64);
             if (!targetFp) {
                 status.className = "mt-4 text-sm font-bold text-red-500";
-                status.innerText = t("⚠️ 拍攝圖片特徵解析失敗", "⚠️ Gagal analisis");
+                status.innerText = t({
+                    tw: "⚠️ 拍攝圖片特徵解析失敗", 
+                    id: "⚠️ Gagal analisis fitur",
+                    en: "⚠️ Feature extraction failed",
+                    ar: "⚠️ فشل استخراج الميزات",
+                    jv: "⚠️ Gagal analisis fitur",
+                    su: "⚠️ Gagal analisis fitur",
+                    min: "⚠️ Gagal analisis fitur"
+                });
                 return;
             }
 
@@ -654,10 +823,17 @@
 
             visualMatchedItems.sort((a, b) => b.matchScore - a.matchScore);
 
-            // 若要強制限於「一模一樣」，我們只將最高分的直接顯示，並標註百分比
             const bestScore = visualMatchedItems[0]?.matchScore || 0;
             status.className = "mt-4 text-sm font-bold text-green-500";
-            status.innerText = t(`✅ 視覺特徵比對完成！最佳匹配相似度: ${bestScore}%`, `✅ Analisis Selesai! Skor: ${bestScore}%`);
+            status.innerText = t({
+                tw: `✅ 視覺特徵比對完成！最佳匹配相似度: ${bestScore}%`, 
+                id: `✅ Analisis Selesai! Skor: ${bestScore}%`,
+                en: `✅ Visual match done! Best score: ${bestScore}%`,
+                ar: `✅ تم المطابقة المرئية! أفضل نتيجة: ${bestScore}%`,
+                jv: `✅ Analisis Rampung! Skor: ${bestScore}%`,
+                su: `✅ Analisis Réngsé! Skor: ${bestScore}%`,
+                min: `✅ Analisis Salasai! Skor: ${bestScore}%`
+            });
 
             visualSearchModal.classList.remove('hidden');
             document.getElementById('visualSearchFilter').value = '';
@@ -691,18 +867,21 @@
             );
             
             if (filtered.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-8">${t('找不到符合的構件', 'Tidak ada')}</div>`;
+                grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-8">${t({
+                    tw:'找不到符合的構件', id:'Tidak ada', en:'No matches found', ar:'لم يتم العثور على نتائج', jv:'Ora ana', su:'Teu aya', min:'Indak ado'
+                })}</div>`;
                 return;
             }
             
             filtered.forEach(item => {
                 const div = document.createElement('div');
                 div.className = "bg-gray-800 border border-gray-700 rounded-lg p-2 cursor-pointer hover:border-blue-500 hover:bg-gray-700 transition flex flex-col items-center shadow relative group";
-                const noImgText = t('無圖片', 'Tanpa Gambar');
+                const noImgText = t({
+                    tw:'無圖片', id:'Tanpa Gambar', en:'No Image', ar:'بدون صورة', jv:'Tanpa Gambar', su:'Tanpa Gambar', min:'Tanpo Gambar'
+                });
                 
                 let scoreBadge = '';
                 if (item.matchScore > 0) {
-                    // 若達到 98%~100% 才標記為綠色(代表幾乎一模一樣)
                     const badgeColor = item.matchScore >= 95 ? 'bg-green-600' : (item.matchScore >= 70 ? 'bg-yellow-600' : 'bg-gray-600');
                     scoreBadge = `<span class="absolute top-3 right-3 ${badgeColor} text-white text-xs px-2 py-0.5 rounded-full font-bold shadow z-10">🎯 ${item.matchScore}%</span>`;
                 }
@@ -806,7 +985,16 @@
             document.getElementById('itemSelect').value = "";
             const status = document.getElementById('analysisStatus');
             status.className = "mt-4 text-sm font-bold text-yellow-500";
-            status.innerText = t("🔄 正在呼叫 NVIDIA AI 視覺匹配...", "🔄 AI matching...");
+            
+            status.innerText = t({
+                tw: "🔄 正在呼叫 NVIDIA AI 視覺匹配...", 
+                id: "🔄 Sedang memanggil AI NVIDIA...",
+                en: "🔄 Calling NVIDIA AI...",
+                ar: "🔄 جاري استدعاء الذكاء الاصطناعي لـ NVIDIA...",
+                jv: "🔄 Nyeluk AI NVIDIA...",
+                su: "🔄 Nyeluk AI NVIDIA...",
+                min: "🔄 Mamanggia AI NVIDIA..."
+            });
 
             const imgContainer = document.getElementById('imageContainer');
             const imgEl = document.getElementById('q_matched_image');
@@ -825,7 +1013,15 @@
                     let matchedItem = allItemsList.find(i => data.result.includes(i.id)) || allItemsList[0];
                     if (matchedItem) {
                         status.className = "mt-4 text-sm font-bold text-green-500";
-                        status.innerText = t(`✅ NVIDIA AI 分析成功！`, `✅ Berhasil!`);
+                        status.innerText = t({
+                            tw: `✅ NVIDIA AI 分析成功！`, 
+                            id: `✅ Analisis AI Berhasil!`,
+                            en: `✅ AI Analysis Successful!`,
+                            ar: `✅ تم تحليل الذكاء الاصطناعي بنجاح!`,
+                            jv: `✅ Analisis AI Sukses!`,
+                            su: `✅ Analisis AI Suksés!`,
+                            min: `✅ Analisis AI Sukses!`
+                        });
                         displayData(matchedItem);
                         currentSelectedData = matchedItem;
                         document.getElementById('actionButtons').classList.remove('hidden');
@@ -838,7 +1034,15 @@
                 }
             } catch (err) {
                 status.className = "mt-4 text-sm font-bold text-red-500";
-                status.innerText = t("⚠️ AI 分析伺服器回應異常，切換視覺特徵比對", "⚠️ Error");
+                status.innerText = t({
+                    tw: "⚠️ AI 分析伺服器回應異常，切換視覺特徵比對", 
+                    id: "⚠️ Error AI, beralih ke pencocokan visual",
+                    en: "⚠️ AI Error, switching to visual match",
+                    ar: "⚠️ خطأ في الذكاء الاصطناعي ، والتبديل إلى المطابقة المرئية",
+                    jv: "⚠️ Error AI, ngalih menyang pencocokan visual",
+                    su: "⚠️ Error AI, pindah ka pencocokan visual",
+                    min: "⚠️ Error AI, pindah ka pancocokan visual"
+                });
                 runVisualMatchWithBase64(imgBase64);
             }
         }
@@ -869,7 +1073,15 @@
             
             if (modelMatch) document.getElementById('detectedModel').value = modelMatch[1];
             if (keyMatch) document.getElementById('detectedApiKey').value = keyMatch[1];
-            alert(t('✅ 偵測解析完畢！', '✅ Selesai!'));
+            alert(t({
+                tw: '✅ 偵測解析完畢！', 
+                id: '✅ Analisis selesai!',
+                en: '✅ Parsing completed!',
+                ar: '✅ اكتمل التحليل!',
+                jv: '✅ Analisis rampung!',
+                su: '✅ Analisis réngsé!',
+                min: '✅ Analisis salasai!'
+            }));
         });
 
         document.getElementById('btnSaveModel').addEventListener('click', async () => {
@@ -886,7 +1098,15 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(t('✅ 儲存成功！', '✅ Berhasil!'));
+                    alert(t({
+                        tw: '✅ 儲存成功！', 
+                        id: '✅ Berhasil disimpan!',
+                        en: '✅ Saved successfully!',
+                        ar: '✅ تم الحفظ بنجاح!',
+                        jv: '✅ Sukses disimpen!',
+                        su: '✅ Suksés disimpen!',
+                        min: '✅ Sukses disimpen!'
+                    }));
                     modelModal.classList.add('hidden');
                 }
             } catch(e) {}
@@ -896,11 +1116,27 @@
 
         document.getElementById('btnDeleteItem').addEventListener('click', async () => {
             if(!currentSelectedData) return;
-            if(!confirm(t(`⚠️ 確定要刪除嗎？`, `⚠️ Hapus?`))) return;
+            if(!confirm(t({
+                tw: `⚠️ 確定要刪除嗎？`, 
+                id: `⚠️ Anda yakin ingin menghapus?`,
+                en: `⚠️ Are you sure you want to delete?`,
+                ar: `⚠️ هل أنت متأكد من الحذف؟`,
+                jv: `⚠️ Sampeyan yakin pengen mbusak?`,
+                su: `⚠️ Anjeun yakin hoyong ngahapus?`,
+                min: `⚠️ Apokoh sanak yakin nio mahapus?`
+            }))) return;
             
             const { error } = await supabase.from('coating_params').delete().eq('id', currentSelectedData.id);
             if (!error) { 
-                alert(t('✅ 刪除成功！', '✅ Berhasil!')); 
+                alert(t({
+                    tw: '✅ 刪除成功！', 
+                    id: '✅ Berhasil dihapus!',
+                    en: '✅ Deleted successfully!',
+                    ar: '✅ تم الحذف بنجاح!',
+                    jv: '✅ Sukses dibusak!',
+                    su: '✅ Suksés dihapus!',
+                    min: '✅ Sukses dihapus!'
+                })); 
                 document.getElementById('itemSelect').value = ""; 
                 await loadItemsToSelect(); 
                 document.getElementById('resultBoard').style.display = 'none';
@@ -916,11 +1152,13 @@
                             'speed_left','speed_right','up_turn_left','up_turn_right',
                             'down_turn_left','down_turn_right','dist_left','dist_right',
                             'voltage','current','remark_1','remark_2','remark_3'];
+            const autoText = t({tw:'自動', id:'Auto', en:'Auto', ar:'تلقائي', jv:'Auto', su:'Auto', min:'Auto'});
+            
             fields.forEach(field => {
                 const el = document.getElementById(field);
                 if (el) {
                     let val = currentSelectedData[field];
-                    if (val === -1 || val === '-1') val = t('自動', 'Auto');
+                    if (val === -1 || val === '-1') val = autoText;
                     el.value = val !== null ? val : '';
                 }
             });
@@ -935,9 +1173,26 @@
                 document.getElementById('regPreviewBox').classList.add('hidden');
             }
 
-            document.getElementById('formTitle').innerHTML = t(`✏️ 修改構件參數`, `✏️ Ubah parameter`);
+            document.getElementById('formTitle').innerHTML = t({
+                tw: `✏️ 修改構件參數`, 
+                id: `✏️ Ubah Parameter Komponen`,
+                en: `✏️ Edit Component Parameters`,
+                ar: `✏️ تعديل معلمات المكون`,
+                jv: `✏️ Owahi Parameter`,
+                su: `✏️ Robah Parameter`,
+                min: `✏️ Ubah Parameter`
+            });
+            
             const submitBtn = document.getElementById('submitBtn');
-            submitBtn.innerText = t("💾 儲存修改至資料庫", "💾 Simpan");
+            submitBtn.innerText = t({
+                tw: "💾 儲存修改至資料庫", 
+                id: "💾 Simpan Perubahan",
+                en: "💾 Save Changes",
+                ar: "💾 حفظ التغييرات",
+                jv: "💾 Simpen Owahan",
+                su: "💾 Simpen Parobahan",
+                min: "💾 Simpan Parubahan"
+            });
             submitBtn.className = "flex-1 bg-yellow-700 hover:bg-yellow-600 py-3 rounded-lg font-bold text-lg shadow-lg transition";
             document.getElementById('cancelEditBtn').classList.remove('hidden');
             switchTab('register');
@@ -953,7 +1208,15 @@
                 let finalImageUrl = processedRegisterImageBase64;
 
                 if (processedRegisterImageBase64 && processedRegisterImageBase64.startsWith('data:image')) {
-                    submitBtn.innerText = t("⏳ 正在上傳圖片至 Google Drive...", "⏳ Mengunggah...");
+                    submitBtn.innerText = t({
+                        tw: "⏳ 正在上傳圖片至 Google Drive...", 
+                        id: "⏳ Mengunggah gambar...",
+                        en: "⏳ Uploading image...",
+                        ar: "⏳ جاري تحميل الصورة...",
+                        jv: "⏳ Ngunggah gambar...",
+                        su: "⏳ Ngunggah gambar...",
+                        min: "⏳ Mangunggah gambar..."
+                    });
                     
                     const uploadRes = await fetch('/api/upload-image', {
                         method: 'POST',
@@ -969,11 +1232,19 @@
                     }
                 }
 
-                submitBtn.innerText = t("⏳ 正在同步至 Supabase...", "⏳ Menyinkronkan...");
+                submitBtn.innerText = t({
+                    tw: "⏳ 正在同步至 Supabase...", 
+                    id: "⏳ Menyinkronkan data...",
+                    en: "⏳ Synchronizing data...",
+                    ar: "⏳ جاري مزامنة البيانات...",
+                    jv: "⏳ Sinkronisasi data...",
+                    su: "⏳ Sinkronisasi data...",
+                    min: "⏳ Manyinkronkan data..."
+                });
 
                 const parseParam = (val) => {
                     val = String(val).trim();
-                    if (val === '自動' || val.toLowerCase() === 'auto') return -1;
+                    if (val === '自動' || val.toLowerCase() === 'auto' || val === 'تلقائي') return -1;
                     return Number(val) || 0;
                 };
 
@@ -1013,15 +1284,39 @@
                 }
 
                 if (dbError) {
-                    alert(t('儲存失敗：' + dbError.message, 'Gagal'));
+                    alert(t({
+                        tw: '儲存失敗：' + dbError.message, 
+                        id: 'Gagal: ' + dbError.message,
+                        en: 'Failed: ' + dbError.message,
+                        ar: 'فشل: ' + dbError.message,
+                        jv: 'Gagal: ' + dbError.message,
+                        su: 'Gagal: ' + dbError.message,
+                        min: 'Gagal: ' + dbError.message
+                    }));
                 } else {
-                    alert(t('✅ 建檔/修改成功！', '✅ Berhasil!'));
+                    alert(t({
+                        tw: '✅ 建檔/修改成功！', 
+                        id: '✅ Berhasil disimpan!',
+                        en: '✅ Saved successfully!',
+                        ar: '✅ تم الحفظ بنجاح!',
+                        jv: '✅ Sukses disimpen!',
+                        su: '✅ Suksés disimpen!',
+                        min: '✅ Sukses disimpan!'
+                    }));
                     resetFormToCreateMode();
                     await loadItemsToSelect();
                     switchTab('query');
                 }
             } catch (err) {
-                alert(t("錯誤：" + err.message, "Error"));
+                alert(t({
+                    tw: "錯誤：" + err.message, 
+                    id: "Error: " + err.message,
+                    en: "Error: " + err.message,
+                    ar: "خطأ: " + err.message,
+                    jv: "Error: " + err.message,
+                    su: "Error: " + err.message,
+                    min: "Error: " + err.message
+                }));
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalBtnText;
