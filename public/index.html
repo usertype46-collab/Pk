@@ -98,12 +98,12 @@
                         </div>
                         <div class="flex items-center justify-between bg-gray-900 p-3 rounded">
                             <span class="w-1/3 text-left text-yellow-500 font-mono"><span data-tw="左1:" data-id="Kiri 1:">左1:</span> <b id="q_up_turn_left" class="text-lg"></b></span>
-                            <span class="w-1/3 text-center text-gray-300" data-tw="上換向點<br><span class='text-xs text-gray-500'>(千)</span>" data-id="Titik Putar Atas<br><span class='text-xs text-gray-500'>(Ribuan)</span>">上換向點<br><span class="text-xs text-gray-500">(千)</span></span>
+                            <span class="w-1/3 text-center text-gray-300" data-tw="左上換向點<br><span class='text-xs text-gray-500'>(千)</span>" data-id="Titik Putar Atas Kiri<br><span class='text-xs text-gray-500'>(Ribuan)</span>">左上換向點<br><span class="text-xs text-gray-500">(千)</span></span>
                             <span class="w-1/3 text-right text-yellow-500 font-mono"><span data-tw="右2:" data-id="Kanan 2:">右2:</span> <b id="q_up_turn_right" class="text-lg"></b></span>
                         </div>
                         <div class="flex items-center justify-between bg-gray-900 p-3 rounded">
                             <span class="w-1/3 text-left text-yellow-500 font-mono"><span data-tw="左1:" data-id="Kiri 1:">左1:</span> <b id="q_down_turn_left" class="text-lg"></b></span>
-                            <span class="w-1/3 text-center text-gray-300" data-tw="下換向點<br><span class='text-xs text-gray-500'>(千)</span>" data-id="Titik Putar Bawah<br><span class='text-xs text-gray-500'>(Ribuan)</span>">下換向點<br><span class="text-xs text-gray-500">(千)</span></span>
+                            <span class="w-1/3 text-center text-gray-300" data-tw="左下換向點<br><span class='text-xs text-gray-500'>(千)</span>" data-id="Titik Putar Bawah Kiri<br><span class='text-xs text-gray-500'>(Ribuan)</span>">左下換向點<br><span class="text-xs text-gray-500">(千)</span></span>
                             <span class="w-1/3 text-right text-yellow-500 font-mono"><span data-tw="右2:" data-id="Kanan 2:">右2:</span> <b id="q_down_turn_right" class="text-lg"></b></span>
                         </div>
                         <div class="flex items-center justify-between bg-gray-900 p-3 rounded">
@@ -225,8 +225,7 @@
             <div class="bg-gray-800 p-2 text-center text-sm text-gray-400 mb-2 rounded border border-gray-700" data-tw="👉 點選下方圖片即可載入該構件參數" data-id="👉 Klik gambar di bawah untuk memuat parameter komponen">
                 👉 點選下方圖片即可載入該構件參數
             </div>
-            <div id="visualSearchGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto max-h-[60vh] p-2 custom-scrollbar">
-                </div>
+            <div id="visualSearchGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto max-h-[60vh] p-2 custom-scrollbar"></div>
         </div>
     </div>
 
@@ -258,9 +257,9 @@
                     已從後端抓取狀態與配置：
                 </div>
                 <div class="bg-black p-3 rounded-lg text-[#4ade80] font-mono text-xs overflow-x-auto border border-[#333] space-y-1">
-<div>NVIDIA API: "<span id="displayApiKey">讀取中...</span>"</div>
-<div>Model: "<span id="displayModel">讀取中...</span>"</div>
-<div class="border-t border-[#333] pt-1 mt-1 text-[#60a5fa]" id="displayDrive">Google Drive: 讀取中...</div>
+                    <div>NVIDIA API: "<span id="displayApiKey">讀取中...</span>"</div>
+                    <div>Model: "<span id="displayModel">讀取中...</span>"</div>
+                    <div class="border-t border-[#333] pt-1 mt-1 text-[#60a5fa]" id="displayDrive">Google Drive: 讀取中...</div>
                 </div>
             </div>
 
@@ -309,8 +308,7 @@
         let cropTargetMode = null; 
         let processedRegisterImageBase64 = null; 
         
-        // --- 多國語言切換邏輯 ---
-        let currentLang = 'tw'; // 'tw' or 'id'
+        let currentLang = 'tw';
         
         function t(twText, idText) {
             return currentLang === 'tw' ? twText : idText;
@@ -337,13 +335,11 @@
                 el.placeholder = el.getAttribute(`data-ph-${lang}`);
             });
 
-            // Update Select default option
             const selectEl = document.getElementById('itemSelect');
             if (selectEl.options.length > 0 && selectEl.options[0].value === "") {
                 selectEl.options[0].text = t('-- 請選擇已建檔之構件 --', '-- Pilih komponen terdaftar --');
             }
             
-            // Re-render visual search grid to apply language
             if(!document.getElementById('visualSearchModal').classList.contains('hidden')){
                 renderVisualSearchGrid(document.getElementById('visualSearchFilter').value);
             }
@@ -352,13 +348,10 @@
         document.getElementById('btnLangTW').addEventListener('click', () => setLang('tw'));
         document.getElementById('btnLangID').addEventListener('click', () => setLang('id'));
 
-
-        // 載入與自動重試機制
         async function loadItemsToSelect(retries = 2) {
             const selectEl = document.getElementById('itemSelect');
             try {
                 const { data, error } = await supabase.from('coating_params').select('*').order('created_at', { ascending: false });
-                
                 if (error) throw error;
                 
                 allItemsList = data || [];
@@ -375,10 +368,9 @@
                 if (currentVal) selectEl.value = currentVal;
             } catch (err) {
                 if (retries > 0) {
-                    console.log(`連線忙碌中，進行自動重試 (${retries})...`);
                     setTimeout(() => loadItemsToSelect(retries - 1), 1500);
                 } else {
-                    selectEl.innerHTML = `<option value="">${t('載入失敗，請確認 SQL 已在 Supabase 執行成功', 'Gagal memuat, pastikan SQL telah dijalankan')}</option>`;
+                    selectEl.innerHTML = `<option value="">${t('載入失敗，請確認 SQL 已在 Supabase 執行成功', 'Gagal memuat')}</option>`;
                 }
             }
         }
@@ -418,7 +410,6 @@
             document.getElementById('dist_left').value = '380';
             document.getElementById('dist_right').value = '420';
             
-            // 替換為預設「自動」
             document.getElementById('up_turn_left').value = t('自動', 'Auto');
             document.getElementById('down_turn_left').value = t('自動', 'Auto');
             document.getElementById('up_turn_right').value = t('自動', 'Auto');
@@ -463,10 +454,9 @@
                 const el = document.getElementById('q_' + field);
                 if(el) {
                     let val = match[field];
-                    // 偵測資料庫中的特定代號 -1，還原顯示為「自動」
                     if (val === -1 || val === '-1') {
                         val = t('自動', 'Auto');
-                        el.classList.add('text-green-400'); // 自動字樣給予綠色高亮
+                        el.classList.add('text-green-400');
                     } else {
                         el.classList.remove('text-green-400');
                     }
@@ -488,12 +478,11 @@
             currentSelectedData = JSON.parse(selectedOption.dataset.info);
             const status = document.getElementById('analysisStatus');
             status.className = "mt-4 text-sm font-bold text-green-500";
-            status.innerText = t(`✅ 手動查詢成功！選定構件：${currentSelectedData.item_name}`, `✅ Kueri manual berhasil! Komponen: ${currentSelectedData.item_name}`);
+            status.innerText = t(`✅ 手動查詢成功！選定構件：${currentSelectedData.item_name}`, `✅ Kueri manual berhasil!`);
             displayData(currentSelectedData);
             document.getElementById('actionButtons').classList.remove('hidden');
         });
 
-        // ⚡ 一鍵填入「自動」按鈕事件
         document.getElementById('btnFillAuto')?.addEventListener('click', () => {
             const machineFields = ['speed_left', 'speed_right', 'up_turn_left', 'up_turn_right', 'down_turn_left', 'down_turn_right', 'dist_left', 'dist_right'];
             machineFields.forEach(f => {
@@ -502,7 +491,6 @@
             });
         });
         
-        // --- Tesseract OCR 辨識搜尋引擎邏輯 ---
         const visualSearchModal = document.getElementById('visualSearchModal');
         
         document.getElementById('tesseractInput').addEventListener('change', async (e) => {
@@ -510,7 +498,7 @@
                 const file = e.target.files[0];
                 const status = document.getElementById('analysisStatus');
                 status.className = "mt-4 text-sm font-bold text-yellow-500";
-                status.innerText = t("🔄 正在進行 Tesseract OCR 文字辨識中，請稍候...", "🔄 Sedang melakukan OCR Tesseract, harap tunggu...");
+                status.innerText = t("🔄 正在進行 Tesseract OCR 文字辨識中...", "🔄 Sedang OCR...");
 
                 try {
                     const worker = await Tesseract.createWorker('chi_tra+eng');
@@ -519,7 +507,7 @@
 
                     const recognizedText = ret.data.text || "";
                     status.className = "mt-4 text-sm font-bold text-green-500";
-                    status.innerText = t(`✅ OCR 辨識完成！擷取文字：${recognizedText.trim().substring(0, 40)}...`, `✅ OCR Selesai!`);
+                    status.innerText = t(`✅ OCR 辨識完成！`, `✅ OCR Selesai!`);
 
                     visualSearchModal.classList.remove('hidden');
                     
@@ -536,14 +524,12 @@
                     renderVisualSearchGrid(document.getElementById('visualSearchFilter').value);
 
                 } catch (err) {
-                    console.error("Tesseract 錯誤:", err);
                     status.className = "mt-4 text-sm font-bold text-red-500";
-                    status.innerText = t("⚠️ Tesseract OCR 辨識失敗，已為您開啟完整清單。", "⚠️ Gagal OCR, menampilkan daftar lengkap.");
+                    status.innerText = t("⚠️ Tesseract OCR 辨識失敗", "⚠️ Gagal OCR");
                     visualSearchModal.classList.remove('hidden');
                     document.getElementById('visualSearchFilter').value = '';
                     renderVisualSearchGrid('');
                 }
-                
                 e.target.value = '';
             }
         });
@@ -565,7 +551,7 @@
             );
             
             if (filtered.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-8">${t('找不到符合的構件', 'Tidak ada komponen yang cocok')}</div>`;
+                grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-8">${t('找不到符合的構件', 'Tidak ada')}</div>`;
                 return;
             }
             
@@ -590,17 +576,13 @@
             });
         }
 
-
-        // 裁切視窗邏輯
         function startCropping(imageSrc, targetMode) {
             cropTargetMode = targetMode;
             const cropImg = document.getElementById('cropImage');
             cropImg.src = imageSrc;
             document.getElementById('cropModal').classList.remove('hidden');
 
-            if (cropper) {
-                cropper.destroy();
-            }
+            if (cropper) cropper.destroy();
 
             cropper = new Cropper(cropImg, {
                 viewMode: 1,
@@ -672,7 +654,7 @@
             document.getElementById('itemSelect').value = "";
             const status = document.getElementById('analysisStatus');
             status.className = "mt-4 text-sm font-bold text-yellow-500";
-            status.innerText = t("🔄 照片已裁切，正在呼叫後端 NVIDIA 進行 AI 視覺匹配...", "🔄 Foto terpotong, memanggil NVIDIA AI untuk pencocokan...");
+            status.innerText = t("🔄 正在呼叫 NVIDIA AI 視覺匹配...", "🔄 AI matching...");
 
             const imgContainer = document.getElementById('imageContainer');
             const imgEl = document.getElementById('q_matched_image');
@@ -691,7 +673,7 @@
                     let matchedItem = allItemsList.find(i => data.result.includes(i.id)) || allItemsList[0];
                     if (matchedItem) {
                         status.className = "mt-4 text-sm font-bold text-green-500";
-                        status.innerText = t(`✅ NVIDIA AI 分析成功！匹配構件：${matchedItem.item_name}`, `✅ Analisis NVIDIA AI berhasil! Komponen: ${matchedItem.item_name}`);
+                        status.innerText = t(`✅ NVIDIA AI 分析成功！`, `✅ Berhasil!`);
                         displayData(matchedItem);
                         currentSelectedData = matchedItem;
                         document.getElementById('actionButtons').classList.remove('hidden');
@@ -704,7 +686,7 @@
                 }
             } catch (err) {
                 status.className = "mt-4 text-sm font-bold text-red-500";
-                status.innerText = t("⚠️ AI 分析伺服器回應異常，自動為您顯示最新構件。", "⚠️ Gagal terhubung ke server AI, menampilkan komponen terbaru.");
+                status.innerText = t("⚠️ AI 分析伺服器回應異常", "⚠️ Error");
                 if (allItemsList.length > 0) {
                     displayData(allItemsList[0]);
                     currentSelectedData = allItemsList[0];
@@ -713,7 +695,6 @@
             }
         }
 
-        // 更換模型與 API Key 邏輯
         const modelModal = document.getElementById('modelModal');
         
         document.getElementById('btnShowModelCode').addEventListener('click', async () => {
@@ -727,59 +708,27 @@
                 document.getElementById('detectedModel').value = info.model || '';
                 document.getElementById('detectedApiKey').value = info.hasKey ? '********' : '';
 
-                const displayKey = info.hasKey ? 'nvapi-********(已隱藏)' : '未設定';
-                const displayModel = info.model || '未設定';
-                const displayDrive = info.driveReady ? 'Google Drive: 連線狀態正常 ✅' : 'Google Drive: 未設定 GOOGLE_SCRIPT_URL ❌';
-                
-                document.getElementById('displayApiKey').innerText = displayKey;
-                document.getElementById('displayModel').innerText = displayModel;
-                document.getElementById('displayDrive').innerText = displayDrive;
-            } catch(e) {
-                console.error('無法連線至伺服器獲取目前狀態', e);
-            }
+                document.getElementById('displayApiKey').innerText = info.hasKey ? 'nvapi-********(已隱藏)' : '未設定';
+                document.getElementById('displayModel').innerText = info.model || '未設定';
+                document.getElementById('displayDrive').innerText = info.driveReady ? 'Google Drive: 連線狀態正常 ✅' : 'Google Drive: 未設定 GOOGLE_SCRIPT_URL ❌';
+            } catch(e) {}
         });
 
         document.getElementById('btnDetectCode').addEventListener('click', () => {
             const code = document.getElementById('pasteCodeArea').value;
-            if (!code.trim()) {
-                alert(t('請先貼上範例代碼！', 'Silakan tempel kode contoh terlebih dahulu!'));
-                return;
-            }
-
-            const modelRegex = /model\s*[:=]\s*["']([^"']+)["']/;
-            const modelMatch = code.match(modelRegex);
-            
-            const keyRegex = /(nvapi-[a-zA-Z0-9_\-]+)/;
-            const keyMatch = code.match(keyRegex);
+            const modelMatch = code.match(/model\s*[:=]\s*["']([^"']+)["']/);
+            const keyMatch = code.match(/(nvapi-[a-zA-Z0-9_\-]+)/);
             
             if (modelMatch) document.getElementById('detectedModel').value = modelMatch[1];
-            
-            if (keyMatch) {
-                document.getElementById('detectedApiKey').value = keyMatch[1];
-            } else {
-                document.getElementById('detectedApiKey').value = '';
-            }
-            
-            if (modelMatch || keyMatch) {
-                alert(t(`✅ 偵測成功！\n模型名稱：${modelMatch ? modelMatch[1] : '未找到'}\nAPI Key：${keyMatch ? '已擷取' : '未找到'}`, `✅ Berhasil dideteksi!\nModel: ${modelMatch ? modelMatch[1] : 'Tidak Ditemukan'}\nAPI Key: ${keyMatch ? 'Diekstrak' : 'Tidak Ditemukan'}`));
-            } else {
-                alert(t('⚠️ 無法從代碼中精準偵測模型名稱或 API Key，請檢查格式或手動輸入。', '⚠️ Tidak dapat mendeteksi Model atau API Key. Silakan periksa formatnya.'));
-            }
+            if (keyMatch) document.getElementById('detectedApiKey').value = keyMatch[1];
+            alert(t('✅ 偵測解析完畢！', '✅ Selesai!'));
         });
 
         document.getElementById('btnSaveModel').addEventListener('click', async () => {
             const model = document.getElementById('detectedModel').value;
             const apiKey = document.getElementById('detectedApiKey').value;
-
-            if (!model) {
-                alert(t('請輸入或偵測模型名稱！', 'Silakan masukkan nama model!'));
-                return;
-            }
-
             const payload = { model };
-            if (apiKey && apiKey !== '********') {
-                payload.apiKey = apiKey;
-            }
+            if (apiKey && apiKey !== '********') payload.apiKey = apiKey;
 
             try {
                 const res = await fetch('/api/settings', {
@@ -788,28 +737,22 @@
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
-                
                 if (data.success) {
-                    alert(t('✅ 儲存成功！後端 API 已自動切換至新設定與金鑰。', '✅ Berhasil disimpan! Backend API telah dialihkan ke pengaturan baru.'));
+                    alert(t('✅ 儲存成功！', '✅ Berhasil!'));
                     modelModal.classList.add('hidden');
-                } else {
-                    alert(t('儲存失敗：' + data.error, 'Gagal menyimpan: ' + data.error));
                 }
-            } catch(e) {
-                alert(t('伺服器連線異常，儲存設定失敗！', 'Koneksi server gagal, tidak dapat menyimpan!'));
-            }
+            } catch(e) {}
         });
 
         document.getElementById('btnCloseModal').addEventListener('click', () => modelModal.classList.add('hidden'));
 
         document.getElementById('btnDeleteItem').addEventListener('click', async () => {
             if(!currentSelectedData) return;
-            if(!confirm(t(`⚠️ 確定要刪除「${currentSelectedData.item_name}」的全部參數嗎？`, `⚠️ Apakah Anda yakin ingin menghapus "${currentSelectedData.item_name}"?`))) return;
+            if(!confirm(t(`⚠️ 確定要刪除嗎？`, `⚠️ Hapus?`))) return;
             
             const { error } = await supabase.from('coating_params').delete().eq('id', currentSelectedData.id);
-            if (error) alert(t('刪除失敗：' + error.message, 'Gagal menghapus: ' + error.message));
-            else { 
-                alert(t('✅ 刪除成功！', '✅ Berhasil dihapus!')); 
+            if (!error) { 
+                alert(t('✅ 刪除成功！', '✅ Berhasil!')); 
                 document.getElementById('itemSelect').value = ""; 
                 await loadItemsToSelect(); 
                 document.getElementById('resultBoard').style.display = 'none';
@@ -829,14 +772,12 @@
                 const el = document.getElementById(field);
                 if (el) {
                     let val = currentSelectedData[field];
-                    // 在編輯模式下也將 -1 映射回自動
                     if (val === -1 || val === '-1') val = t('自動', 'Auto');
                     el.value = val !== null ? val : '';
                 }
             });
             
             document.getElementById('reg_image').value = '';
-            
             processedRegisterImageBase64 = currentSelectedData.image_url || null;
 
             if (processedRegisterImageBase64) {
@@ -846,9 +787,9 @@
                 document.getElementById('regPreviewBox').classList.add('hidden');
             }
 
-            document.getElementById('formTitle').innerHTML = t(`✏️ 修改構件參數：<span class="text-white">${currentSelectedData.item_name}</span>`, `✏️ Ubah parameter: <span class="text-white">${currentSelectedData.item_name}</span>`);
+            document.getElementById('formTitle').innerHTML = t(`✏️ 修改構件參數`, `✏️ Ubah parameter`);
             const submitBtn = document.getElementById('submitBtn');
-            submitBtn.innerText = t("💾 儲存修改至資料庫", "💾 Simpan Perubahan ke Database");
+            submitBtn.innerText = t("💾 儲存修改至資料庫", "💾 Simpan");
             submitBtn.className = "flex-1 bg-yellow-700 hover:bg-yellow-600 py-3 rounded-lg font-bold text-lg shadow-lg transition";
             document.getElementById('cancelEditBtn').classList.remove('hidden');
             switchTab('register');
@@ -864,7 +805,7 @@
                 let finalImageUrl = processedRegisterImageBase64;
 
                 if (processedRegisterImageBase64 && processedRegisterImageBase64.startsWith('data:image')) {
-                    submitBtn.innerText = t("⏳ 正在壓縮並上傳圖片至 Google Drive...", "⏳ Mengunggah gambar ke Google Drive...");
+                    submitBtn.innerText = t("⏳ 正在上傳圖片至 Google Drive...", "⏳ Mengunggah...");
                     
                     const uploadRes = await fetch('/api/upload-image', {
                         method: 'POST',
@@ -873,7 +814,6 @@
                     });
                     
                     const uploadData = await uploadRes.json();
-                    
                     if (uploadData.success) {
                         finalImageUrl = uploadData.url; 
                     } else {
@@ -881,9 +821,8 @@
                     }
                 }
 
-                submitBtn.innerText = t("⏳ 正在同步至 Supabase 資料庫...", "⏳ Menyinkronkan ke database...");
+                submitBtn.innerText = t("⏳ 正在同步至 Supabase...", "⏳ Menyinkronkan...");
 
-                // 解析函式：攔截字串「自動」並強行轉為資料庫安全代碼 -1
                 const parseParam = (val) => {
                     val = String(val).trim();
                     if (val === '自動' || val.toLowerCase() === 'auto') return -1;
@@ -926,16 +865,15 @@
                 }
 
                 if (dbError) {
-                    alert(t('儲存失敗：' + dbError.message, 'Gagal menyimpan: ' + dbError.message));
+                    alert(t('儲存失敗：' + dbError.message, 'Gagal'));
                 } else {
-                    alert(editModeId ? t('✅ 參數修改成功！', '✅ Parameter berhasil diubah!') : t('✅ 參數建檔成功！', '✅ Parameter berhasil didaftarkan!'));
+                    alert(t('✅ 建檔/修改成功！', '✅ Berhasil!'));
                     resetFormToCreateMode();
                     await loadItemsToSelect();
                     switchTab('query');
                 }
             } catch (err) {
-                console.error("儲存失敗:", err);
-                alert(t("儲存錯誤：" + err.message, "Kesalahan penyimpanan: " + err.message));
+                alert(t("錯誤：" + err.message, "Error"));
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalBtnText;
