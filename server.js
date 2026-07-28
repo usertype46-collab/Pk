@@ -4,11 +4,10 @@ import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Storage, File } from 'megajs';
 import sharp from 'sharp';
 import crypto from 'crypto';
 
-// 修正：補上 Node.js 環境中 MegaJS 所需的 Web Crypto API 支援
+// 修正：補上 Node.js 環境中所需的 Web Crypto API 支援
 if (typeof globalThis.crypto === 'undefined') {
   globalThis.crypto = crypto.webcrypto;
 }
@@ -37,31 +36,6 @@ let client = new OpenAI({
   apiKey: currentApiKey
 });
 
-// --- Mega 雲端硬碟初始化 ---
-let megaStorage = null;
-
-async function initMega() {
-  try {
-    if (!process.env.MEGA_EMAIL || !process.env.MEGA_PASSWORD) {
-      console.warn("⚠️ [警告] 尚未設定 MEGA_EMAIL 或 MEGA_PASSWORD。圖片將無法上傳。");
-      return;
-    }
-    console.log("⏳ 正在登入 Mega 雲端硬碟...");
-    megaStorage = new Storage({
-      email: process.env.MEGA_EMAIL,
-      password: process.env.MEGA_PASSWORD
-    });
-    
-    // 必須等待 .ready，否則後續上傳會全部失敗
-    await megaStorage.ready;
-    console.log("✅ Mega 雲端硬碟登入成功！空間已準備就緒。");
-  } catch (err) {
-    console.error("❌ Mega 登入失敗，請確認 .env 帳號密碼是否正確:", err.message);
-    megaStorage = null;
-  }
-}
-initMega();
-
 // --- API 路由區塊 ---
 
 // 1. 系統狀態檢查
@@ -70,7 +44,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     model: currentModel,
     hasKey: !!currentApiKey,
-    megaReady: !!megaStorage
+    driveReady: !!process.env.GOOGLE_SCRIPT_URL
   });
 });
 
@@ -88,13 +62,13 @@ app.post('/api/settings', (req, res) => {
   res.json({ success: true });
 });
 
-// 3. 上傳圖片至 Mega
+// 3. 上傳圖片至 Google Drive (透過 Apps Script)
 app.post('/api/upload-image', async (req, res) => {
   try {
     const { imageBase64 } = req.body;
     
-    if (!megaStorage) {
-      return res.status(500).json({ success: false, error: "後端尚未成功連線至 Mega，請通知管理員檢查伺服器。" });
+    if (!process.env.GOOGLE_SCRIPT_URL) {
+      return res.status(500).json({ success: false, error: "後端尚未設定 GOOGLE_SCRIPT_URL，請通知管理員至 Railway 設定環境變數。" });
     }
     if (!imageBase64) {
       return res.status(400).json({ success: false, error: "未接收到圖片檔案。" });
@@ -104,49 +78,65 @@ app.post('/api/upload-image', async (req, res) => {
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     let buffer = Buffer.from(base64Data, 'base64');
 
-    // 使用 sharp 進行圖片壓縮 (轉為 JPEG，品質 80%)，加速上傳並節省 Mega 空間
+    // 使用 sharp 進行圖片壓縮 (轉為 JPEG，品質 80%)，加速上傳並節省 Google Drive 空間
     buffer = await sharp(buffer)
       .jpeg({ quality: 80 })
       .toBuffer();
 
+    const compressedBase64 = buffer.toString('base64');
     const filename = `baifu_${Date.now()}.jpg`;
-    console.log(`[Mega 上傳] 準備儲存檔案: ${filename} (大小: ${(buffer.length / 1024).toFixed(2)} KB)`);
+    console.log(`[Google Drive 上傳] 準備傳送檔案: ${filename} (壓縮後大小: ${(buffer.length / 1024).toFixed(2)} KB)`);
     
-    // 上傳檔案並等待完成
-    const file = await megaStorage.upload(filename, buffer).complete;
-    
-    // 獲取公開分享連結
-    const link = await file.link();
-    
-    // 回傳透過本機代理的網址，以解決前端 Canvas 跨域 (CORS) 污染問題
-    const proxyUrl = `/image-proxy?url=${encodeURIComponent(link)}`;
+    // 發送至 Google Apps Script Web App
+    const response = await fetch(process.env.GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        fileName: filename,
+        mimeType: 'image/jpeg',
+        base64: compressedBase64
+      })
+    });
 
-    console.log(`[Mega 上傳] 成功！連結已生成。`);
-    res.json({ success: true, url: proxyUrl, originalLink: link });
+    const result = await response.json();
+
+    if (result.success) {
+      // 回傳透過本機代理的網址，以解決前端 Canvas 的 CORS 污染問題
+      const proxyUrl = `/image-proxy?url=${encodeURIComponent(result.url)}`;
+      console.log(`[Google Drive 上傳] 成功！連結已生成。`);
+      res.json({ success: true, url: proxyUrl, originalLink: result.url });
+    } else {
+      throw new Error(result.error || "Google Apps Script 發生未知錯誤");
+    }
 
   } catch (error) {
-    console.error("❌ 上傳至 Mega 失敗:", error);
+    console.error("❌ 上傳至 Google Drive 失敗:", error);
     res.status(500).json({ success: false, error: "雲端上傳失敗：" + error.message });
   }
 });
 
-// 4. Mega 圖片代理伺服器 (避免前端跨域問題)
+// 4. Google Drive 圖片代理伺服器 (避免前端跨域問題)
 app.get('/image-proxy', async (req, res) => {
   try {
     const encodedUrl = req.query.url;
     if (!encodedUrl) return res.status(400).send("No URL provided");
     
     const decodedUrl = decodeURIComponent(encodedUrl);
-    const file = File.fromURL(decodedUrl);
     
-    await file.loadAttributes();
+    // 從 Google Drive 讀取圖片資料流
+    const response = await fetch(decodedUrl);
+    if (!response.ok) {
+        throw new Error(`無法獲取圖片，狀態碼: ${response.status}`);
+    }
 
-    res.setHeader('Content-Type', 'image/jpeg');
-    // 設定快取，避免重複載入相同圖片造成 Mega 流量限制 (快取 1 年)
+    res.setHeader('Content-Type', response.headers.get('content-type') || 'image/jpeg');
+    // 設定快取，避免重複載入相同圖片造成流量浪費 (快取 1 年)
     res.setHeader('Cache-Control', 'public, max-age=31536000');
     
-    const stream = file.download();
-    stream.pipe(res);
+    const buffer = await response.arrayBuffer();
+    res.send(Buffer.from(buffer));
 
   } catch (error) {
     console.error("❌ 代理讀取圖片失敗:", error);
