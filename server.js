@@ -32,6 +32,18 @@ let client = new OpenAI({
   apiKey: currentApiKey
 });
 
+/**
+ * 將 Google Drive 的 HTML 檢視連結轉換為直連圖片 CDN 網址
+ */
+function convertGoogleDriveUrl(url) {
+  if (!url) return url;
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  }
+  return url;
+}
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -78,7 +90,7 @@ app.post('/api/upload-image', async (req, res) => {
     const filename = `baifu_${Date.now()}.jpg`;
     console.log(`[Google Drive 上傳] 準備傳送檔案: ${filename} (大小: ${(buffer.length / 1024).toFixed(2)} KB)`);
     
-    // 關鍵修復：加入 redirect: 'follow' 確保正確跟隨 GAS 的 302 重新導向
+    // 跟隨 GAS 的 302 重新導向
     const response = await fetch(process.env.GOOGLE_SCRIPT_URL, {
       method: 'POST',
       redirect: 'follow',
@@ -102,9 +114,11 @@ app.post('/api/upload-image', async (req, res) => {
     }
 
     if (result.success) {
-      const proxyUrl = `/image-proxy?url=${encodeURIComponent(result.url)}`;
-      console.log(`[Google Drive 上傳] 成功！連結: ${result.url}`);
-      res.json({ success: true, url: proxyUrl, originalLink: result.url });
+      // 自動轉為圖片直連網址
+      const directUrl = convertGoogleDriveUrl(result.url);
+      const proxyUrl = `/image-proxy?url=${encodeURIComponent(directUrl)}`;
+      console.log(`[Google Drive 上傳] 成功！轉換後直連: ${directUrl}`);
+      res.json({ success: true, url: proxyUrl, originalLink: directUrl });
     } else {
       throw new Error(result.error || "Google Apps Script 發生未知錯誤");
     }
@@ -115,18 +129,24 @@ app.post('/api/upload-image', async (req, res) => {
   }
 });
 
+// 圖片代理 API：自動處理 Google Drive 檔案並串流返回圖檔內容
 app.get('/image-proxy', async (req, res) => {
   try {
     const encodedUrl = req.query.url;
     if (!encodedUrl) return res.status(400).send("No URL provided");
     
-    const decodedUrl = decodeURIComponent(encodedUrl);
-    const response = await fetch(decodedUrl);
+    let decodedUrl = decodeURIComponent(encodedUrl);
+    
+    // 自動轉換 Google Drive 的檔案檢視頁面連結為圖片串流直連
+    decodedUrl = convertGoogleDriveUrl(decodedUrl);
+
+    const response = await fetch(decodedUrl, { redirect: 'follow' });
     if (!response.ok) {
         throw new Error(`無法獲取圖片，狀態碼: ${response.status}`);
     }
 
-    res.setHeader('Content-Type', response.headers.get('content-type') || 'image/jpeg');
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=31536000');
     
     const buffer = await response.arrayBuffer();
