@@ -175,14 +175,14 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <input type="text" id="speed_left" value="600" data-ph-tw="左上下速度(百)" data-ph-id="Kec. Atas/Bawah Kiri (Ratusan)" placeholder="左上下速度(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="up_turn_left" data-ph-tw="左上換向點(千)" data-ph-id="Titik Putar Atas Kiri (Ribuan)" placeholder="左上換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="down_turn_left" data-ph-tw="左下換向點(千)" data-ph-id="Titik Putar Bawah Kiri (Ribuan)" placeholder="左下換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="up_turn_left" value="自動" data-ph-tw="左上換向點(千)" data-ph-id="Titik Putar Atas Kiri (Ribuan)" placeholder="左上換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="down_turn_left" value="自動" data-ph-tw="左下換向點(千)" data-ph-id="Titik Putar Bawah Kiri (Ribuan)" placeholder="左下換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
                             <input type="text" id="dist_left" value="380" data-ph-tw="左工件距離(百)" data-ph-id="Jarak Benda Kerja Kiri (Ratusan)" placeholder="左工件距離(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
                         </div>
                         <div class="space-y-2">
                             <input type="text" id="speed_right" value="600" data-ph-tw="右上下速度(百)" data-ph-id="Kec. Atas/Bawah Kanan (Ratusan)" placeholder="右上下速度(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="up_turn_right" data-ph-tw="右上換向點(千)" data-ph-id="Titik Putar Atas Kanan (Ribuan)" placeholder="右上換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="down_turn_right" data-ph-tw="右下換向點(千)" data-ph-id="Titik Putar Bawah Kanan (Ribuan)" placeholder="右下換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="up_turn_right" value="自動" data-ph-tw="右上換向點(千)" data-ph-id="Titik Putar Atas Kanan (Ribuan)" placeholder="右上換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                            <input type="text" id="down_turn_right" value="自動" data-ph-tw="右下換向點(千)" data-ph-id="Titik Putar Bawah Kanan (Ribuan)" placeholder="右下換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
                             <input type="text" id="dist_right" value="420" data-ph-tw="右工件距離(百)" data-ph-id="Jarak Benda Kerja Kanan (Ratusan)" placeholder="右工件距離(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
                         </div>
                     </div>
@@ -253,18 +253,14 @@
             <h3 class="text-xl font-bold text-[#b49cf5] mb-4 flex items-center gap-2" data-tw="🤖 模型與 API 金鑰狀態" data-id="🤖 Status Model & API Key">🤖 模型與 API 金鑰狀態</h3>
             
             <div class="mb-5 bg-[#252536] p-4 rounded-xl border border-[#3b3b4f]">
-                <div class="flex items-center text-[#4ade80] font-bold mb-3 text-sm" data-tw="✓ 已從後端抓取 API Key 與模型配置：" data-id="✓ Konfigurasi API dari backend:">
+                <div class="flex items-center text-[#4ade80] font-bold mb-3 text-sm" data-tw="✓ 已從後端抓取狀態與配置：" data-id="✓ Konfigurasi status dari backend:">
                     <span class="bg-[#4ade80] text-black w-4 h-4 inline-flex items-center justify-center rounded-sm text-xs mr-2">✓</span> 
-                    已從後端抓取 API Key 與模型配置：
+                    已從後端抓取狀態與配置：
                 </div>
-                <div class="bg-black p-3 rounded-lg text-[#4ade80] font-mono text-xs overflow-x-auto border border-[#333]">
-<pre><code>const client = new OpenAI({
-  baseURL:
-  "https://integrate.api.nvidia.com/v1"
-  ,
-  apiKey: "<span id="displayApiKey">讀取中...</span>",
-  model: "<span id="displayModel">讀取中...</span>"
-})</code></pre>
+                <div class="bg-black p-3 rounded-lg text-[#4ade80] font-mono text-xs overflow-x-auto border border-[#333] space-y-1">
+<div>NVIDIA API: "<span id="displayApiKey">讀取中...</span>"</div>
+<div>Model: "<span id="displayModel">讀取中...</span>"</div>
+<div class="border-t border-[#333] pt-1 mt-1 text-[#60a5fa]" id="displayDrive">Google Drive: 讀取中...</div>
                 </div>
             </div>
 
@@ -421,6 +417,13 @@
             document.getElementById('speed_right').value = '600';
             document.getElementById('dist_left').value = '380';
             document.getElementById('dist_right').value = '420';
+            
+            // 替換為預設「自動」
+            document.getElementById('up_turn_left').value = t('自動', 'Auto');
+            document.getElementById('down_turn_left').value = t('自動', 'Auto');
+            document.getElementById('up_turn_right').value = t('自動', 'Auto');
+            document.getElementById('down_turn_right').value = t('自動', 'Auto');
+
             document.getElementById('voltage').value = '70';
             document.getElementById('current').value = '15';
             
@@ -726,9 +729,11 @@
 
                 const displayKey = info.hasKey ? 'nvapi-********(已隱藏)' : '未設定';
                 const displayModel = info.model || '未設定';
+                const displayDrive = info.driveReady ? 'Google Drive: 連線狀態正常 ✅' : 'Google Drive: 未設定 GOOGLE_SCRIPT_URL ❌';
                 
                 document.getElementById('displayApiKey').innerText = displayKey;
                 document.getElementById('displayModel').innerText = displayModel;
+                document.getElementById('displayDrive').innerText = displayDrive;
             } catch(e) {
                 console.error('無法連線至伺服器獲取目前狀態', e);
             }
@@ -859,7 +864,7 @@
                 let finalImageUrl = processedRegisterImageBase64;
 
                 if (processedRegisterImageBase64 && processedRegisterImageBase64.startsWith('data:image')) {
-                    submitBtn.innerText = t("⏳ 正在壓縮並上傳圖片至 Mega 雲端...", "⏳ Mengunggah gambar ke Mega Drive...");
+                    submitBtn.innerText = t("⏳ 正在壓縮並上傳圖片至 Google Drive...", "⏳ Mengunggah gambar ke Google Drive...");
                     
                     const uploadRes = await fetch('/api/upload-image', {
                         method: 'POST',
@@ -878,7 +883,7 @@
 
                 submitBtn.innerText = t("⏳ 正在同步至 Supabase 資料庫...", "⏳ Menyinkronkan ke database...");
 
-                // 新增解析函式：攔截字串「自動」並強行轉為資料庫安全代碼 -1
+                // 解析函式：攔截字串「自動」並強行轉為資料庫安全代碼 -1
                 const parseParam = (val) => {
                     val = String(val).trim();
                     if (val === '自動' || val.toLowerCase() === 'auto') return -1;
