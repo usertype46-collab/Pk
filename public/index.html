@@ -823,7 +823,6 @@
 
                 submitBtn.innerText = t("⏳ 正在同步至 Supabase...", "⏳ Menyinkronkan...");
 
-                // 強化數值轉換，確保回傳的一定為數值格式，預防資料型別錯誤
                 const parseParam = (val) => {
                     val = String(val).trim();
                     if (val === '自動' || val.toLowerCase() === 'auto') return -1;
