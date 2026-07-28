@@ -168,7 +168,10 @@
                         <input type="text" id="gun_8" data-ph-tw="槍8" data-ph-id="Pistol 8" placeholder="槍8" class="bg-gray-900 p-2 rounded w-full text-center text-white border border-gray-700">
                     </div>
 
-                    <div class="border-t border-gray-700 pt-4"><h3 class="text-yellow-500 mb-2" data-tw="往復機運行參數" data-id="Parameter Mesin Reciprocating">往復機運行參數</h3></div>
+                    <div class="border-t border-gray-700 pt-4 flex justify-between items-center mb-2">
+                        <h3 class="text-yellow-500" data-tw="往復機運行參數" data-id="Parameter Mesin Reciprocating">往復機運行參數</h3>
+                        <button type="button" id="btnFillAuto" class="bg-yellow-700 hover:bg-yellow-600 text-white text-xs px-3 py-1.5 rounded font-bold shadow transition" data-tw="⚡ 填入「自動」" data-id="⚡ Isi 'Auto'">⚡ 填入「自動」</button>
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <input type="text" id="speed_left" value="600" data-ph-tw="左上下速度(百)" data-ph-id="Kec. Atas/Bawah Kiri (Ratusan)" placeholder="左上下速度(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
@@ -455,7 +458,17 @@
             
             fields.forEach(field => {
                 const el = document.getElementById('q_' + field);
-                if(el) el.innerText = (match[field] !== null && match[field] !== undefined && match[field] !== '') ? match[field] : '0';
+                if(el) {
+                    let val = match[field];
+                    // 偵測資料庫中的特定代號 -1，還原顯示為「自動」
+                    if (val === -1 || val === '-1') {
+                        val = t('自動', 'Auto');
+                        el.classList.add('text-green-400'); // 自動字樣給予綠色高亮
+                    } else {
+                        el.classList.remove('text-green-400');
+                    }
+                    el.innerText = (val !== null && val !== undefined && val !== '') ? val : '0';
+                }
             });
         }
 
@@ -476,6 +489,15 @@
             displayData(currentSelectedData);
             document.getElementById('actionButtons').classList.remove('hidden');
         });
+
+        // ⚡ 一鍵填入「自動」按鈕事件
+        document.getElementById('btnFillAuto')?.addEventListener('click', () => {
+            const machineFields = ['speed_left', 'speed_right', 'up_turn_left', 'up_turn_right', 'down_turn_left', 'down_turn_right', 'dist_left', 'dist_right'];
+            machineFields.forEach(f => {
+                const el = document.getElementById(f);
+                if (el) el.value = t('自動', 'Auto');
+            });
+        });
         
         // --- Tesseract OCR 辨識搜尋引擎邏輯 ---
         const visualSearchModal = document.getElementById('visualSearchModal');
@@ -488,7 +510,6 @@
                 status.innerText = t("🔄 正在進行 Tesseract OCR 文字辨識中，請稍候...", "🔄 Sedang melakukan OCR Tesseract, harap tunggu...");
 
                 try {
-                    // 使用 Tesseract 辨識圖片中的文字（支援中英文）
                     const worker = await Tesseract.createWorker('chi_tra+eng');
                     const ret = await worker.recognize(file);
                     await worker.terminate();
@@ -497,12 +518,9 @@
                     status.className = "mt-4 text-sm font-bold text-green-500";
                     status.innerText = t(`✅ OCR 辨識完成！擷取文字：${recognizedText.trim().substring(0, 40)}...`, `✅ OCR Selesai!`);
 
-                    // 開啟 Modal 並依據辨識結果過濾
                     visualSearchModal.classList.remove('hidden');
                     
-                    // 嘗試從辨識出的文字提取關鍵字（去除空白與換行）
                     const cleanText = recognizedText.replace(/\s+/g, '');
-                    // 如果辨識結果有部分吻合品名，自動填入過濾框
                     let matchedKeyword = '';
                     for (const item of allItemsList) {
                         if (cleanText.includes(item.item_name) || item.item_name.includes(cleanText.substring(0, 3))) {
@@ -523,7 +541,6 @@
                     renderVisualSearchGrid('');
                 }
                 
-                // 清空 input 確保重複選擇同一張照片也能觸發
                 e.target.value = '';
             }
         });
@@ -805,7 +822,12 @@
                             'voltage','current','remark_1','remark_2','remark_3'];
             fields.forEach(field => {
                 const el = document.getElementById(field);
-                if (el) el.value = currentSelectedData[field] !== null ? currentSelectedData[field] : '';
+                if (el) {
+                    let val = currentSelectedData[field];
+                    // 在編輯模式下也將 -1 映射回自動
+                    if (val === -1 || val === '-1') val = t('自動', 'Auto');
+                    el.value = val !== null ? val : '';
+                }
             });
             
             document.getElementById('reg_image').value = '';
@@ -836,7 +858,6 @@
             try {
                 let finalImageUrl = processedRegisterImageBase64;
 
-                // 若圖片是新的 base64 (而非原本資料庫的代理網址)，則先上傳
                 if (processedRegisterImageBase64 && processedRegisterImageBase64.startsWith('data:image')) {
                     submitBtn.innerText = t("⏳ 正在壓縮並上傳圖片至 Mega 雲端...", "⏳ Mengunggah gambar ke Mega Drive...");
                     
@@ -849,13 +870,20 @@
                     const uploadData = await uploadRes.json();
                     
                     if (uploadData.success) {
-                        finalImageUrl = uploadData.url; // 儲存伺服器 Proxy 網址
+                        finalImageUrl = uploadData.url; 
                     } else {
                         throw new Error(uploadData.error || "圖片上傳失敗");
                     }
                 }
 
                 submitBtn.innerText = t("⏳ 正在同步至 Supabase 資料庫...", "⏳ Menyinkronkan ke database...");
+
+                // 新增解析函式：攔截字串「自動」並強行轉為資料庫安全代碼 -1
+                const parseParam = (val) => {
+                    val = String(val).trim();
+                    if (val === '自動' || val.toLowerCase() === 'auto') return -1;
+                    return val || '0';
+                };
 
                 const payload = {
                     item_name: document.getElementById('item_name').value,
@@ -868,16 +896,16 @@
                     gun_6: document.getElementById('gun_6').value || '0',
                     gun_7: document.getElementById('gun_7').value || '0',
                     gun_8: document.getElementById('gun_8').value || '0',
-                    speed_left: document.getElementById('speed_left').value || '0',
-                    speed_right: document.getElementById('speed_right').value || '0',
-                    up_turn_left: document.getElementById('up_turn_left').value || '0',
-                    up_turn_right: document.getElementById('up_turn_right').value || '0',
-                    down_turn_left: document.getElementById('down_turn_left').value || '0',
-                    down_turn_right: document.getElementById('down_turn_right').value || '0',
-                    dist_left: document.getElementById('dist_left').value || '0',
-                    dist_right: document.getElementById('dist_right').value || '0',
-                    voltage: document.getElementById('voltage').value || '0',
-                    current: document.getElementById('current').value || '0',
+                    speed_left: parseParam(document.getElementById('speed_left').value),
+                    speed_right: parseParam(document.getElementById('speed_right').value),
+                    up_turn_left: parseParam(document.getElementById('up_turn_left').value),
+                    up_turn_right: parseParam(document.getElementById('up_turn_right').value),
+                    down_turn_left: parseParam(document.getElementById('down_turn_left').value),
+                    down_turn_right: parseParam(document.getElementById('down_turn_right').value),
+                    dist_left: parseParam(document.getElementById('dist_left').value),
+                    dist_right: parseParam(document.getElementById('dist_right').value),
+                    voltage: parseParam(document.getElementById('voltage').value),
+                    current: parseParam(document.getElementById('current').value),
                     remark_1: document.getElementById('remark_1').value,
                     remark_2: document.getElementById('remark_2').value,
                     remark_3: document.getElementById('remark_3').value,
