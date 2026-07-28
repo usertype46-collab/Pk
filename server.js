@@ -7,6 +7,12 @@ import { fileURLToPath } from 'url';
 import { Storage, File } from 'megajs';
 import sharp from 'sharp';
 
+// 修正：補上 Node.js 環境中 MegaJS 所需的 Web Crypto API 支援
+import crypto from 'crypto';
+if (typeof globalThis.crypto === 'undefined') {
+  globalThis.crypto = crypto.webcrypto;
+}
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
