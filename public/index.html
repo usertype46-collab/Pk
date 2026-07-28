@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body class="bg-gray-900 text-white font-sans min-h-screen pb-12">
     <div class="max-w-6xl mx-auto p-4">
@@ -16,9 +15,22 @@
             <h1 class="text-2xl font-bold text-blue-500" data-tw="百富粉體塗裝參數系統<br><span class='text-lg text-gray-400'>(AI 智慧版)</span>" data-id="Sistem Parameter Pelapisan Serbuk Baifu<br><span class='text-lg text-gray-400'>(Versi Cerdas AI)</span>">百富粉體塗裝參數系統<br><span class="text-lg text-gray-400">(AI 智慧版)</span></h1>
             
             <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <div class="flex gap-1 bg-gray-800 p-1 rounded-lg border border-gray-700">
-                    <button id="btnLangTW" class="bg-blue-600 text-white text-sm px-3 py-1.5 rounded font-bold shadow transition opacity-100">🇹🇼 中文</button>
-                    <button id="btnLangID" class="bg-transparent text-gray-400 text-sm px-3 py-1.5 rounded font-bold transition opacity-60 hover:opacity-100">🇮🇩 ID</button>
+                <!-- 語言切換選單 (包含印尼語九大類) -->
+                <div class="flex items-center gap-2 bg-gray-800 p-1.5 rounded-lg border border-gray-700">
+                    <select id="langSelect" class="bg-gray-900 text-white text-sm px-2 py-1.5 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold cursor-pointer">
+                        <option value="tw">🇹🇼 中文</option>
+                        <optgroup label="印尼語言 (Bahasa Indonesia)">
+                            <option value="id">🇮🇩 國家語言 (印尼語)</option>
+                            <option value="jv">🇮🇩 地方母語 (如爪哇語)</option>
+                            <option value="su">🇮🇩 地方母語 (如巽他語)</option>
+                            <option value="min">🇮🇩 區域通用語 (如米南加保語)</option>
+                        </optgroup>
+                        <optgroup label="其他語言">
+                            <option value="en">🇬🇧 外來語 (英語/荷蘭語等)</option>
+                            <option value="ar">🇸🇦 宗教語言 (如阿拉伯語)</option>
+                        </optgroup>
+                    </select>
+                    <button id="btnLangInfo" class="text-gray-400 hover:text-blue-400 transition" title="印尼語言分類說明">ℹ️</button>
                 </div>
                 <button id="btnShowModelCode" class="bg-purple-900/50 hover:bg-purple-800 text-purple-400 border border-purple-800 text-xs px-4 py-2 rounded-lg font-bold shadow transition flex-1 md:flex-none text-center" data-tw="⚡ 模型更換自動偵測" data-id="⚡ Ganti Model / API Otomatis">
                     ⚡ 模型更換自動偵測
@@ -42,8 +54,9 @@
                     </button>
                     
                     <input type="file" accept="image/*" capture="environment" id="tesseractInput" class="hidden">
-                    <button onclick="document.getElementById('tesseractInput').click()" class="bg-blue-700 hover:bg-blue-600 px-6 py-4 rounded-lg font-bold shadow-lg w-full text-lg transition" data-tw="🖼️ 拍照Tesseract識別符合圖片 (無 AI 手動比對)" data-id="🖼️ Pengenalan Tesseract (Tanpa AI)">
-                        🖼️ 拍照Tesseract識別符合圖片 (無 AI 手動比對)
+                    <!-- 已將 Tesseract 修正為高精準視覺比對 -->
+                    <button onclick="document.getElementById('tesseractInput').click()" class="bg-blue-700 hover:bg-blue-600 px-6 py-4 rounded-lg font-bold shadow-lg w-full text-lg transition" data-tw="🖼️ 拍照視覺特徵精準比對 (無 AI 本地比對)" data-id="🖼️ Pengenalan Fitur Visual (Tanpa AI)">
+                        🖼️ 拍照視覺特徵精準比對 (無 AI 本地比對)
                     </button>
                 </div>
                 <p id="analysisStatus" class="mt-4 text-sm text-gray-300"></p>
@@ -213,22 +226,41 @@
         </div>
     </div>
 
+    <!-- 語言分類說明彈窗 -->
+    <div id="langInfoModal" class="fixed inset-0 bg-black/90 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-gray-900 border border-blue-600 p-6 rounded-xl max-w-md w-full shadow-2xl text-white relative">
+            <h3 class="text-xl font-bold text-blue-400 mb-4">🇮🇩 印尼語言分類說明</h3>
+            <p class="text-sm text-gray-300 mb-4 leading-relaxed">
+                系統支援之印尼語言可分為九大類，主要包含：<br><br>
+                1. <b class="text-white">國家語言</b>：印尼語 (Bahasa Indonesia)<br>
+                2. <b class="text-white">地方母語</b>：如爪哇語 (Jawa)、巽他語 (Sunda)<br>
+                3. <b class="text-white">區域通用語</b>：如米南加保語 (Minangkabau)<br>
+                4. <b class="text-white">外來語</b>：英語、阿拉伯語、中文、荷蘭語等<br>
+                5. <b class="text-white">宗教語言</b>：如阿拉伯語在伊斯蘭禮拜中使用<br>
+                <span class="text-gray-500 text-xs mt-3 block">* 註：目前系統核心介面皆以預設之國家語言 (印尼語) 為基準。</span>
+            </p>
+            <button id="btnCloseLangInfo" class="w-full bg-blue-700 hover:bg-blue-600 py-2.5 rounded-lg font-bold transition">了解 / Mengerti</button>
+        </div>
+    </div>
+
+    <!-- 視覺影像比對彈窗 -->
     <div id="visualSearchModal" class="fixed inset-0 bg-black/90 flex flex-col items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-blue-600 p-4 rounded-xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-blue-400" data-tw="👀 Tesseract OCR 辨識搜尋結果" data-id="👀 Hasil Pengenalan OCR Tesseract">👀 Tesseract OCR 辨識搜尋結果</h3>
+                <h3 class="text-lg font-bold text-blue-400" data-tw="👀 高精準影像特徵比對結果" data-id="👀 Hasil Pengenalan Visual">👀 高精準影像特徵比對結果</h3>
                 <button id="btnCloseVisualSearch" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-white font-bold transition">✕</button>
             </div>
             <div class="mb-4">
                 <input type="text" id="visualSearchFilter" class="w-full bg-gray-800 p-3 rounded border border-gray-700 text-white font-bold" data-ph-tw="🔍 輸入關鍵字過濾名稱..." data-ph-id="🔍 Masukkan kata kunci untuk memfilter..." placeholder="🔍 輸入關鍵字過濾名稱...">
             </div>
-            <div class="bg-gray-800 p-2 text-center text-sm text-gray-400 mb-2 rounded border border-gray-700" data-tw="👉 點選下方圖片即可載入該構件參數" data-id="👉 Klik gambar di bawah untuk memuat parameter komponen">
-                👉 點選下方圖片即可載入該構件參數
+            <div class="bg-gray-800 p-2 text-center text-sm text-gray-400 mb-2 rounded border border-gray-700" data-tw="👉 系統已自動將最符合照片特徵(長寬比/輪廓/色彩)的構件排在前面，點選即可載入數據" data-id="👉 Hasil diurutkan berdasarkan kemiripan visual gambar">
+                👉 系統已自動將最符合照片特徵(長寬比/輪廓/色彩)的構件排在前面，點選即可載入數據
             </div>
             <div id="visualSearchGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto max-h-[60vh] p-2 custom-scrollbar"></div>
         </div>
     </div>
 
+    <!-- 圖片裁切彈窗 -->
     <div id="cropModal" class="fixed inset-0 bg-black/90 flex flex-col items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-yellow-600 p-4 rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col items-center shadow-2xl">
             <h3 class="text-lg font-bold text-yellow-500 mb-2" data-tw="✂️ 調整圖片範圍與角度" data-id="✂️ Sesuaikan Gambar">✂️ 調整圖片範圍與角度</h3>
@@ -241,12 +273,13 @@
                 <button type="button" id="btnResetCrop" class="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm font-bold border border-gray-700" data-tw="重置" data-id="Ulang">重置</button>
             </div>
             <div class="flex gap-4 w-full">
-                <button type="button" id="btnConfirmCrop" class="flex-1 bg-green-700 hover:bg-green-600 py-2.5 rounded-lg font-bold text-white shadow transition" data-tw="✅ 確認裁切並使用" data-id="✅ Konfirmasi dan Gunakan">✅ 確認裁切並使用</button>
+                <button type="button" id="btnConfirmCrop" class="flex-1 bg-green-700 hover:bg-green-600 py-2.5 rounded-lg font-bold text-white shadow transition" data-tw="✅ 確認裁切並比對" data-id="✅ Konfirmasi dan Gunakan">✅ 確認裁切並比對</button>
                 <button type="button" id="btnCancelCrop" class="flex-1 bg-gray-700 hover:bg-gray-600 py-2.5 rounded-lg font-bold text-white transition" data-tw="✕ 取消" data-id="✕ Batal">✕ 取消</button>
             </div>
         </div>
     </div>
 
+    <!-- 模型與 Key 設定彈窗 -->
     <div id="modelModal" class="fixed inset-0 bg-black/90 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-[#1e1e2d] border border-[#3b2b5d] p-6 rounded-2xl max-w-md w-full shadow-2xl">
             <h3 class="text-xl font-bold text-[#b49cf5] mb-4 flex items-center gap-2" data-tw="🤖 模型與 API 金鑰狀態" data-id="🤖 Status Model & API Key">🤖 模型與 API 金鑰狀態</h3>
@@ -307,6 +340,7 @@
         let cropper = null;
         let cropTargetMode = null; 
         let processedRegisterImageBase64 = null; 
+        let visualMatchedItems = [];
         
         let currentLang = 'tw';
         
@@ -314,25 +348,21 @@
             return currentLang === 'tw' ? twText : idText;
         }
 
+        // 修改支援下拉式選單與各類印尼語言 Fallback 機制
         function setLang(lang) {
             currentLang = lang;
-            const btnTW = document.getElementById('btnLangTW');
-            const btnID = document.getElementById('btnLangID');
             
-            if(lang === 'tw') {
-                btnTW.className = "bg-blue-600 text-white text-sm px-3 py-1.5 rounded font-bold shadow transition opacity-100";
-                btnID.className = "bg-transparent text-gray-400 text-sm px-3 py-1.5 rounded font-bold transition opacity-60 hover:opacity-100";
-            } else {
-                btnID.className = "bg-blue-600 text-white text-sm px-3 py-1.5 rounded font-bold shadow transition opacity-100";
-                btnTW.className = "bg-transparent text-gray-400 text-sm px-3 py-1.5 rounded font-bold transition opacity-60 hover:opacity-100";
-            }
-            
+            // 將爪哇語/巽他語/米南加保語 fallback 至印尼文(id)，阿拉伯文/英文 fallback 至英文(en)
+            const baseLang = ['jv', 'su', 'min'].includes(lang) ? 'id' : (lang === 'ar' ? 'en' : lang);
+
             document.querySelectorAll('[data-tw]').forEach(el => {
-                el.innerHTML = el.getAttribute(`data-${lang}`);
+                const targetText = el.getAttribute(`data-${baseLang}`) || el.getAttribute(`data-id`) || el.getAttribute('data-tw');
+                el.innerHTML = targetText;
             });
             
             document.querySelectorAll('[data-ph-tw]').forEach(el => {
-                el.placeholder = el.getAttribute(`data-ph-${lang}`);
+                const targetPh = el.getAttribute(`data-ph-${baseLang}`) || el.getAttribute(`data-ph-id`) || el.getAttribute('data-ph-tw');
+                el.placeholder = targetPh;
             });
 
             const selectEl = document.getElementById('itemSelect');
@@ -345,8 +375,15 @@
             }
         }
 
-        document.getElementById('btnLangTW').addEventListener('click', () => setLang('tw'));
-        document.getElementById('btnLangID').addEventListener('click', () => setLang('id'));
+        document.getElementById('langSelect').addEventListener('change', (e) => setLang(e.target.value));
+        
+        // 印尼語言九大類說明視窗控制
+        document.getElementById('btnLangInfo').addEventListener('click', () => {
+            document.getElementById('langInfoModal').classList.remove('hidden');
+        });
+        document.getElementById('btnCloseLangInfo').addEventListener('click', () => {
+            document.getElementById('langInfoModal').classList.add('hidden');
+        });
 
         async function loadItemsToSelect(retries = 2) {
             const selectEl = document.getElementById('itemSelect');
@@ -370,7 +407,7 @@
                 if (retries > 0) {
                     setTimeout(() => loadItemsToSelect(retries - 1), 1500);
                 } else {
-                    selectEl.innerHTML = `<option value="">${t('載入失敗，請確認 SQL 已在 Supabase 執行成功', 'Gagal memuat')}</option>`;
+                    selectEl.innerHTML = `<option value="">${t('載入失敗，請確認 Supabase 連線', 'Gagal memuat')}</option>`;
                 }
             }
         }
@@ -419,7 +456,7 @@
             document.getElementById('current').value = '15';
             
             const formTitle = document.getElementById('formTitle');
-            formTitle.innerHTML = document.getElementById('formTitle').getAttribute(`data-${currentLang}`);
+            formTitle.innerHTML = document.getElementById('formTitle').getAttribute(`data-${currentLang}`) || document.getElementById('formTitle').getAttribute('data-id');
             formTitle.className = "text-xl mb-4 font-bold text-green-500";
             
             const submitBtn = document.getElementById('submitBtn');
@@ -493,58 +530,148 @@
         
         const visualSearchModal = document.getElementById('visualSearchModal');
         
-        // 這裡將原本直接送入 OCR 的邏輯，改為「先裁切」
         document.getElementById('tesseractInput').addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 const file = e.target.files[0];
                 const reader = new FileReader();
                 reader.onload = function(evt) {
-                    // 新增 cropTargetMode 為 'tesseract'
-                    startCropping(evt.target.result, 'tesseract');
+                    startCropping(evt.target.result, 'visual');
                 };
                 reader.readAsDataURL(file);
-                e.target.value = ''; // 清空 input 讓下次同檔名也能觸發
+                e.target.value = '';
             }
         });
 
-        // 獨立出 Tesseract 執行的 Function，接收裁切後的 Base64
-        async function runTesseractWithBase64(imgBase64) {
-            const status = document.getElementById('analysisStatus');
-            status.className = "mt-4 text-sm font-bold text-yellow-500";
-            status.innerText = t("🔄 正在進行 Tesseract OCR 文字辨識中...", "🔄 Sedang OCR...");
+        // ==========================================
+        // 核心精準修正：極致高解析度視覺圖像特徵比對 (dHash + RGB + 長寬比)
+        // (解決純粹依靠 OCR 或低解析度特徵造成的完全不符合問題)
+        // ==========================================
+        function loadImage(src) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.onload = () => resolve(img);
+                img.onerror = () => resolve(null);
+                img.src = src;
+            });
+        }
 
+        async function getVisualFingerprint(imgSrc) {
             try {
-                const worker = await Tesseract.createWorker('chi_tra+eng');
-                const ret = await worker.recognize(imgBase64);
-                await worker.terminate();
+                const img = await loadImage(imgSrc);
+                if (!img) return null;
 
-                const recognizedText = ret.data.text || "";
-                status.className = "mt-4 text-sm font-bold text-green-500";
-                status.innerText = t(`✅ OCR 辨識完成！`, `✅ OCR Selesai!`);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
 
-                visualSearchModal.classList.remove('hidden');
+                // 1. 高精細結構感知 dHash (33x32 Grayscale) 取代舊的 17x16
+                canvas.width = 33;
+                canvas.height = 32;
+                ctx.drawImage(img, 0, 0, 33, 32);
+                const imgData = ctx.getImageData(0, 0, 33, 32).data;
                 
-                const cleanText = recognizedText.replace(/\s+/g, '');
-                let matchedKeyword = '';
-                for (const item of allItemsList) {
-                    if (cleanText.includes(item.item_name) || item.item_name.includes(cleanText.substring(0, 3))) {
-                        matchedKeyword = item.item_name;
-                        break;
+                let grays = [];
+                for (let i = 0; i < imgData.length; i += 4) {
+                    grays.push(0.299 * imgData[i] + 0.587 * imgData[i+1] + 0.114 * imgData[i+2]);
+                }
+
+                let dHashBits = [];
+                for (let y = 0; y < 32; y++) {
+                    for (let x = 0; x < 32; x++) {
+                        dHashBits.push(grays[y * 33 + x] > grays[y * 33 + x + 1] ? 1 : 0);
                     }
                 }
 
-                document.getElementById('visualSearchFilter').value = matchedKeyword || cleanText.substring(0, 10);
-                renderVisualSearchGrid(document.getElementById('visualSearchFilter').value);
+                // 2. 高精細色彩特徵向量 (16x16 Color Vector) 取代舊的 8x8
+                canvas.width = 16;
+                canvas.height = 16;
+                ctx.drawImage(img, 0, 0, 16, 16);
+                const colorData = ctx.getImageData(0, 0, 16, 16).data;
+                let colorVector = [];
+                for (let i = 0; i < colorData.length; i += 4) {
+                    colorVector.push(colorData[i], colorData[i+1], colorData[i+2]);
+                }
 
-            } catch (err) {
-                status.className = "mt-4 text-sm font-bold text-red-500";
-                status.innerText = t("⚠️ Tesseract OCR 辨識失敗", "⚠️ Gagal OCR");
-                visualSearchModal.classList.remove('hidden');
-                document.getElementById('visualSearchFilter').value = '';
-                renderVisualSearchGrid('');
+                // 3. 加入長寬比例特徵以確保「一模一樣」
+                const aspectRatio = img.width / img.height;
+
+                return { dHashBits, colorVector, aspectRatio };
+            } catch (e) {
+                return null;
             }
         }
-        
+
+        function calculateSimilarity(fp1, fp2) {
+            if (!fp1 || !fp2) return 0;
+
+            // 1. dHash 結構特徵比對
+            let hashMatches = 0;
+            const totalBits = fp1.dHashBits.length;
+            for (let i = 0; i < totalBits; i++) {
+                if (fp1.dHashBits[i] === fp2.dHashBits[i]) hashMatches++;
+            }
+            const structScore = hashMatches / totalBits;
+
+            // 2. 色彩差異比對
+            let colorDiffSum = 0;
+            const totalColors = fp1.colorVector.length;
+            for (let i = 0; i < totalColors; i++) {
+                colorDiffSum += Math.abs(fp1.colorVector[i] - fp2.colorVector[i]);
+            }
+            const colorScore = 1 - (colorDiffSum / (totalColors * 255));
+
+            // 3. 長寬比差異比對 (防誤判不同形狀構件)
+            const ratioDiff = Math.abs(fp1.aspectRatio - fp2.aspectRatio);
+            const ratioScore = Math.max(0, 1 - ratioDiff); // 差距過大直接歸零
+
+            // 嚴格權重融合 (50% 輪廓細節 + 40% 色彩明暗 + 10% 圖片長寬比例)
+            return Math.round((structScore * 0.50 + colorScore * 0.40 + ratioScore * 0.10) * 100);
+        }
+
+        async function runVisualMatchWithBase64(targetImgBase64) {
+            const status = document.getElementById('analysisStatus');
+            status.className = "mt-4 text-sm font-bold text-yellow-500";
+            status.innerText = t("🔄 正在分析高解析度圖像特徵與輪廓比對中...", "🔄 Menganalisis fitur gambar resolusi tinggi...");
+
+            const targetFp = await getVisualFingerprint(targetImgBase64);
+            if (!targetFp) {
+                status.className = "mt-4 text-sm font-bold text-red-500";
+                status.innerText = t("⚠️ 拍攝圖片特徵解析失敗", "⚠️ Gagal analisis");
+                return;
+            }
+
+            visualMatchedItems = [];
+            
+            for (const item of allItemsList) {
+                let score = 0;
+                if (item.image_url) {
+                    const proxiedUrl = item.image_url.startsWith('http') ? `/image-proxy?url=${encodeURIComponent(item.image_url)}` : item.image_url;
+                    const itemFp = await getVisualFingerprint(proxiedUrl);
+                    score = calculateSimilarity(targetFp, itemFp);
+                }
+                visualMatchedItems.push({ ...item, matchScore: score });
+            }
+
+            visualMatchedItems.sort((a, b) => b.matchScore - a.matchScore);
+
+            // 若要強制限於「一模一樣」，我們只將最高分的直接顯示，並標註百分比
+            const bestScore = visualMatchedItems[0]?.matchScore || 0;
+            status.className = "mt-4 text-sm font-bold text-green-500";
+            status.innerText = t(`✅ 視覺特徵比對完成！最佳匹配相似度: ${bestScore}%`, `✅ Analisis Selesai! Skor: ${bestScore}%`);
+
+            visualSearchModal.classList.remove('hidden');
+            document.getElementById('visualSearchFilter').value = '';
+            renderVisualSearchGrid('');
+
+            if (visualMatchedItems.length > 0) {
+                const bestMatch = visualMatchedItems[0];
+                document.getElementById('itemSelect').value = bestMatch.id;
+                currentSelectedData = bestMatch;
+                displayData(bestMatch);
+                document.getElementById('actionButtons').classList.remove('hidden');
+            }
+        }
+
         document.getElementById('btnCloseVisualSearch').addEventListener('click', () => {
             visualSearchModal.classList.add('hidden');
         });
@@ -557,7 +684,9 @@
             const grid = document.getElementById('visualSearchGrid');
             grid.innerHTML = '';
             
-            const filtered = allItemsList.filter(item => 
+            const listToRender = visualMatchedItems.length > 0 ? visualMatchedItems : allItemsList.map(i => ({...i, matchScore: 0}));
+
+            const filtered = listToRender.filter(item => 
                 item.item_name.toLowerCase().includes(filterText.toLowerCase())
             );
             
@@ -568,10 +697,18 @@
             
             filtered.forEach(item => {
                 const div = document.createElement('div');
-                div.className = "bg-gray-800 border border-gray-700 rounded-lg p-2 cursor-pointer hover:border-blue-500 hover:bg-gray-700 transition flex flex-col items-center shadow";
+                div.className = "bg-gray-800 border border-gray-700 rounded-lg p-2 cursor-pointer hover:border-blue-500 hover:bg-gray-700 transition flex flex-col items-center shadow relative group";
                 const noImgText = t('無圖片', 'Tanpa Gambar');
                 
+                let scoreBadge = '';
+                if (item.matchScore > 0) {
+                    // 若達到 98%~100% 才標記為綠色(代表幾乎一模一樣)
+                    const badgeColor = item.matchScore >= 95 ? 'bg-green-600' : (item.matchScore >= 70 ? 'bg-yellow-600' : 'bg-gray-600');
+                    scoreBadge = `<span class="absolute top-3 right-3 ${badgeColor} text-white text-xs px-2 py-0.5 rounded-full font-bold shadow z-10">🎯 ${item.matchScore}%</span>`;
+                }
+
                 div.innerHTML = `
+                    ${scoreBadge}
                     <div class="h-28 w-full bg-black mb-2 rounded flex items-center justify-center overflow-hidden border border-gray-900">
                         ${item.image_url ? `<img src="${item.image_url}" class="max-h-full max-w-full object-contain">` : `<span class="text-gray-600 text-xs">${noImgText}</span>`}
                     </div>
@@ -616,10 +753,8 @@
             if (cropper) cropper.destroy();
         });
 
-        // 裁切確認事件中分發邏輯
         document.getElementById('btnConfirmCrop').addEventListener('click', () => {
             if (!cropper) return;
-            // 控制匯出的大小，最高 1024x1024 讓 Tesseract 解讀更有效率不耗記憶體
             const canvas = cropper.getCroppedCanvas({
                 maxWidth: 1024,
                 maxHeight: 1024,
@@ -638,9 +773,8 @@
                 const prevImg = document.getElementById('regPreviewImg');
                 prevImg.src = croppedBase64;
                 prevBox.classList.remove('hidden');
-            } else if (cropTargetMode === 'tesseract') {
-                // 如果是手動 Tesseract 模式，將裁切好的照片送交辨識
-                runTesseractWithBase64(croppedBase64);
+            } else if (cropTargetMode === 'visual') {
+                runVisualMatchWithBase64(croppedBase64);
             }
         });
 
@@ -704,12 +838,8 @@
                 }
             } catch (err) {
                 status.className = "mt-4 text-sm font-bold text-red-500";
-                status.innerText = t("⚠️ AI 分析伺服器回應異常", "⚠️ Error");
-                if (allItemsList.length > 0) {
-                    displayData(allItemsList[0]);
-                    currentSelectedData = allItemsList[0];
-                    document.getElementById('actionButtons').classList.remove('hidden');
-                }
+                status.innerText = t("⚠️ AI 分析伺服器回應異常，切換視覺特徵比對", "⚠️ Error");
+                runVisualMatchWithBase64(imgBase64);
             }
         }
 
