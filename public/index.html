@@ -294,25 +294,39 @@
                         <h3 class="text-yellow-500" data-tw="往復機運行參數" data-id="Parameter Mesin Reciprocating" data-en="Reciprocator Parameters" data-ar="معلمات آلة التردد" data-jv="Parameter Mesin Reciprocating" data-su="Parameter Mesin Reciprocating" data-min="Parameter Masin Reciprocating">往復機運行參數</h3>
                         <button type="button" id="btnFillAuto" class="bg-yellow-700 hover:bg-yellow-600 text-white text-xs px-3 py-1.5 rounded font-bold shadow transition" data-tw="⚡ 填入「自動」" data-id="⚡ Isi 'Auto'" data-en="⚡ Fill 'Auto'" data-ar="⚡ تعبئة 'تلقائي'" data-jv="⚡ Isi 'Auto'" data-su="⚡ Eusian 'Auto'" data-min="⚡ Isi 'Auto'">⚡ 填入「自動」</button>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <input type="text" id="speed_left" value="600" data-ph-tw="左上下速度(百)" data-ph-id="Kec. Atas/Bawah Kiri (Ratusan)" data-ph-en="Left Up/Down Speed (Hundreds)" data-ph-ar="سرعة أعلى/أسفل اليسار (مئات)" data-ph-jv="Kec. Nduwur/Ngisor Kiwa (Ratusan)" data-ph-su="Kec. Luhur/Handap Kénca (Ratusan)" data-ph-min="Kec. Ateh/Bawah Kida (Ratusan)" placeholder="左上下速度(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="up_turn_left" value="自動" data-ph-tw="左上換向點(千)" data-ph-id="Titik Putar Atas Kiri (Ribuan)" data-ph-en="Top Left Turn Point (Thousands)" data-ph-ar="نقطة الدوران العلوية اليسرى (آلاف)" data-ph-jv="Titik Puter Nduwur Kiwa (Ewonan)" data-ph-su="Titik Puter Luhur Kénca (Rébuan)" data-ph-min="Titiak Puta Ateh Kida (Ribuan)" placeholder="左上換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="down_turn_left" value="自動" data-ph-tw="左下換向點(千)" data-ph-id="Titik Putar Bawah Kiri (Ribuan)" data-ph-en="Bottom Left Turn Point (Thousands)" data-ph-ar="نقطة الدوران السفلية اليسرى (آلاف)" data-ph-jv="Titik Puter Ngisor Kiwa (Ewonan)" data-ph-su="Titik Puter Handap Kénca (Rébuan)" data-ph-min="Titiak Puta Bawah Kida (Ribuan)" placeholder="左下換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="dist_left" value="380" data-ph-tw="左工件距離(百)" data-ph-id="Jarak Benda Kerja Kiri (Ratusan)" data-ph-en="Left Workpiece Distance (Hundreds)" data-ph-ar="مسافة قطعة العمل اليسرى (مئات)" data-ph-jv="Jarak Benda Kerja Kiwa (Ratusan)" data-ph-su="Jarak Benda Kerja Kénca (Ratusan)" data-ph-min="Jarak Benda Karajo Kida (Ratusan)" placeholder="左工件距離(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 bg-gray-900/40 p-2 rounded border border-gray-700">
+                            <input type="text" id="speed_left" value="600" data-ph-tw="左1" data-ph-id="Kiri 1" data-ph-en="Left 1" data-ph-ar="يسار 1" data-ph-jv="Kiwa 1" data-ph-su="Kénca 1" data-ph-min="Kida 1" placeholder="左1" class="flex-1 w-full bg-gray-900 p-2 rounded text-white border border-gray-600 text-center">
+                            <span class="w-32 text-center text-gray-300 font-bold" data-tw="上下速度(百)" data-id="Atas/Bawah" data-en="Up/Down" data-ar="أعلى/أسفل" data-jv="Nduwur/Ngisor" data-su="Luhur/Handap" data-min="Ateh/Bawah">上下速度(百)</span>
+                            <input type="text" id="speed_right" value="600" data-ph-tw="右2" data-ph-id="Kanan 2" data-ph-en="Right 2" data-ph-ar="يمين 2" data-ph-jv="Tengen 2" data-ph-su="Katuhu 2" data-ph-min="Kanan 2" placeholder="右2" class="flex-1 w-full bg-gray-900 p-2 rounded text-white border border-gray-600 text-center">
                         </div>
-                        <div class="space-y-2">
-                            <input type="text" id="speed_right" value="600" data-ph-tw="右上下速度(百)" data-ph-id="Kec. Atas/Bawah Kanan (Ratusan)" data-ph-en="Right Up/Down Speed (Hundreds)" data-ph-ar="سرعة أعلى/أسفل اليمين (مئات)" data-ph-jv="Kec. Nduwur/Ngisor Tengen (Ratusan)" data-ph-su="Kec. Luhur/Handap Katuhu (Ratusan)" data-ph-min="Kec. Ateh/Bawah Kanan (Ratusan)" placeholder="右上下速度(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="up_turn_right" value="自動" data-ph-tw="右上換向點(千)" data-ph-id="Titik Putar Atas Kanan (Ribuan)" data-ph-en="Top Right Turn Point (Thousands)" data-ph-ar="نقطة الدوران العلوية اليمنى (آلاف)" data-ph-jv="Titik Puter Nduwur Tengen (Ewonan)" data-ph-su="Titik Puter Luhur Katuhu (Rébuan)" data-ph-min="Titiak Puta Ateh Kanan (Ribuan)" placeholder="右上換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="down_turn_right" value="自動" data-ph-tw="右下換向點(千)" data-ph-id="Titik Putar Bawah Kanan (Ribuan)" data-ph-en="Bottom Right Turn Point (Thousands)" data-ph-ar="نقطة الدوران السفلية اليمنى (آلاف)" data-ph-jv="Titik Puter Ngisor Tengen (Ewonan)" data-ph-su="Titik Puter Handap Katuhu (Rébuan)" data-ph-min="Titiak Puta Bawah Kanan (Ribuan)" placeholder="右下換向點(千)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                            <input type="text" id="dist_right" value="420" data-ph-tw="右工件距離(百)" data-ph-id="Jarak Benda Kerja Kanan (Ratusan)" data-ph-en="Right Workpiece Distance (Hundreds)" data-ph-ar="مسافة قطعة العمل اليمنى (مئات)" data-ph-jv="Jarak Benda Kerja Tengen (Ratusan)" data-ph-su="Jarak Benda Kerja Katuhu (Ratusan)" data-ph-min="Jarak Benda Karajo Kanan (Ratusan)" placeholder="右工件距離(百)" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                        <div class="flex items-center gap-3 bg-gray-900/40 p-2 rounded border border-gray-700">
+                            <input type="text" id="up_turn_left" value="自動" data-ph-tw="左1" data-ph-id="Kiri 1" data-ph-en="Left 1" data-ph-ar="يسار 1" data-ph-jv="Kiwa 1" data-ph-su="Kénca 1" data-ph-min="Kida 1" placeholder="左1" class="flex-1 w-full bg-gray-900 p-2 rounded text-white border border-gray-600 text-center">
+                            <span class="w-32 text-center text-gray-300 font-bold" data-tw="上換向點(千)" data-id="Putar Atas" data-en="Top Turn" data-ar="دوران علوي" data-jv="Puter Nduwur" data-su="Puter Luhur" data-min="Puta Ateh">上換向點(千)</span>
+                            <input type="text" id="up_turn_right" value="自動" data-ph-tw="右2" data-ph-id="Kanan 2" data-ph-en="Right 2" data-ph-ar="يمين 2" data-ph-jv="Tengen 2" data-ph-su="Katuhu 2" data-ph-min="Kanan 2" placeholder="右2" class="flex-1 w-full bg-gray-900 p-2 rounded text-white border border-gray-600 text-center">
+                        </div>
+                        <div class="flex items-center gap-3 bg-gray-900/40 p-2 rounded border border-gray-700">
+                            <input type="text" id="down_turn_left" value="自動" data-ph-tw="左1" data-ph-id="Kiri 1" data-ph-en="Left 1" data-ph-ar="يسار 1" data-ph-jv="Kiwa 1" data-ph-su="Kénca 1" data-ph-min="Kida 1" placeholder="左1" class="flex-1 w-full bg-gray-900 p-2 rounded text-white border border-gray-600 text-center">
+                            <span class="w-32 text-center text-gray-300 font-bold" data-tw="下換向點(千)" data-id="Putar Bawah" data-en="Btm Turn" data-ar="دوران سفلي" data-jv="Puter Ngisor" data-su="Puter Handap" data-min="Puta Bawah">下換向點(千)</span>
+                            <input type="text" id="down_turn_right" value="自動" data-ph-tw="右2" data-ph-id="Kanan 2" data-ph-en="Right 2" data-ph-ar="يمين 2" data-ph-jv="Tengen 2" data-ph-su="Katuhu 2" data-ph-min="Kanan 2" placeholder="右2" class="flex-1 w-full bg-gray-900 p-2 rounded text-white border border-gray-600 text-center">
+                        </div>
+                        <div class="flex items-center gap-3 bg-gray-900/40 p-2 rounded border border-gray-700">
+                            <input type="text" id="dist_left" value="380" data-ph-tw="左1" data-ph-id="Kiri 1" data-ph-en="Left 1" data-ph-ar="يسار 1" data-ph-jv="Kiwa 1" data-ph-su="Kénca 1" data-ph-min="Kida 1" placeholder="左1" class="flex-1 w-full bg-gray-900 p-2 rounded text-white border border-gray-600 text-center">
+                            <span class="w-32 text-center text-gray-300 font-bold" data-tw="工件距離(百)" data-id="Jarak" data-en="Distance" data-ar="مسافة" data-jv="Jarak" data-su="Jarak" data-min="Jarak">工件距離(百)</span>
+                            <input type="text" id="dist_right" value="420" data-ph-tw="右2" data-ph-id="Kanan 2" data-ph-en="Right 2" data-ph-ar="يمين 2" data-ph-jv="Tengen 2" data-ph-su="Katuhu 2" data-ph-min="Kanan 2" placeholder="右2" class="flex-1 w-full bg-gray-900 p-2 rounded text-white border border-gray-600 text-center">
                         </div>
                     </div>
 
                     <div class="border-t border-gray-700 pt-4"><h3 class="text-red-500 mb-2" data-tw="電壓與電流" data-id="Tegangan & Arus" data-en="Voltage & Current" data-ar="الجهد والتيار" data-jv="Tegangan & Arus" data-su="Tegangan & Arus" data-min="Tegangan & Arus">電壓與電流</h3></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="voltage" value="70" data-ph-tw="電壓" data-ph-id="Tegangan" data-ph-en="Voltage" data-ph-ar="الجهد" data-ph-jv="Tegangan" data-ph-su="Tegangan" data-ph-min="Tegangan" placeholder="電壓" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
-                        <input type="text" id="current" value="15" data-ph-tw="電流" data-ph-id="Arus" data-ph-en="Current" data-ph-ar="التيار" data-ph-jv="Arus" data-ph-su="Arus" data-ph-min="Arus" placeholder="電流" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-700">
+                    <div class="flex flex-col md:flex-row items-center gap-4 bg-gray-900/40 p-3 rounded border border-gray-700">
+                        <div class="flex-1 flex items-center gap-3 w-full">
+                            <span class="text-gray-300 whitespace-nowrap font-bold" data-tw="電壓欄位：" data-id="Tegangan:" data-en="Voltage:" data-ar="الجهد:" data-jv="Tegangan:" data-su="Tegangan:" data-min="Tegangan:">電壓欄位：</span>
+                            <input type="text" id="voltage" value="70" data-ph-tw="電壓" data-ph-id="Tegangan" data-ph-en="Voltage" data-ph-ar="الجهد" data-ph-jv="Tegangan" data-ph-su="Tegangan" data-ph-min="Tegangan" placeholder="電壓" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-600 text-center">
+                        </div>
+                        <div class="flex-1 flex items-center gap-3 w-full">
+                            <span class="text-gray-300 whitespace-nowrap font-bold" data-tw="電流欄位：" data-id="Arus:" data-en="Current:" data-ar="التيار:" data-jv="Arus:" data-su="Arus:" data-min="Arus:">電流欄位：</span>
+                            <input type="text" id="current" value="15" data-ph-tw="電流" data-ph-id="Arus" data-ph-en="Current" data-ph-ar="التيار" data-ph-jv="Arus" data-ph-su="Arus" data-ph-min="Arus" placeholder="電流" class="w-full bg-gray-900 p-2 rounded text-white border border-gray-600 text-center">
+                        </div>
                     </div>
 
                     <div class="border-t border-gray-700 pt-4"><h3 class="text-gray-400 mb-2" data-tw="備註" data-id="Catatan" data-en="Notes" data-ar="ملاحظات" data-jv="Catatan" data-su="Catetan" data-min="Catatan">備註</h3></div>
@@ -349,7 +363,6 @@
         </div>
     </div>
 
-    <!-- 語言分類說明彈窗 -->
     <div id="langInfoModal" class="fixed inset-0 bg-black/90 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-blue-600 p-6 rounded-xl max-w-md w-full shadow-2xl text-white relative">
             <h3 class="text-xl font-bold text-blue-400 mb-4" data-tw="🇮🇩 印尼語言分類說明" data-id="🇮🇩 Info Kategori Bahasa" data-en="🇮🇩 Language Info" data-ar="🇮🇩 معلومات اللغة" data-jv="🇮🇩 Info Basa" data-su="🇮🇩 Info Basa" data-min="🇮🇩 Info Bahaso">🇮🇩 印尼語言分類說明</h3>
@@ -365,7 +378,6 @@
         </div>
     </div>
 
-    <!-- 視覺影像比對彈窗 -->
     <div id="visualSearchModal" class="fixed inset-0 bg-black/90 flex flex-col items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-blue-600 p-4 rounded-xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl">
             <div class="flex justify-between items-center mb-4">
@@ -382,7 +394,6 @@
         </div>
     </div>
 
-    <!-- 圖片裁切彈窗 -->
     <div id="cropModal" class="fixed inset-0 bg-black/90 flex flex-col items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-900 border border-yellow-600 p-4 rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col items-center shadow-2xl">
             <h3 class="text-lg font-bold text-yellow-500 mb-2" data-tw="✂️ 調整圖片範圍與角度" data-id="✂️ Sesuaikan Gambar" data-en="✂️ Adjust Image Area & Angle" data-ar="✂️ ضبط مساحة وزاوية الصورة" data-jv="✂️ Sesuaikan Gambar" data-su="✂️ Saluyukeun Gambar" data-min="✂️ Sasuwaian Gambar">✂️ 調整圖片範圍與角度</h3>
@@ -401,7 +412,6 @@
         </div>
     </div>
 
-    <!-- 模型與 Key 設定彈窗 -->
     <div id="modelModal" class="fixed inset-0 bg-black/90 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-[#1e1e2d] border border-[#3b2b5d] p-6 rounded-2xl max-w-md w-full shadow-2xl">
             <h3 class="text-xl font-bold text-[#b49cf5] mb-4 flex items-center gap-2" data-tw="🤖 模型與 API 金鑰狀態" data-id="🤖 Status Model & API Key" data-en="🤖 Model & API Key Status" data-ar="🤖 حالة النموذج و API Key" data-jv="🤖 Status Model & API Key" data-su="🤖 Status Modél & API Key" data-min="🤖 Status Model & API Key">🤖 模型與 API 金鑰狀態</h3>
