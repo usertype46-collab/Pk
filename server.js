@@ -1,103 +1,194 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const { OpenAI } = require('openai'); // 使用 OpenAI SDK 串接 NVIDIA NIM API
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import OpenAI from 'openai';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import sharp from 'sharp';
+import crypto from 'crypto';
+
+if (typeof globalThis.crypto === 'undefined') {
+  globalThis.crypto = crypto.webcrypto;
+}
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
+const port = process.env.PORT || 3000;
 
-// 啟用 CORS 與大容量 JSON 解析 (支援 Base64 圖片)
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// 設定 NVIDIA API 客戶端
-// 請在同層目錄的 .env 檔案中設定 NVIDIA_API_KEY=您的金鑰
-const client = new OpenAI({
-    apiKey: process.env.NVIDIA_API_KEY,
-    baseURL: 'https://integrate.api.nvidia.com/v1',
+let currentApiKey = process.env.NVIDIA_API_KEY || "nvapi-請填入預設金鑰";
+let currentModel = "nvidia/nemotron-3-ultra-550b-a55b";
+
+let client = new OpenAI({
+  baseURL: "https://integrate.api.nvidia.com/v1",
+  apiKey: currentApiKey
 });
 
 /**
- * ========================================================
- * API 1: 標籤/料號 OCR 辨識 (建檔模式使用)
- * 模型: Llama-3.2-90B-Vision-Instruct
- * ========================================================
+ * 將 Google Drive 的 HTML 檢視連結轉換為直連圖片 CDN 網址
  */
-app.post('/api/analyze-ocr', async (req, res) => {
-    try {
-        const { imageBase64 } = req.body;
-        
-        if (!imageBase64) {
-            return res.status(400).json({ success: false, error: "未接收到圖片檔案。" });
-        }
+function convertGoogleDriveUrl(url) {
+  if (!url) return url;
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  }
+  return url;
+}
 
-        // 使用強大的視覺模型進行 OCR
-        const ocrModel = "meta/llama-3.2-90b-vision-instruct";
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    model: currentModel,
+    hasKey: !!currentApiKey,
+    driveReady: !!process.env.GOOGLE_SCRIPT_URL
+  });
+});
 
-        const completion = await client.chat.completions.create({
-            model: ocrModel,
-            messages: [
-                {
-                    role: "user",
-                    content: [
-                        { 
-                            type: "text", 
-                            text: "你是一個專業的工業零件標籤辨識助理。請辨識圖片中的文字，找出對應的「料號(Part Number)」與「品名(Item Name)」。\n\n嚴格規定：\n1. 直接將料號與品名並列，中間以斜線「/」作為分隔線。\n2. 絕對不要加上任何其他的說明、前綴、標點符號或換行符號。\n3. 輸出範例：AB123456/高壓避震彈簧\n4. 如果只辨識到其中一項，就單獨輸出該項目即可。" 
-                        },
-                        { 
-                            type: "image_url", 
-                            image_url: { url: imageBase64 } 
-                        }
-                    ]
-                }
-            ],
-            temperature: 0.1, // 極低溫度，確保輸出格式穩定
-            max_tokens: 100
-        });
+app.post('/api/settings', (req, res) => {
+  const { model, apiKey } = req.body;
+  if (model) currentModel = model;
+  if (apiKey) {
+    currentApiKey = apiKey;
+    client = new OpenAI({
+      baseURL: "https://integrate.api.nvidia.com/v1",
+      apiKey: currentApiKey
+    });
+  }
+  res.json({ success: true });
+});
 
-        const recognizedText = completion.choices[0].message.content.trim();
-        console.log(`[OCR 辨識成功] 解析結果: ${recognizedText}`);
-        
-        res.json({ success: true, text: recognizedText });
-        
-    } catch (error) {
-        console.error("❌ AI 標籤 OCR 分析失敗:", error);
-        res.status(500).json({ success: false, error: error.message });
+// 圖片上傳至 Google Drive (透過 Google Apps Script 中繼)
+app.post('/api/upload-image', async (req, res) => {
+  try {
+    const { imageBase64 } = req.body;
+    
+    if (!process.env.GOOGLE_SCRIPT_URL) {
+      return res.status(500).json({ success: false, error: "後端尚未設定 GOOGLE_SCRIPT_URL 環境變數。" });
     }
+    if (!imageBase64) {
+      return res.status(400).json({ success: false, error: "未接收到圖片檔案。" });
+    }
+
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    let buffer = Buffer.from(base64Data, 'base64');
+
+    // 壓縮圖片
+    buffer = await sharp(buffer)
+      .jpeg({ quality: 80 })
+      .toBuffer();
+
+    const compressedBase64 = buffer.toString('base64');
+    const filename = `baifu_${Date.now()}.jpg`;
+    console.log(`[Google Drive 上傳] 準備傳送檔案: ${filename} (大小: ${(buffer.length / 1024).toFixed(2)} KB)`);
+    
+    // 跟隨 GAS 的 302 重新導向
+    const response = await fetch(process.env.GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        fileName: filename,
+        mimeType: 'image/jpeg',
+        base64: compressedBase64
+      })
+    });
+
+    const responseText = await response.text();
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseErr) {
+      console.error("❌ Google Apps Script 回傳非 JSON 格式:", responseText);
+      throw new Error("Google Apps Script 回傳格式錯誤，請檢查網址或權限設定是否為「任何人」。");
+    }
+
+    if (result.success) {
+      // 自動轉為圖片直連網址
+      const directUrl = convertGoogleDriveUrl(result.url);
+      const proxyUrl = `/image-proxy?url=${encodeURIComponent(directUrl)}`;
+      console.log(`[Google Drive 上傳] 成功！轉換後直連: ${directUrl}`);
+      res.json({ success: true, url: proxyUrl, originalLink: directUrl });
+    } else {
+      throw new Error(result.error || "Google Apps Script 發生未知錯誤");
+    }
+
+  } catch (error) {
+    console.error("❌ 上傳至 Google Drive 失敗:", error);
+    res.status(500).json({ success: false, error: "雲端上傳失敗：" + error.message });
+  }
 });
 
-/**
- * ========================================================
- * API 2: 工件影像相似度分析 (查詢模式使用 - 擴充佔位符)
- * 用於在資料庫中找尋外觀最接近的工件
- * ========================================================
- */
+// 圖片代理 API：自動處理 Google Drive 檔案並串流返回圖檔內容
+app.get('/image-proxy', async (req, res) => {
+  try {
+    const encodedUrl = req.query.url;
+    if (!encodedUrl) return res.status(400).send("No URL provided");
+    
+    let decodedUrl = decodeURIComponent(encodedUrl);
+    
+    // 自動轉換 Google Drive 的檔案檢視頁面連結為圖片串流直連
+    decodedUrl = convertGoogleDriveUrl(decodedUrl);
+
+    const response = await fetch(decodedUrl, { redirect: 'follow' });
+    if (!response.ok) {
+        throw new Error(`無法獲取圖片，狀態碼: ${response.status}`);
+    }
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    
+    const buffer = await response.arrayBuffer();
+    res.send(Buffer.from(buffer));
+
+  } catch (error) {
+    console.error("❌ 代理讀取圖片失敗:", error);
+    res.status(500).send("圖片載入失敗");
+  }
+});
+
 app.post('/api/analyze-image', async (req, res) => {
-    try {
-        const { imageBase64 } = req.body;
-        
-        if (!imageBase64) {
-            return res.status(400).json({ success: false, error: "未接收到圖片檔案。" });
-        }
+  try {
+    const { imageBase64, items } = req.body;
 
-        // 這裡可串接您的工件特徵擷取或分類模型
-        // 範例中直接返回成功狀態，供前端作後續資料庫比對或提示
-        console.log(`[影像查詢] 收到前端查詢請求`);
-        
-        res.json({ 
-            success: true, 
-            message: "影像已接收，待與資料庫特徵進行匹配。"
-        });
-        
-    } catch (error) {
-        console.error("❌ 影像查詢分析失敗:", error);
-        res.status(500).json({ success: false, error: error.message });
-    }
+    const completion = await client.chat.completions.create({
+      model: currentModel,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { 
+              type: "text", 
+              text: `你是一個專業的粉體塗裝自動槍參數辨識與分析助手。現有資料庫構件清單如下：${JSON.stringify(items)}。請辨識圖片中最符合哪一個構件，並【僅回傳該構件的 id字串】，不要包含任何其他文字或說明。` 
+            },
+            { type: "image_url", image_url: { url: imageBase64 } }
+          ]
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 50
+    });
+
+    const resultText = completion.choices[0].message.content.trim();
+    res.json({ success: true, result: resultText });
+    
+  } catch (error) {
+    console.error("❌ AI 影像分析失敗:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-// 啟動伺服器
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`🚀 伺服器已啟動運行於 http://localhost:${PORT}`);
-    console.log(`📡 NVIDIA API 整合已準備就緒`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 百富系統伺服器已啟動於 http://localhost:${port}`);
 });
