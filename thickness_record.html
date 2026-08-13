@@ -2,14 +2,15 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>工件膜厚紀錄總表 / Catatan Ketebalan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        /* 優化捲軸樣式 */
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(31, 41, 55, 0.5); border-radius: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(75, 85, 99, 0.8); border-radius: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(107, 114, 128, 1); }
         
         /* 隱藏 details 預設的三角形 */
         details > summary { list-style: none; }
@@ -17,38 +18,56 @@
         
         /* 展開時的箭頭動畫特效 */
         details[open] summary .arrow-icon { transform: rotate(180deg); }
+        
+        /* 表格展開的平滑過渡 */
+        details[open] summary ~ div { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(-5px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-white font-sans min-h-screen p-4 md:p-8 custom-scrollbar">
+<body class="bg-[#0f1117] text-gray-200 font-sans min-h-screen p-4 md:p-8 custom-scrollbar bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-gray-800/40 via-[#0f1117] to-[#0f1117]">
 
-    <div class="max-w-6xl mx-auto">
-        <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-700">
-            <h1 class="text-3xl font-bold text-pink-500 flex items-center gap-3">
-                📊 工件膜厚紀錄總表
-                <span class="text-sm font-normal text-gray-400 bg-gray-800 px-3 py-1 rounded-full border border-gray-700">下拉式檢視與平均值分析</span>
-            </h1>
-            <button onclick="window.close()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-white font-bold transition shadow-md">
-                ✕ 關閉視窗
+    <div class="max-w-7xl mx-auto">
+        <!-- 頂部標題與按鈕區 (優化 RWD) -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 mb-8 pb-6 border-b border-gray-700/60">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-400 to-indigo-400 flex items-center gap-3">
+                    📊 工件膜厚紀錄總表
+                </h1>
+                <p class="mt-3 text-xs md:text-sm font-medium text-gray-300 inline-flex items-center gap-2 bg-gray-800/80 px-4 py-1.5 rounded-full border border-gray-700/50 backdrop-blur-md shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                    下拉式檢視與平均值分析 / Analisis Rata-rata
+                </p>
+            </div>
+            <button onclick="window.close()" class="w-full md:w-auto bg-gradient-to-r from-gray-700 to-gray-800 hover:from-pink-600 hover:to-purple-600 border border-gray-600 hover:border-transparent px-5 py-2.5 rounded-xl text-white font-bold transition-all duration-300 shadow-lg hover:shadow-pink-500/30 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                關閉視窗
             </button>
         </div>
 
         <!-- 讀取狀態提示 -->
-        <div id="loadingMsg" class="text-center text-gray-400 py-10 font-bold text-xl animate-pulse">
+        <div id="loadingMsg" class="text-center text-gray-400 py-20 font-bold text-xl animate-pulse flex flex-col items-center gap-4">
+            <svg class="animate-spin h-10 w-10 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
             資料讀取中，請稍候... / Memuat data...
         </div>
 
-        <!-- 紀錄列表容器 (下拉式) -->
-        <div id="recordContainer" class="space-y-4 hidden">
+        <!-- 紀錄列表容器 -->
+        <div id="recordContainer" class="space-y-5 hidden">
             <!-- JS 動態生成 -->
         </div>
     </div>
 
-    <!-- 圖片點擊放大 Modal -->
-    <div id="imageModal" class="fixed inset-0 bg-black/95 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity" onclick="closeImageModal()">
-        <div class="relative max-w-4xl w-full flex flex-col items-center">
-            <button class="absolute -top-10 right-0 text-white hover:text-pink-400 font-bold text-2xl transition" onclick="closeImageModal()">✕</button>
-            <img id="enlargedImage" src="" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-[0_0_25px_rgba(236,72,153,0.3)] border border-gray-700 cursor-zoom-out">
-            <p id="enlargedTitle" class="mt-4 text-xl font-bold text-pink-400"></p>
+    <!-- 圖片點擊放大 Modal (優化動畫與 Backdrop) -->
+    <div id="imageModal" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none" onclick="closeImageModal()">
+        <div class="relative max-w-5xl w-full flex flex-col items-center transform scale-95 transition-transform duration-300" id="modalContent">
+            <button class="absolute -top-12 right-0 text-gray-400 hover:text-pink-400 font-bold text-3xl transition-colors bg-gray-900/50 rounded-full w-10 h-10 flex items-center justify-center" onclick="closeImageModal()">✕</button>
+            <img id="enlargedImage" src="" class="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-[0_0_40px_rgba(236,72,153,0.15)] border border-gray-700 cursor-zoom-out bg-black/50">
+            <p id="enlargedTitle" class="mt-5 text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-gray-100 to-gray-400 tracking-wider"></p>
         </div>
     </div>
 
@@ -60,7 +79,77 @@
         const supabaseKey = 'sb_publishable_qUCcWVbzo-99rP85r_RhQg_EGewmxB4';
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // 頁面載入時讀取資料
+        const FALLBACK_SVG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgMTUwIDE1MCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzExMTgyNyIvPjxwYXRoIGQ9Ik00NSA2MCBMNjUgODAgTDgwIDY1IEwxMDUgOTAgTDQ1IDkwIFoiIGZpbGw9IiMzNzQxNTEiLz48Y2lyY2xlIGN4PSI1NSIgY3k9IjUwIiByPSI4IiBmaWxsPSIjNGI1NTYzIi8+PHRleHQgeD0iNTAlIiB5PSI8MiUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5Y2EzYWYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=";
+
+        function extractGoogleDriveId(url) {
+            if (!url) return null;
+            try { url = decodeURIComponent(url); } catch(e) {}
+            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
+            return match ? match[1] : null;
+        }
+
+        function convertGoogleDriveUrl(url) {
+            const driveId = extractGoogleDriveId(url);
+            if (driveId) return `https://lh3.googleusercontent.com/d/${driveId}`;
+            return url;
+        }
+
+        function formatImageUrl(rawUrl, itemName) {
+            let cleanUrl = rawUrl ? String(rawUrl).trim() : '';
+            if (!cleanUrl || cleanUrl === 'null' || cleanUrl === 'undefined') {
+                if (itemName && String(itemName).trim()) cleanUrl = String(itemName).trim();
+                else return FALLBACK_SVG;
+            }
+            if (cleanUrl.startsWith('data:image')) return cleanUrl;
+            if (cleanUrl.includes('image-proxy') || cleanUrl.includes('drive.google.com') || cleanUrl.includes('googleusercontent.com')) return convertGoogleDriveUrl(cleanUrl);
+            if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+                if (cleanUrl.startsWith('http://')) cleanUrl = cleanUrl.replace('http://', 'https://');
+                return encodeURI(cleanUrl);
+            }
+            cleanUrl = cleanUrl.replace(/^\/+/, '');
+            if (cleanUrl.startsWith('storage/v1/object/public/')) return encodeURI(`${supabaseUrl}/${cleanUrl}`);
+            if (cleanUrl.startsWith('coating_images/')) return encodeURI(`${supabaseUrl}/storage/v1/object/public/${cleanUrl}`);
+            if (!cleanUrl.includes('/')) {
+                if (!/\.(jpg|jpeg|png|webp|gif|svg)$/i.test(cleanUrl)) cleanUrl = `${cleanUrl}.jpg`;
+                cleanUrl = `coating_images/${cleanUrl}`;
+            }
+            return encodeURI(`${supabaseUrl}/storage/v1/object/public/${cleanUrl}`);
+        }
+
+        window.handleImageError = function(img) {
+            let retryStep = parseInt(img.dataset.retryStep || "0");
+            const rawSrc = img.dataset.rawSrc || img.src;
+
+            const driveId = extractGoogleDriveId(rawSrc) || extractGoogleDriveId(img.src);
+            if (driveId) {
+                if (retryStep === 0) { img.dataset.retryStep = "1"; img.src = `https://drive.google.com/thumbnail?id=${driveId}&sz=w1000`; return; }
+                else if (retryStep === 1) { img.dataset.retryStep = "2"; img.src = `https://drive.google.com/uc?export=view&id=${driveId}`; return; }
+                else { img.onerror = null; img.src = FALLBACK_SVG; return; }
+            }
+
+            if (rawSrc.startsWith('data:image')) { img.onerror = null; img.src = FALLBACK_SVG; return; }
+
+            const extensions = ['.png', '.PNG', '.JPG', '.jpeg', '.JPEG', '.webp', ''];
+            if (retryStep < extensions.length) {
+                img.dataset.retryStep = (retryStep + 1).toString();
+                const ext = extensions[retryStep];
+                let baseUrl = rawSrc.split('?')[0].replace(/\.(jpg|jpeg|png|webp|gif|svg)$/i, '');
+                img.src = ext === '' ? baseUrl : baseUrl + ext;
+                return;
+            }
+
+            if (retryStep === extensions.length) {
+                img.dataset.retryStep = (retryStep + 1).toString();
+                if (rawSrc.includes('/coating_images/')) {
+                    img.src = rawSrc.replace('/coating_images/', '/');
+                    return;
+                }
+            }
+
+            img.onerror = null;
+            img.src = FALLBACK_SVG;
+        };
+
         async function fetchRecords() {
             try {
                 const { data, error } = await supabase
@@ -69,15 +158,13 @@
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-
                 renderRecords(data || []);
             } catch (err) {
                 console.error(err);
-                document.getElementById('loadingMsg').innerHTML = `<span class="text-red-500">讀取失敗：${err.message}</span>`;
+                document.getElementById('loadingMsg').innerHTML = `<span class="text-red-500 bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20">讀取失敗：${err.message}</span>`;
             }
         }
 
-        // 計算單一區段平均值的小工具函數
         function calcAvg(min, max) {
             const vMin = parseFloat(min) || 0;
             const vMax = parseFloat(max) || 0;
@@ -85,7 +172,6 @@
             return (vMin + vMax) / 2;
         }
 
-        // 計算前、中、後段加總平均值 (Overall Average)
         function calcOverallAvg(r) {
             const avgF = calcAvg(r.f_min, r.f_max);
             const avgM = calcAvg(r.m_min, r.m_max);
@@ -98,24 +184,24 @@
             return (sum / validAvgs.length).toFixed(1);
         }
 
-        // 渲染下拉式選單與資料
         function renderRecords(items) {
             const container = document.getElementById('recordContainer');
             const loadingMsg = document.getElementById('loadingMsg');
-            let html = '';
 
             const itemsWithRecords = items.filter(item => item.thickness_records && item.thickness_records.length > 0);
 
             if (itemsWithRecords.length === 0) {
-                loadingMsg.innerHTML = "目前系統中無任何工件膜厚紀錄。";
+                loadingMsg.innerHTML = `<span class="text-gray-400 bg-gray-800/50 px-6 py-4 rounded-xl border border-gray-700/50">目前系統中無任何工件膜厚紀錄。</span>`;
                 return;
             }
 
             loadingMsg.classList.add('hidden');
             container.classList.remove('hidden');
 
+            let html = '';
+
             itemsWithRecords.forEach((item, index) => {
-                const imgSrc = item.image_url ? item.image_url : 'https://via.placeholder.com/150?text=No+Image';
+                const imgSrc = formatImageUrl(item.image_url, item.item_name);
                 
                 let recordsHtml = '';
                 item.thickness_records.forEach(r => {
@@ -124,24 +210,30 @@
                     const avgR = calcAvg(r.r_min, r.r_max);
                     const overallAvg = calcOverallAvg(r);
 
+                    // 表格數據 Row 的美化與背景分色
                     recordsHtml += `
-                        <tr class="border-b border-gray-700/50 hover:bg-gray-700/30 transition">
-                            <td class="px-4 py-3 text-pink-400 font-bold tracking-wider">${r.date}</td>
-                            <td class="px-4 py-3">
-                                <div class="text-xs text-gray-400">Range: ${r.f_min}~${r.f_max}</div>
-                                <div class="text-lg text-white font-bold mt-1">${avgF !== null ? avgF.toFixed(1) : '-'} <span class="text-xs font-normal text-gray-500">μm</span></div>
+                        <tr class="hover:bg-gray-700/30 transition-colors duration-200 group/row border-b border-gray-700/30 last:border-0">
+                            <td class="px-5 py-4 text-gray-300 font-medium tracking-wide whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    ${r.date}
+                                </div>
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="text-xs text-gray-400">Range: ${r.m_min}~${r.m_max}</div>
-                                <div class="text-lg text-white font-bold mt-1">${avgM !== null ? avgM.toFixed(1) : '-'} <span class="text-xs font-normal text-gray-500">μm</span></div>
+                            <td class="px-5 py-4 bg-yellow-500/[0.02]">
+                                <div class="text-[11px] text-gray-500 mb-0.5">Range: ${r.f_min}~${r.f_max}</div>
+                                <div class="text-lg text-gray-100 font-bold">${avgF !== null ? avgF.toFixed(1) : '-'} <span class="text-xs font-normal text-gray-500">μm</span></div>
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="text-xs text-gray-400">Range: ${r.r_min}~${r.r_max}</div>
-                                <div class="text-lg text-white font-bold mt-1">${avgR !== null ? avgR.toFixed(1) : '-'} <span class="text-xs font-normal text-gray-500">μm</span></div>
+                            <td class="px-5 py-4 bg-green-500/[0.02]">
+                                <div class="text-[11px] text-gray-500 mb-0.5">Range: ${r.m_min}~${r.m_max}</div>
+                                <div class="text-lg text-gray-100 font-bold">${avgM !== null ? avgM.toFixed(1) : '-'} <span class="text-xs font-normal text-gray-500">μm</span></div>
                             </td>
-                            <td class="px-4 py-3 bg-gray-800/40">
-                                <div class="text-xs text-gray-400">Combined Avg</div>
-                                <div class="text-lg text-pink-400 font-extrabold mt-1">${overallAvg} <span class="text-xs font-normal text-gray-500">μm</span></div>
+                            <td class="px-5 py-4 bg-blue-500/[0.02]">
+                                <div class="text-[11px] text-gray-500 mb-0.5">Range: ${r.r_min}~${r.r_max}</div>
+                                <div class="text-lg text-gray-100 font-bold">${avgR !== null ? avgR.toFixed(1) : '-'} <span class="text-xs font-normal text-gray-500">μm</span></div>
+                            </td>
+                            <td class="px-5 py-4 bg-pink-500/[0.04] border-l border-gray-700/30">
+                                <div class="text-[11px] text-pink-500/50 mb-0.5 uppercase tracking-wider font-bold">Overall</div>
+                                <div class="text-xl text-pink-400 font-black drop-shadow-sm">${overallAvg} <span class="text-xs font-medium text-pink-500/60">μm</span></div>
                             </td>
                         </tr>
                     `;
@@ -149,39 +241,50 @@
 
                 const isOpen = index === 0 ? 'open' : '';
                 
+                // Details 卡片的 RWD 與擬物化美化
                 html += `
-                    <details class="bg-gray-800 border border-gray-700 rounded-xl shadow-lg group" ${isOpen}>
-                        <summary class="p-4 cursor-pointer flex items-center justify-between hover:bg-gray-750 transition rounded-xl focus:outline-none">
-                            <div class="flex items-center gap-5">
-                                <img src="${imgSrc}" alt="${item.item_name}" 
-                                     class="w-20 h-20 object-contain bg-black rounded-lg border border-gray-600 shadow-md cursor-zoom-in hover:scale-105 transition"
-                                     onclick="openImageModal(event, this.src, '${item.item_name}')"
-                                     title="點擊放大圖片">
-                                <div>
-                                    <h2 class="text-xl font-bold text-blue-400">${item.item_name}</h2>
-                                    <p class="text-sm text-gray-400 mt-1">共 <span class="text-pink-500 font-bold">${item.thickness_records.length}</span> 筆膜厚檢測紀錄</p>
+                    <details class="bg-gray-800/60 backdrop-blur-sm border border-gray-700/60 rounded-2xl shadow-xl hover:border-gray-500/50 transition-all duration-300 group overflow-hidden" ${isOpen}>
+                        <summary class="p-4 sm:p-5 cursor-pointer flex items-center justify-between hover:bg-gray-750 transition-colors focus:outline-none">
+                            <div class="flex items-center gap-4 sm:gap-6 w-full">
+                                <div class="relative shrink-0">
+                                    <img src="${imgSrc}" alt="${item.item_name}" 
+                                         data-raw-src="${imgSrc}"
+                                         class="w-16 h-16 sm:w-20 sm:h-20 object-contain bg-black/50 rounded-xl border border-gray-600/50 shadow-inner cursor-zoom-in group-hover:scale-105 group-hover:border-pink-500/50 transition-all duration-300"
+                                         onerror="handleImageError(this)"
+                                         onclick="openImageModal(event, this.src, '${item.item_name}')"
+                                         title="點擊放大圖片">
+                                </div>
+                                <div class="flex-grow">
+                                    <h2 class="text-xl sm:text-2xl font-bold text-blue-300 group-hover:text-blue-200 transition-colors">${item.item_name}</h2>
+                                    <p class="text-xs sm:text-sm text-gray-400 mt-1 flex items-center gap-2">
+                                        共 <span class="text-pink-400 font-bold text-base mx-0.5">${item.thickness_records.length}</span> 筆膜厚檢測紀錄
+                                    </p>
                                 </div>
                             </div>
-                            <div class="arrow-icon text-gray-400 transition-transform duration-300 mr-4">
-                                ▼
+                            <!-- 優化的下拉箭頭 -->
+                            <div class="arrow-icon text-gray-400 group-hover:text-pink-400 transition-transform duration-300 ml-4 shrink-0 bg-gray-900/50 p-2.5 rounded-full border border-gray-700/50">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                             </div>
                         </summary>
                         
-                        <div class="p-4 border-t border-gray-700 bg-gray-900/50 rounded-b-xl overflow-x-auto">
-                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
-                                <thead class="text-xs text-gray-400 bg-gray-800/80 rounded uppercase">
-                                    <tr>
-                                        <th class="px-4 py-3 rounded-tl-lg">檢測日期 <span class="normal-case text-gray-500 block">Date</span></th>
-                                        <th class="px-4 py-3 text-yellow-500">前段平均 <span class="normal-case text-gray-500 block">Front (F) Avg</span></th>
-                                        <th class="px-4 py-3 text-green-500">中段平均 <span class="normal-case text-gray-500 block">Middle (M) Avg</span></th>
-                                        <th class="px-4 py-3 text-blue-500">後段平均 <span class="normal-case text-gray-500 block">Rear (R) Avg</span></th>
-                                        <th class="px-4 py-3 text-pink-400 rounded-tr-lg">總平均 <span class="normal-case text-gray-500 block">Overall Avg (OA)</span></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${recordsHtml}
-                                </tbody>
-                            </table>
+                        <!-- 表格區域 RWD 改進 -->
+                        <div class="p-3 sm:p-6 border-t border-gray-700/50 bg-[#0f1117]/80">
+                            <div class="overflow-x-auto custom-scrollbar pb-3 rounded-xl border border-gray-700/50 shadow-inner">
+                                <table class="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
+                                    <thead class="text-xs text-gray-400 bg-gray-800/90 uppercase tracking-wider border-b border-gray-700/80">
+                                        <tr>
+                                            <th class="px-5 py-4 font-semibold">檢測日期 <span class="normal-case text-gray-500 block mt-1">Date</span></th>
+                                            <th class="px-5 py-4 font-semibold text-yellow-500/90 bg-yellow-500/10">前段平均 <span class="normal-case text-yellow-500/50 block mt-1">Front (F)</span></th>
+                                            <th class="px-5 py-4 font-semibold text-green-500/90 bg-green-500/10">中段平均 <span class="normal-case text-green-500/50 block mt-1">Middle (M)</span></th>
+                                            <th class="px-5 py-4 font-semibold text-blue-500/90 bg-blue-500/10">後段平均 <span class="normal-case text-blue-500/50 block mt-1">Rear (R)</span></th>
+                                            <th class="px-5 py-4 font-semibold text-pink-400 bg-pink-500/10">總平均 <span class="normal-case text-pink-400/50 block mt-1">Overall Avg</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-700/30">
+                                        ${recordsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </details>
                 `;
@@ -192,21 +295,44 @@
 
         fetchRecords();
 
+        // Modal 動畫控制優化
         window.openImageModal = function(event, src, title) {
             event.preventDefault();
             event.stopPropagation();
             
             const modal = document.getElementById('imageModal');
+            const modalContent = document.getElementById('modalContent');
             const img = document.getElementById('enlargedImage');
             const titleEl = document.getElementById('enlargedTitle');
             
+            img.onerror = function() {
+                this.onerror = null;
+                this.src = FALLBACK_SVG;
+            };
             img.src = src;
             titleEl.textContent = title;
+            
             modal.classList.remove('hidden');
+            // 微延遲觸發 transition
+            setTimeout(() => {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
         };
 
         window.closeImageModal = function() {
-            document.getElementById('imageModal').classList.add('hidden');
+            const modal = document.getElementById('imageModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            
+            // 等待動畫結束後隱藏
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
         };
     </script>
 </body>
