@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工件膜厚紀錄總表 / Catatan Ketebalan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        
+        /* 隱藏 details 預設的三角形 */
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        
+        /* 展開時的箭頭動畫特效 */
+        details[open] summary .arrow-icon { transform: rotate(180deg); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans min-h-screen p-4 md:p-8 custom-scrollbar">
+
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-700">
+            <h1 class="text-3xl font-bold text-pink-500 flex items-center gap-3">
+                📊 工件膜厚紀錄總表
+                <span class="text-sm font-normal text-gray-400 bg-gray-800 px-3 py-1 rounded-full border border-gray-700">下拉式檢視與平均值分析</span>
+            </h1>
+            <button onclick="window.close()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-white font-bold transition shadow-md">
+                ✕ 關閉視窗
+            </button>
+        </div>
+
+        <!-- 讀取狀態提示 -->
+        <div id="loadingMsg" class="text-center text-gray-400 py-10 font-bold text-xl animate-pulse">
+            資料讀取中，請稍候... / Memuat data...
+        </div>
+
+        <!-- 紀錄列表容器 (下拉式) -->
+        <div id="recordContainer" class="space-y-4 hidden">
+            <!-- JS 動態生成 -->
+        </div>
+    </div>
+
+    <!-- 圖片點擊放大 Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-black/95 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity" onclick="closeImageModal()">
+        <div class="relative max-w-4xl w-full flex flex-col items-center">
+            <button class="absolute -top-10 right-0 text-white hover:text-pink-400 font-bold text-2xl transition" onclick="closeImageModal()">✕</button>
+            <img id="enlargedImage" src="" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-[0_0_25px_rgba(236,72,153,0.3)] border border-gray-700 cursor-zoom-out">
+            <p id="enlargedTitle" class="mt-4 text-xl font-bold text-pink-400"></p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+        
+        // Supabase 初始化 (與主系統共用)
+        const supabaseUrl = 'https://wxdrtnqizpbjfugdaglb.supabase.co';
+        const supabaseKey = 'sb_publishable_qUCcWVbzo-99rP85r_RhQg_EGewmxB4';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // 頁面載入時讀取資料
+        async function fetchRecords() {
+            try {
+                const { data, error } = await supabase
+                    .from('coating_params')
+                    .select('item_name, image_url, thickness_records, created_at')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                renderRecords(data || []);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loadingMsg').innerHTML = `<span class="text-red-500">讀取失敗：${err.message}</span>`;
+            }
+        }
+
+        // 計算單一區段平均值的小工具函數
+        function calcAvg(min, max) {
+            const vMin = parseFloat(min) || 0;
+            const vMax = parseFloat(max) || 0;
+            if(vMin === 0 && vMax === 0) return null;
+            return (vMin + vMax) / 2;
+        }
+
+        // 計算前、中、後段加總平均值 (Overall Average)
+        function calcOverallAvg(r) {
+            const avgF = calcAvg(r.f_min, r.f_max);
+            const avgM = calcAvg(r.m_min, r.m_max);
+            const avgR = calcAvg(r.r_min, r.r_max);
+            
+            const validAvgs = [avgF, avgM, avgR].filter(val => val !== null);
+            if (validAvgs.length === 0) return "-";
+            
+            const sum = validAvgs.reduce((acc, curr) => acc + curr, 0);
+            return (sum / validAvgs.length).toFixed(1);
+        }
+
+        // 渲染下拉式選單與資料
+        function renderRecords(items) {
+            const container = document.getElementById('recordContainer');
+            const loadingMsg = document.getElementById('loadingMsg');
+            let html = '';
+
+            const itemsWithRecords = items.filter(item => item.thickness_records && item.thickness_records.length > 0);
+
+            if (itemsWithRecords.length === 0) {
+                loadingMsg.innerHTML = "目前系統中無任何工件膜厚紀錄。";
+                return;
+            }
+
+            loadingMsg.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            itemsWithRecords.forEach((item, index) => {
+                const imgSrc = item.image_url ? item.image_url : 'https://via.placeholder.com/150?text=No+Image';
+                
+                let recordsHtml = '';
+                item.thickness_records.forEach(r => {
+                    const avgF = calcAvg(r.f_min, r.f_max);
+                    const avgM = calcAvg(r.m_min, r.m_max);
+                    const avgR = calcAvg(r.r_min, r.r_max);
+                    const overallAvg = calcOverallAvg(r);
+
+                    recordsHtml += `
+                        <tr class="border-b border-gray-700/50 hover:bg-gray-700/30 transition">
+                            <td class="px-4 py-3 text-pink-400 font-bold tracking-wider">${r.date}</td>
+                            <td class="px-4 py-3">
+                                <div class="text-xs text-gray-400">Range: ${r.f_min}~${r.f_max}</div>
+                                <div class="text-lg text-white font-bold mt-1">${avgF !== null ? avgF.toFixed(1) : '-'} <span class="text-xs font-normal text-gray-500">μm</span></div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="text-xs text-gray-400">Range: ${r.m_min}~${r.m_max}</div>
+                                <div class="text-lg text-white font-bold mt-1">${avgM !== null ? avgM.toFixed(1) : '-'} <span class="text-xs font-normal text-gray-500">μm</span></div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="text-xs text-gray-400">Range: ${r.r_min}~${r.r_max}</div>
+                                <div class="text-lg text-white font-bold mt-1">${avgR !== null ? avgR.toFixed(1) : '-'} <span class="text-xs font-normal text-gray-500">μm</span></div>
+                            </td>
+                            <td class="px-4 py-3 bg-gray-800/40">
+                                <div class="text-xs text-gray-400">Combined Avg</div>
+                                <div class="text-lg text-pink-400 font-extrabold mt-1">${overallAvg} <span class="text-xs font-normal text-gray-500">μm</span></div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                const isOpen = index === 0 ? 'open' : '';
+                
+                html += `
+                    <details class="bg-gray-800 border border-gray-700 rounded-xl shadow-lg group" ${isOpen}>
+                        <summary class="p-4 cursor-pointer flex items-center justify-between hover:bg-gray-750 transition rounded-xl focus:outline-none">
+                            <div class="flex items-center gap-5">
+                                <img src="${imgSrc}" alt="${item.item_name}" 
+                                     class="w-20 h-20 object-contain bg-black rounded-lg border border-gray-600 shadow-md cursor-zoom-in hover:scale-105 transition"
+                                     onclick="openImageModal(event, this.src, '${item.item_name}')"
+                                     title="點擊放大圖片">
+                                <div>
+                                    <h2 class="text-xl font-bold text-blue-400">${item.item_name}</h2>
+                                    <p class="text-sm text-gray-400 mt-1">共 <span class="text-pink-500 font-bold">${item.thickness_records.length}</span> 筆膜厚檢測紀錄</p>
+                                </div>
+                            </div>
+                            <div class="arrow-icon text-gray-400 transition-transform duration-300 mr-4">
+                                ▼
+                            </div>
+                        </summary>
+                        
+                        <div class="p-4 border-t border-gray-700 bg-gray-900/50 rounded-b-xl overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
+                                <thead class="text-xs text-gray-400 bg-gray-800/80 rounded uppercase">
+                                    <tr>
+                                        <th class="px-4 py-3 rounded-tl-lg">檢測日期 <span class="normal-case text-gray-500 block">Date</span></th>
+                                        <th class="px-4 py-3 text-yellow-500">前段平均 <span class="normal-case text-gray-500 block">Front (F) Avg</span></th>
+                                        <th class="px-4 py-3 text-green-500">中段平均 <span class="normal-case text-gray-500 block">Middle (M) Avg</span></th>
+                                        <th class="px-4 py-3 text-blue-500">後段平均 <span class="normal-case text-gray-500 block">Rear (R) Avg</span></th>
+                                        <th class="px-4 py-3 text-pink-400 rounded-tr-lg">總平均 <span class="normal-case text-gray-500 block">Overall Avg (OA)</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${recordsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        fetchRecords();
+
+        window.openImageModal = function(event, src, title) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('enlargedImage');
+            const titleEl = document.getElementById('enlargedTitle');
+            
+            img.src = src;
+            titleEl.textContent = title;
+            modal.classList.remove('hidden');
+        };
+
+        window.closeImageModal = function() {
+            document.getElementById('imageModal').classList.add('hidden');
+        };
+    </script>
+</body>
+</html>
