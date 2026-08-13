@@ -27,8 +27,16 @@
         .text-alert-red { color: #ef4444 !important; font-weight: bold; }
     </style>
 </head>
-<body class="bg-gray-900 text-white font-sans min-h-screen pb-12">
-    <div class="max-w-6xl mx-auto p-4">
+<body class="bg-gray-900 text-white font-sans min-h-screen pb-12 relative">
+    
+    <!-- 右上角懸浮選單：工件膜厚紀錄 -->
+    <div class="fixed top-4 right-4 z-40">
+        <button id="btnOpenThicknessModal" class="bg-pink-700/90 hover:bg-pink-600 border border-pink-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.5)] px-4 py-2 rounded-full font-bold transition flex items-center gap-2 backdrop-blur-sm">
+            📊 工件膜厚紀錄
+        </button>
+    </div>
+
+    <div class="max-w-6xl mx-auto p-4 mt-6 md:mt-0">
         
         <!-- 頂部標題與左右並列設定區 -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -533,6 +541,35 @@
             <div class="flex justify-end gap-3 mt-4">
                 <button id="btnSaveModel" class="bg-[#523788] hover:bg-[#6849a6] px-6 py-2 rounded-lg font-bold shadow text-white transition">💾 儲存</button>
                 <button id="btnCloseModal" class="bg-[#4b5563] hover:bg-[#6b7280] px-5 py-2 rounded-lg font-bold transition text-white">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 工件膜厚紀錄 Modal -->
+    <div id="thicknessTableModal" class="fixed inset-0 bg-black/90 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-gray-900 border border-pink-600 p-6 rounded-xl max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-pink-400">📊 工件膜厚紀錄</h3>
+                <button id="btnCloseThicknessModal" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-white font-bold transition shadow-md">✕ 關閉</button>
+            </div>
+            
+            <!-- 表格預覽區 -->
+            <div class="overflow-x-auto overflow-y-auto max-h-[70vh] custom-scrollbar border border-gray-700 rounded-lg shadow-inner bg-gray-800/50">
+                <table class="w-full text-sm text-left text-gray-300 whitespace-nowrap">
+                    <thead class="text-xs text-gray-400 uppercase bg-gray-800 sticky top-0 shadow-md">
+                        <tr>
+                            <th class="px-4 py-3 border-b border-gray-700">構件圖片</th>
+                            <th class="px-4 py-3 border-b border-gray-700">構件品名</th>
+                            <th class="px-4 py-3 border-b border-gray-700 text-pink-400">檢測日期</th>
+                            <th class="px-4 py-3 border-b border-gray-700">前段 (Min-Max)</th>
+                            <th class="px-4 py-3 border-b border-gray-700">中段 (Min-Max)</th>
+                            <th class="px-4 py-3 border-b border-gray-700">後段 (Min-Max)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="thicknessTableBody">
+                        <!-- 動態載入的紀錄將顯示於此 -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -1054,6 +1091,59 @@
                 </div>
             `).join('');
         });
+
+        // --- 工件膜厚紀錄邏輯 ---
+        const btnOpenThicknessModal = document.getElementById('btnOpenThicknessModal');
+        const btnCloseThicknessModal = document.getElementById('btnCloseThicknessModal');
+        const thicknessTableModal = document.getElementById('thicknessTableModal');
+        const thicknessTableBody = document.getElementById('thicknessTableBody');
+
+        // 開啟並讀取全部紀錄
+        btnOpenThicknessModal.addEventListener('click', () => {
+            let htmlContent = '';
+            
+            // 遍歷所有構件與其膜厚紀錄
+            allItemsList.forEach(item => {
+                if (item.thickness_records && item.thickness_records.length > 0) {
+                    item.thickness_records.forEach(record => {
+                        const imgHtml = item.image_url 
+                            ? `<img src="${item.image_url}" class="w-12 h-12 object-contain bg-black rounded border border-gray-700 mx-auto">` 
+                            : `<span class="text-gray-500 text-xs">無照片</span>`;
+
+                        htmlContent += `
+                            <tr class="border-b border-gray-700 hover:bg-gray-700/60 transition duration-150 text-center md:text-left">
+                                <td class="px-4 py-3 text-center">${imgHtml}</td>
+                                <td class="px-4 py-3 font-bold text-white">${item.item_name}</td>
+                                <td class="px-4 py-3 text-pink-400 font-bold">${record.date}</td>
+                                <td class="px-4 py-3">${record.f_min} ~ ${record.f_max} μm</td>
+                                <td class="px-4 py-3">${record.m_min} ~ ${record.m_max} μm</td>
+                                <td class="px-4 py-3">${record.r_min} ~ ${record.r_max} μm</td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+
+            // 如果沒有任何紀錄
+            if (htmlContent === '') {
+                htmlContent = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500 font-bold text-lg">
+                            目前系統中無任何工件膜厚紀錄
+                        </td>
+                    </tr>
+                `;
+            }
+
+            thicknessTableBody.innerHTML = htmlContent;
+            thicknessTableModal.classList.remove('hidden');
+        });
+
+        // 關閉紀錄表
+        btnCloseThicknessModal.addEventListener('click', () => {
+            thicknessTableModal.classList.add('hidden');
+        });
+
     </script>
 </body>
 </html>
