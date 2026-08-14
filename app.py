@@ -15,43 +15,9 @@ from PIL import Image
 # 載入環境變數
 load_dotenv()
 
-# 取得當前檔案所在的絕對路徑，確保 Vercel 環境下能精準找到 public 目錄
+# 取得當前檔案所在的絕對路徑，確保 Vercel 環境下能讀取 public 目錄
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, 'public')
-
-# ==========================================
-# 自動防呆機制：確保 public 資料夾與 index.html 存在
-# ==========================================
-if not os.path.exists(PUBLIC_DIR):
-    os.makedirs(PUBLIC_DIR, exist_ok=True)
-    print(f"[系統初始化] 自動建立 public 資料夾: {PUBLIC_DIR}")
-
-index_file_path = os.path.join(PUBLIC_DIR, 'index.html')
-if not os.path.exists(index_file_path):
-    with open(index_file_path, 'w', encoding='utf-8') as f:
-        f.write("""<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>百富粉體塗裝系統 - 初始化中</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; padding-top: 80px; background: #f4f4f9; color: #333; }
-        .card { max-width: 600px; margin: auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { color: #2563eb; margin-top: 0; }
-        code { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; color: #d97706; }
-        p { line-height: 1.6; color: #4b5563; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h2>⚙️ 百富粉體塗裝系統</h2>
-        <p>後端伺服器運作正常！系統偵測到您尚未放置完整的前端 <code>index.html</code> 檔案。</p>
-        <p>請將您的前端靜態頁面檔案覆蓋至專案中的 <code>public/index.html</code>，並重新推送到 GitHub 即可完成介面更新。</p>
-    </div>
-</body>
-</html>""")
-    print(f"[系統初始化] 自動建立預設 index.html 於: {index_file_path}")
 
 # 建立 Flask 應用
 app = Flask(__name__, static_folder=PUBLIC_DIR)
@@ -120,7 +86,6 @@ def upload_image():
         compressed_base64 = base64.b64encode(output.getvalue()).decode('utf-8')
         
         filename = f"baifu_{int(time.time() * 1000)}.jpg"
-        print(f"[Google Drive 上傳] 準備傳送檔案: {filename}")
         
         # 發送至 Google Apps Script
         response = requests.post(
@@ -138,13 +103,11 @@ def upload_image():
         if result.get('success'):
             direct_url = convert_google_drive_url(result.get('url'))
             proxy_url = f"/image-proxy?url={urllib.parse.quote(direct_url)}"
-            print(f"[Google Drive 上傳] 成功！轉換後直連: {direct_url}")
             return jsonify({"success": True, "url": proxy_url, "originalLink": direct_url})
         else:
             raise Exception(result.get('error', "Google Apps Script 發生未知錯誤"))
 
     except Exception as e:
-        print(f"❌ 上傳至 Google Drive 失敗: {str(e)}")
         return jsonify({"success": False, "error": f"雲端上傳失敗：{str(e)}"}), 500
 
 @app.route('/image-proxy', methods=['GET'])
@@ -170,7 +133,6 @@ def image_proxy():
         )
 
     except Exception as e:
-        print(f"❌ 代理讀取圖片失敗: {str(e)}")
         return "圖片載入失敗", 500
 
 @app.route('/api/analyze-image', methods=['POST'])
@@ -207,7 +169,6 @@ def analyze_image():
         return jsonify({"success": True, "result": result_text})
         
     except Exception as e:
-        print(f"❌ AI 影像分析失敗: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/parse-item-name', methods=['POST'])
@@ -246,11 +207,10 @@ def parse_item_name():
         return jsonify({"success": True, "result": result_text})
         
     except Exception as e:
-        print(f"❌ AI 解析料號品名失敗: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 # ==========================================
-# 萬用路由 (Catch-All) - 確保正確回傳靜態檔案
+# 萬用路由 (Catch-All) - 讀取靜態檔案
 # ==========================================
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -261,7 +221,7 @@ def serve_static(path):
     if os.path.exists(os.path.join(PUBLIC_DIR, 'index.html')):
         return send_from_directory(PUBLIC_DIR, 'index.html')
         
-    return f"伺服器運作正常，但找不到前端靜態檔案 (404)。請確認 public/index.html 檔案存在。", 404
+    return "伺服器運作正常，但找不到前端靜態檔案 (404)。請確認您的專案中含有 public/index.html 檔案。", 404
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 3000))
