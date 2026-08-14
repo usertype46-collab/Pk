@@ -6,7 +6,7 @@ import json
 import time
 import urllib.parse
 import requests
-from flask import Flask, request, jsonify, send_file, send_from_directory
+from flask import Flask, request, jsonify, send_file, send_from_directory, render_template_string
 from flask_cors import CORS
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -210,18 +210,44 @@ def parse_item_name():
         return jsonify({"success": False, "error": str(e)}), 500
 
 # ==========================================
-# 萬用路由 (Catch-All) - 讀取靜態檔案
+# 萬用路由 (Catch-All) - 具備內建安全渲染機制
 # ==========================================
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_static(path):
+    # 1. 優先尋找 public 資料夾中的實體檔案 (例如 CSS, JS, 圖片或其他靜態檔案)
     if path != "" and os.path.exists(os.path.join(PUBLIC_DIR, path)):
         return send_from_directory(PUBLIC_DIR, path)
     
-    if os.path.exists(os.path.join(PUBLIC_DIR, 'index.html')):
+    # 2. 如果專案有實體的 index.html，直接回傳
+    index_file_path = os.path.join(PUBLIC_DIR, 'index.html')
+    if os.path.exists(index_file_path):
         return send_from_directory(PUBLIC_DIR, 'index.html')
         
-    return "伺服器運作正常，但找不到前端靜態檔案 (404)。請確認您的專案中含有 public/index.html 檔案。", 404
+    # 3. 防呆 fallback：若無實體 index.html，直接透過字串渲染預設頁面，確保絕不回傳 404
+    fallback_html = """<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>百富粉體塗裝系統 - 運行中</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; padding-top: 80px; background: #f4f4f9; color: #333; }
+        .card { max-width: 600px; margin: auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #2563eb; margin-top: 0; }
+        code { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; color: #d97706; }
+        p { line-height: 1.6; color: #4b5563; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>⚙️ 百富粉體塗裝系統</h2>
+        <p>後端伺服器與 API 運作完全正常！</p>
+        <p>目前系統正在運行內建的預設首頁。若要更換為您的正式前端介面，請將檔案放入專案的 <code>public/index.html</code> 中並重新推送到 GitHub。</p>
+    </div>
+</body>
+</html>"""
+    return render_template_string(fallback_html)
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 3000))
