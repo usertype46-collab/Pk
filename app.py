@@ -19,7 +19,7 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, 'public')
 
-# 建立 Flask 應用，設定絕對路徑靜態資料夾
+# 建立 Flask 應用
 app = Flask(__name__, static_folder=PUBLIC_DIR)
 CORS(app)
 
@@ -215,12 +215,22 @@ def parse_item_name():
         print(f"❌ AI 解析料號品名失敗: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route('/')
-def index():
-    # 使用絕對路徑確保在 Vercel 佈署環境下能正確回傳首頁
+# ==========================================
+# 萬用路由 (Catch-All) - 確保正確回傳靜態檔案
+# ==========================================
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_static(path):
+    # 1. 嘗試尋找並回傳指定的靜態檔案 (例如 CSS, JS, 圖片)
+    if path != "" and os.path.exists(os.path.join(PUBLIC_DIR, path)):
+        return send_from_directory(PUBLIC_DIR, path)
+    
+    # 2. 如果找不到指定檔案，或是使用者訪問根目錄 '/'，統一回傳 index.html
     if os.path.exists(os.path.join(PUBLIC_DIR, 'index.html')):
         return send_from_directory(PUBLIC_DIR, 'index.html')
-    return "找不到前端靜態檔案 (404)，請檢查 public 目錄與結構", 404
+        
+    # 3. 確保除錯用：如果連 index.html 都找不到，提示目錄錯誤
+    return f"伺服器運作正常，但找不到前端靜態檔案 (404)。請確認 public/index.html 檔案存在。", 404
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 3000))
