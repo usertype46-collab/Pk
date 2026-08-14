@@ -15,8 +15,12 @@ from PIL import Image
 # 載入環境變數
 load_dotenv()
 
-# 建立 Flask 應用，設定靜態資料夾為 public
-app = Flask(__name__, static_folder='public', static_url_path='')
+# 取得當前檔案所在的絕對路徑，確保 Vercel 環境下能精準找到 public 目錄
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PUBLIC_DIR = os.path.join(BASE_DIR, 'public')
+
+# 建立 Flask 應用，設定絕對路徑靜態資料夾
+app = Flask(__name__, static_folder=PUBLIC_DIR)
 CORS(app)
 
 current_api_key = os.getenv("NVIDIA_API_KEY", "nvapi-請填入預設金鑰")
@@ -82,6 +86,7 @@ def upload_image():
         compressed_base64 = base64.b64encode(output.getvalue()).decode('utf-8')
         
         filename = f"baifu_{int(time.time() * 1000)}.jpg"
+        print(f"[Google Drive 上傳] 準備傳送檔案: {filename}")
         
         # 發送至 Google Apps Script
         response = requests.post(
@@ -99,11 +104,13 @@ def upload_image():
         if result.get('success'):
             direct_url = convert_google_drive_url(result.get('url'))
             proxy_url = f"/image-proxy?url={urllib.parse.quote(direct_url)}"
+            print(f"[Google Drive 上傳] 成功！轉換後直連: {direct_url}")
             return jsonify({"success": True, "url": proxy_url, "originalLink": direct_url})
         else:
             raise Exception(result.get('error', "Google Apps Script 發生未知錯誤"))
 
     except Exception as e:
+        print(f"❌ 上傳至 Google Drive 失敗: {str(e)}")
         return jsonify({"success": False, "error": f"雲端上傳失敗：{str(e)}"}), 500
 
 @app.route('/image-proxy', methods=['GET'])
@@ -129,6 +136,7 @@ def image_proxy():
         )
 
     except Exception as e:
+        print(f"❌ 代理讀取圖片失敗: {str(e)}")
         return "圖片載入失敗", 500
 
 @app.route('/api/analyze-image', methods=['POST'])
@@ -165,6 +173,7 @@ def analyze_image():
         return jsonify({"success": True, "result": result_text})
         
     except Exception as e:
+        print(f"❌ AI 影像分析失敗: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/parse-item-name', methods=['POST'])
@@ -203,11 +212,15 @@ def parse_item_name():
         return jsonify({"success": True, "result": result_text})
         
     except Exception as e:
+        print(f"❌ AI 解析料號品名失敗: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/')
 def index():
-    return app.send_static_file('index.html')
+    # 使用絕對路徑確保在 Vercel 佈署環境下能正確回傳首頁
+    if os.path.exists(os.path.join(PUBLIC_DIR, 'index.html')):
+        return send_from_directory(PUBLIC_DIR, 'index.html')
+    return "找不到前端靜態檔案 (404)，請檢查 public 目錄與結構", 404
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 3000))
